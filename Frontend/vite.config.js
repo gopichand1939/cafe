@@ -6,7 +6,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      "/api": {
+      "/category": {
+        target: "http://localhost:15013",
+        changeOrigin: true,
+      },
+      "/items": {
         target: "http://localhost:15013",
         changeOrigin: true,
       },

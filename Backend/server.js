@@ -39,8 +39,8 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use("/api/category", categoryRoutes);
-app.use("/api/items", itemRoutes);
+app.use("/category", categoryRoutes);
+app.use("/items", itemRoutes);
 
 const PORT = Number(process.env.PORT) || 5000;
 
