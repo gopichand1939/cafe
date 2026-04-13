@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import ItemForm from "./ItemForm";
 import { ITEM_CREATE } from "../../Utils/Constant";
+import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 
 function AddItem() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ function AddItem() {
         formData.append("item_image", payload.item_image_file);
       }
 
-      const response = await fetch(ITEM_CREATE, {
+      const response = await fetchWithRefreshToken(ITEM_CREATE, {
         method: "POST",
         body: formData,
       });

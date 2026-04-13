@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { CATEGORY_BY_ID, CATEGORY_DELETE } from "../../Utils/Constant";
+import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { setCategorySelectedItem } from "../../Redux/CardSlice";
 import KeyValueDisplay from "../../components/common/KeyValueDisplay";
 
@@ -22,7 +23,7 @@ function DeleteCategory() {
 
     const fetchCategory = async () => {
       try {
-        const response = await fetch(CATEGORY_BY_ID, {
+        const response = await fetchWithRefreshToken(CATEGORY_BY_ID, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -55,7 +56,7 @@ function DeleteCategory() {
     setIsDeleting(true);
 
     try {
-      const response = await fetch(CATEGORY_DELETE, {
+      const response = await fetchWithRefreshToken(CATEGORY_DELETE, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

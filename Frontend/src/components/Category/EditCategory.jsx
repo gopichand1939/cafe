@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import CategoryForm from "./CategoryForm";
 import { CATEGORY_BY_ID, CATEGORY_UPDATE } from "../../Utils/Constant";
+import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 
 function EditCategory() {
   const { id } = useParams();
@@ -22,7 +23,7 @@ function EditCategory() {
 
     const fetchCategory = async () => {
       try {
-        const response = await fetch(CATEGORY_BY_ID, {
+        const response = await fetchWithRefreshToken(CATEGORY_BY_ID, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -61,7 +62,7 @@ function EditCategory() {
         formData.append("category_image", payload.category_image_file);
       }
 
-      const response = await fetch(CATEGORY_UPDATE, {
+      const response = await fetchWithRefreshToken(CATEGORY_UPDATE, {
         method: "POST",
         body: formData,
       });

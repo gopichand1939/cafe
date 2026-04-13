@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BACKEND_BASE_URL, CATEGORY_GET } from "../../Utils/Constant";
+import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 
 const getInitialFormState = (selectedItem) => ({
   category_id: selectedItem?.category_id ? String(selectedItem.category_id) : "",
@@ -31,7 +32,7 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(CATEGORY_GET);
+        const response = await fetchWithRefreshToken(CATEGORY_GET);
         const data = await response.json();
 
         if (!response.ok || data.success === false) {

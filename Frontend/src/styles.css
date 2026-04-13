@@ -260,6 +260,28 @@ img {
   gap: 14px;
 }
 
+.topbar-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-profile-copy {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+}
+
+.topbar-profile-copy strong {
+  color: #1f2937;
+  font-size: 0.96rem;
+}
+
+.topbar-profile-copy span {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
 .topbar-dot {
   width: 18px;
   height: 18px;
@@ -1217,9 +1239,14 @@ img {
     min-height: 76px;
   }
 
+  .topbar-profile-copy {
+    display: none;
+  }
+
   .topbar-title strong {
     font-size: 1.35rem;
   }
+
 }
 
 @media (max-width: 640px) {
@@ -1257,4 +1284,5 @@ img {
     bottom: 18px;
     max-width: none;
   }
+
 }

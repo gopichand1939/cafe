@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { BACKEND_BASE_URL, CATEGORY_BY_ID } from "../../Utils/Constant";
+import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { setCategorySelectedItem } from "../../Redux/CardSlice";
 import KeyValueDisplay from "../../components/common/KeyValueDisplay";
 
@@ -21,7 +22,7 @@ function ViewCategory() {
 
     const fetchCategory = async () => {
       try {
-        const response = await fetch(CATEGORY_BY_ID, {
+        const response = await fetchWithRefreshToken(CATEGORY_BY_ID, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import CategoryForm from "./CategoryForm";
 import { CATEGORY_CREATE } from "../../Utils/Constant";
+import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 
 function AddCategory() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ function AddCategory() {
         formData.append("category_image", payload.category_image_file);
       }
 
-      const response = await fetch(CATEGORY_CREATE, {
+      const response = await fetchWithRefreshToken(CATEGORY_CREATE, {
         method: "POST",
         body: formData,
       });

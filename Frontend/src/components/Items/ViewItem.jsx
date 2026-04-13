@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { BACKEND_BASE_URL, ITEM_BY_ID } from "../../Utils/Constant";
+import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { setItemSelectedItem } from "../../Redux/CardSlice";
 import KeyValueDisplay from "../../components/common/KeyValueDisplay";
 
@@ -21,7 +22,7 @@ function ViewItem() {
 
     const fetchItem = async () => {
       try {
-        const response = await fetch(ITEM_BY_ID, {
+        const response = await fetchWithRefreshToken(ITEM_BY_ID, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

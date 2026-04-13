@@ -1,0 +1,9 @@
+.register-page {
+  background:
+    radial-gradient(circle at top right, rgba(16, 185, 129, 0.16), transparent 30%),
+    linear-gradient(135deg, #f6fffb 0%, #effaf3 100%);
+}
+
+.register-form-card {
+  width: min(100%, 460px);
+}

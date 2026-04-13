@@ -4,6 +4,8 @@ const express = require("express");
 const path = require("path");
 const categoryRoutes = require("./category/categoryRoutes");
 const itemRoutes = require("./items/itemRoutes");
+const adminRoutes = require("./Login/adminRoutes");
+const adminModel = require("./Login/adminModel");
 
 const app = express();
 
@@ -41,9 +43,21 @@ app.get("/", (req, res) => {
 
 app.use("/category", categoryRoutes);
 app.use("/items", itemRoutes);
+app.use("/admin", adminRoutes);
 
 const PORT = Number(process.env.PORT) || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await adminModel.ensureAdminTable();
+
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+startServer();

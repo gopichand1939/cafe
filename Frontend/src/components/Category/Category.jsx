@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { BACKEND_BASE_URL, CATEGORY_LIST } from "../../Utils/Constant";
+import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import StatusPill from "../../components/common/StatusPill";
 import Table from "../Table";
 import ActionPopover from "../ActionPopover";
@@ -26,7 +27,7 @@ function Category() {
     setLoading(true);
 
     try {
-      const response = await fetch(CATEGORY_LIST, {
+      const response = await fetchWithRefreshToken(CATEGORY_LIST, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
