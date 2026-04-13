@@ -61,7 +61,7 @@ function App() {
               <Route path="/viewitem/:id" element={<ViewItem />} />
               <Route path="/edititem/:id" element={<EditItem />} />
               <Route path="/deleteitem/:id" element={<DeleteItem />} />
-              <Route path="*" element={<Loader label="Loading screen..." />} />
+              <Route path="*" element={<Navigate to="/category" replace />} />
             </Route>
           </Routes>
         </BrowserRouter>
