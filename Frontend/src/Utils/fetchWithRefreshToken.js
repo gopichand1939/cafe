@@ -86,6 +86,7 @@ const refreshAccessToken = async () => {
     accessToken: data?.data?.access_token,
     refreshToken: data?.data?.refresh_token,
     admin: data?.data?.admin,
+    menuArray: data?.data?.menu_array,
   });
 
   return data?.data?.access_token || null;

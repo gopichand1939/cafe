@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { getStoredAdminMenuTree } from "../../Utils/authStorage";
+import { getMenuMatchPaths, getMenuRoutePath } from "../../Utils/menuConfig";
 
 function DashboardIcon(props) {
   return (
@@ -153,6 +155,23 @@ function ItemIcon(props) {
   );
 }
 
+function TimingsIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 7.5v5l3 1.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DefaultIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 function ChevronIcon({ open, style }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" style={style}>
@@ -167,120 +186,61 @@ function ChevronIcon({ open, style }) {
   );
 }
 
-const menuConfig = [
-  {
-    key: "dashboard",
-    label: "Dashboard",
-    to: "/dashboard",
-    Icon: DashboardIcon,
-  },
-  {
-    key: "authentication",
-    label: "Authentication",
-    to: "/authentication",
-    Icon: AuthenticationIcon,
-  },
-  {
-    key: "settings",
-    label: "Settings",
-    to: "/settings",
-    Icon: SettingsIcon,
-  },
-  {
-    key: "menu-management",
-    label: "Menu Management",
-    Icon: MenuManagementIcon,
-    children: [
-      {
-        key: "category",
-        label: "Category",
-        to: "/category",
-        Icon: CategoryIcon,
-        matchPaths: [
-          "/category",
-          "/addcategory",
-          "/editcategory/",
-          "/viewcategory/",
-          "/deletecategory/",
-        ],
-      },
-      {
-        key: "items",
-        label: "Items",
-        to: "/items",
-        Icon: ItemIcon,
-        matchPaths: [
-          "/items",
-          "/additem",
-          "/edititem/",
-          "/viewitem/",
-          "/deleteitem/",
-        ],
-      },
-    ],
-  },
-  {
-    key: "orders",
-    label: "Orders",
-    to: "/orders",
-    Icon: OrdersIcon,
-  },
-  {
-    key: "customers",
-    label: "Customers",
-    to: "/customers",
-    Icon: CustomersIcon,
-  },
-  {
-    key: "reviews",
-    label: "Reviews",
-    to: "/reviews",
-    Icon: ReviewsIcon,
-  },
-  {
-    key: "user-management",
-    label: "User Management",
-    to: "/user-management",
-    Icon: UserManagementIcon,
-  },
-];
+const iconMap = {
+  dashboard: DashboardIcon,
+  authentication: AuthenticationIcon,
+  settings: SettingsIcon,
+  timings: TimingsIcon,
+  "menu-management": MenuManagementIcon,
+  menu_management: MenuManagementIcon,
+  orders: OrdersIcon,
+  customers: CustomersIcon,
+  reviews: ReviewsIcon,
+  "user-management": UserManagementIcon,
+  user_management: UserManagementIcon,
+  category: CategoryIcon,
+  items: ItemIcon,
+};
 
-const isPathMatched = (pathname, targetPath = "", matchPaths = []) => {
-  const pathsToMatch = matchPaths.length ? matchPaths : [targetPath];
+const isPathMatched = (pathname, menuKey = "", children = []) => {
+  const matchPaths = getMenuMatchPaths(menuKey);
 
-  return pathsToMatch.some((path) => {
-    if (!path) return false;
-    return pathname === path || pathname.startsWith(path);
-  });
+  if (
+    matchPaths.some((path) => path && (pathname === path || pathname.startsWith(path)))
+  ) {
+    return true;
+  }
+
+  return children.some((child) => isPathMatched(pathname, child.menu_key, child.children || []));
 };
 
 function Sidebar({ collapsed = false, onNavigate }) {
   const location = useLocation();
+  const [storedMenus, setStoredMenus] = useState(() => getStoredAdminMenuTree());
 
-  const normalizedMenu = useMemo(() => {
-    return menuConfig.map((menu) => {
-      const childItems =
-        menu.children?.map((child) => ({
-          ...child,
-          isActive: isPathMatched(location.pathname, child.to, child.matchPaths),
-        })) || [];
-
-      const isParentActive = childItems.length
-        ? childItems.some((child) => child.isActive)
-        : isPathMatched(location.pathname, menu.to, menu.matchPaths);
-
-      return {
-        ...menu,
-        isActive: isParentActive,
-        children: childItems,
-      };
-    });
+  useEffect(() => {
+    setStoredMenus(getStoredAdminMenuTree());
   }, [location.pathname]);
+
+  const normalizedMenu = useMemo(
+    () =>
+      storedMenus.map((menu) => ({
+        ...menu,
+        resolvedPath: getMenuRoutePath(menu.menu_key),
+        isActive: isPathMatched(location.pathname, menu.menu_key, menu.children || []),
+        children: (menu.children || []).map((child) => ({
+          ...child,
+          resolvedPath: getMenuRoutePath(child.menu_key),
+          isActive: isPathMatched(location.pathname, child.menu_key, child.children || []),
+        })),
+      })),
+    [location.pathname, storedMenus]
+  );
 
   const [openMenus, setOpenMenus] = useState(() =>
     normalizedMenu.reduce((acc, menu) => {
-      if (menu.children?.length && menu.isActive) {
-        acc[menu.key] = true;
+      if ((menu.children || []).length && menu.isActive) {
+        acc[menu.menu_id] = true;
       }
       return acc;
     }, {})
@@ -289,25 +249,23 @@ function Sidebar({ collapsed = false, onNavigate }) {
   useEffect(() => {
     setOpenMenus((prev) => {
       const next = { ...prev };
-
       normalizedMenu.forEach((menu) => {
-        if (menu.children?.length && menu.isActive) {
-          next[menu.key] = true;
+        if ((menu.children || []).length && menu.isActive) {
+          next[menu.menu_id] = true;
         }
       });
-
       return next;
     });
   }, [normalizedMenu]);
 
-  const handleParentToggle = (menuKey) => {
+  const handleParentToggle = (menuId) => {
     if (collapsed) {
       return;
     }
 
     setOpenMenus((prev) => ({
       ...prev,
-      [menuKey]: !prev[menuKey],
+      [menuId]: !prev[menuId],
     }));
   };
 
@@ -316,7 +274,6 @@ function Sidebar({ collapsed = false, onNavigate }) {
     brand: "#1f2937",
     accent: "#57b98f",
     text: "#24324a",
-    muted: "#6b7280",
     iconBg: "#eef4f1",
     line: "#d8ece3",
     activeBg: "linear-gradient(135deg, #56ba90 0%, #4aa57f 100%)",
@@ -327,124 +284,34 @@ function Sidebar({ collapsed = false, onNavigate }) {
     childIconActiveBg: "#dff3e8",
   };
 
-  const rootStyle = {
-    height: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    gap: 14,
-    padding: "18px 16px",
-    background: colors.panel,
-    overflow: "hidden",
-  };
-
-  const brandWrapStyle = {
-    display: "grid",
-    gap: 8,
-    padding: collapsed ? "8px 0 0" : "10px 8px 2px",
-    justifyItems: collapsed ? "center" : "stretch",
-  };
-
-  const brandCopyStyle = {
-    display: "grid",
-    gap: 2,
-    padding: collapsed ? 0 : "0 4px 4px",
-    justifyItems: collapsed ? "center" : "start",
-  };
-
-  const navStyle = {
-    display: "flex",
-    flexDirection: "column",
-    gap: 8,
-    marginTop: 2,
-    alignItems: collapsed ? "center" : "stretch",
-  };
-
-  const getParentItemStyle = (isActive) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    width: collapsed ? 56 : "100%",
-    minHeight: collapsed ? 56 : 54,
-    padding: collapsed ? 0 : "0 14px",
-    justifyContent: collapsed ? "center" : "flex-start",
-    border: 0,
-    borderRadius: collapsed ? 18 : 16,
-    background: isActive ? colors.activeBg : "transparent",
-    color: isActive ? colors.activeText : colors.text,
-    textDecoration: "none",
-    fontWeight: 700,
-    textAlign: "left",
-    boxShadow: isActive ? "0 10px 20px rgba(86, 186, 144, 0.18)" : "none",
-    transform: isActive ? "translateX(2px)" : "none",
-    transition: "all 0.2s ease",
-  });
-
-  const getParentIconWrapStyle = (isActive) => ({
-    width: 32,
-    height: 32,
-    display: "grid",
-    placeItems: "center",
-    borderRadius: 10,
-    background: isActive ? "rgba(255, 255, 255, 0.18)" : colors.iconBg,
-    color: "currentColor",
-    flexShrink: 0,
-  });
-
-  const groupWrapStyle = {
-    display: "grid",
-    gap: 8,
-    width: "100%",
-  };
-
-  const submenuStyle = {
-    display: "grid",
-    gap: 6,
-    marginLeft: 18,
-    paddingLeft: 16,
-    borderLeft: `1px solid ${colors.line}`,
-  };
-
-  const getChildItemStyle = (isActive) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    minHeight: 44,
-    padding: "0 12px",
-    borderRadius: 12,
-    background: isActive ? colors.childActiveBg : "transparent",
-    color: isActive ? colors.childActiveText : "#51607a",
-    textDecoration: "none",
-    fontWeight: 600,
-    transition: "all 0.2s ease",
-  });
-
-  const getChildIconWrapStyle = (isActive) => ({
-    width: 28,
-    height: 28,
-    display: "grid",
-    placeItems: "center",
-    borderRadius: 8,
-    background: isActive ? colors.childIconActiveBg : colors.childIconBg,
-    color: "currentColor",
-    flexShrink: 0,
-  });
-
-  const iconStyle = {
-    width: 18,
-    height: 18,
-    flexShrink: 0,
-  };
-
-  const childIconStyle = {
-    width: 16,
-    height: 16,
-    flexShrink: 0,
-  };
-
   return (
-    <div style={rootStyle}>
-      <div style={brandWrapStyle}>
-        <div style={brandCopyStyle}>
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        gap: 14,
+        padding: "18px 16px",
+        background: colors.panel,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gap: 8,
+          padding: collapsed ? "8px 0 0" : "10px 8px 2px",
+          justifyItems: collapsed ? "center" : "stretch",
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gap: 2,
+            padding: collapsed ? 0 : "0 4px 4px",
+            justifyItems: collapsed ? "center" : "start",
+          }}
+        >
           {!collapsed ? (
             <p
               style={{
@@ -459,7 +326,6 @@ function Sidebar({ collapsed = false, onNavigate }) {
               Cafe
             </p>
           ) : null}
-
           <h1
             style={{
               margin: 0,
@@ -473,64 +339,140 @@ function Sidebar({ collapsed = false, onNavigate }) {
         </div>
       </div>
 
-      <nav style={navStyle}>
+      <nav
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          marginTop: 2,
+          alignItems: collapsed ? "center" : "stretch",
+        }}
+      >
         {normalizedMenu.map((menu) => {
           const hasChildren = Boolean(menu.children?.length);
-          const isOpen = hasChildren ? openMenus[menu.key] || false : false;
+          const isOpen = hasChildren ? openMenus[menu.menu_id] || false : false;
+          const Icon = iconMap[menu.menu_key] || DefaultIcon;
 
-          if (!hasChildren) {
+          const parentStyle = {
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            width: collapsed ? 56 : "100%",
+            minHeight: collapsed ? 56 : 54,
+            padding: collapsed ? 0 : "0 14px",
+            justifyContent: collapsed ? "center" : "flex-start",
+            border: 0,
+            borderRadius: collapsed ? 18 : 16,
+            background: menu.isActive ? colors.activeBg : "transparent",
+            color: menu.isActive ? colors.activeText : colors.text,
+            textDecoration: "none",
+            fontWeight: 700,
+            textAlign: "left",
+            boxShadow: menu.isActive ? "0 10px 20px rgba(86, 186, 144, 0.18)" : "none",
+            transform: menu.isActive ? "translateX(2px)" : "none",
+            transition: "all 0.2s ease",
+          };
+
+          const iconWrapStyle = {
+            width: 32,
+            height: 32,
+            display: "grid",
+            placeItems: "center",
+            borderRadius: 10,
+            background: menu.isActive ? "rgba(255, 255, 255, 0.18)" : colors.iconBg,
+            color: "currentColor",
+            flexShrink: 0,
+          };
+
+          if (!hasChildren && menu.resolvedPath) {
             return (
               <NavLink
-                key={menu.key}
-                to={menu.to}
-                style={getParentItemStyle(menu.isActive)}
+                key={menu.menu_id}
+                to={menu.resolvedPath}
+                style={parentStyle}
                 onClick={onNavigate}
-                title={collapsed ? menu.label : undefined}
+                title={collapsed ? menu.menu_name : undefined}
               >
-                <span style={getParentIconWrapStyle(menu.isActive)}>
-                  <menu.Icon style={iconStyle} />
+                <span style={iconWrapStyle}>
+                  <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
                 </span>
-                {!collapsed ? <span>{menu.label}</span> : null}
+                {!collapsed ? <span>{menu.menu_name}</span> : null}
               </NavLink>
             );
           }
 
           return (
-            <div key={menu.key} style={groupWrapStyle}>
+            <div key={menu.menu_id} style={{ display: "grid", gap: 8, width: "100%" }}>
               <button
                 type="button"
-                style={getParentItemStyle(menu.isActive)}
-                onClick={() => handleParentToggle(menu.key)}
-                title={collapsed ? menu.label : undefined}
+                style={parentStyle}
+                onClick={() => handleParentToggle(menu.menu_id)}
+                title={collapsed ? menu.menu_name : undefined}
                 aria-expanded={collapsed ? false : isOpen}
               >
-                <span style={getParentIconWrapStyle(menu.isActive)}>
-                  <menu.Icon style={iconStyle} />
+                <span style={iconWrapStyle}>
+                  <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
                 </span>
-
                 {!collapsed ? (
                   <>
-                    <span style={{ flex: 1 }}>{menu.label}</span>
+                    <span style={{ flex: 1 }}>{menu.menu_name}</span>
                     <ChevronIcon open={isOpen} style={{ width: 18, height: 18, flexShrink: 0 }} />
                   </>
                 ) : null}
               </button>
 
               {!collapsed && isOpen ? (
-                <div style={submenuStyle}>
-                  {menu.children.map((child) => (
-                    <NavLink
-                      key={child.key}
-                      to={child.to}
-                      style={getChildItemStyle(child.isActive)}
-                      onClick={onNavigate}
-                    >
-                      <span style={getChildIconWrapStyle(child.isActive)}>
-                        <child.Icon style={childIconStyle} />
-                      </span>
-                      <span>{child.label}</span>
-                    </NavLink>
-                  ))}
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 6,
+                    marginLeft: 18,
+                    paddingLeft: 16,
+                    borderLeft: `1px solid ${colors.line}`,
+                  }}
+                >
+                  {menu.children.map((child) => {
+                    const ChildIcon = iconMap[child.menu_key] || DefaultIcon;
+
+                    return (
+                      <NavLink
+                        key={child.menu_id}
+                        to={child.resolvedPath || "#"}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          minHeight: 44,
+                          padding: "0 12px",
+                          borderRadius: 12,
+                          background: child.isActive ? colors.childActiveBg : "transparent",
+                          color: child.isActive ? colors.childActiveText : "#51607a",
+                          textDecoration: "none",
+                          fontWeight: 600,
+                          transition: "all 0.2s ease",
+                        }}
+                        onClick={child.resolvedPath ? onNavigate : undefined}
+                      >
+                        <span
+                          style={{
+                            width: 28,
+                            height: 28,
+                            display: "grid",
+                            placeItems: "center",
+                            borderRadius: 8,
+                            background: child.isActive
+                              ? colors.childIconActiveBg
+                              : colors.childIconBg,
+                            color: "currentColor",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <ChildIcon style={{ width: 16, height: 16, flexShrink: 0 }} />
+                        </span>
+                        <span>{child.menu_name}</span>
+                      </NavLink>
+                    );
+                  })}
                 </div>
               ) : null}
             </div>

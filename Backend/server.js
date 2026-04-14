@@ -6,6 +6,7 @@ const categoryRoutes = require("./category/categoryRoutes");
 const itemRoutes = require("./items/itemRoutes");
 const adminRoutes = require("./Login/adminRoutes");
 const adminModel = require("./Login/adminModel");
+const menuAccessModel = require("./Access/menuAccessModel");
 const restaurantSettingsRoutes = require("./restaurant/restaurantSettingsRoutes");
 const restaurantSettingsModel = require("./restaurant/restaurantSettingsModel");
 
@@ -53,6 +54,7 @@ const PORT = Number(process.env.PORT) || 5000;
 const startServer = async () => {
   try {
     await adminModel.ensureAdminTable();
+    await menuAccessModel.ensureAccessControlData();
     await restaurantSettingsModel.ensureRestaurantSettingsTable();
 
     app.listen(PORT, () => {

@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const adminModel = require("./adminModel");
+const menuAccessModel = require("../Access/menuAccessModel");
 const {
   generateAccessToken,
   generateRefreshToken,
@@ -11,11 +12,12 @@ const {
   hashToken,
 } = require("./tokenService");
 
-const buildAuthResponse = (message, admin, accessToken, refreshToken) => ({
+const buildAuthResponse = async (message, admin, accessToken, refreshToken) => ({
   success: true,
   message,
   data: {
     admin: adminModel.sanitizeAdmin(admin),
+    menu_array: await menuAccessModel.getMenusForAdmin(admin.id),
     access_token: accessToken,
     refresh_token: refreshToken,
   },
@@ -69,12 +71,14 @@ const registerAdmin = async (req, res) => {
       phone: phone ? String(phone).trim() : null,
       passwordHash,
     });
+    await menuAccessModel.assignDefaultPermissionsToAdmin(createdAdmin.id);
 
     return res.status(201).json({
       success: true,
       message: "Admin registered successfully",
       data: {
         admin: adminModel.sanitizeAdmin(createdAdmin),
+        menu_array: await menuAccessModel.getMenusForAdmin(createdAdmin.id),
       },
     });
   } catch (error) {
@@ -126,7 +130,7 @@ const loginAdmin = async (req, res) => {
 
     return res
       .status(200)
-      .json(buildAuthResponse("Login successful", savedAdmin, accessToken, refreshToken));
+      .json(await buildAuthResponse("Login successful", savedAdmin, accessToken, refreshToken));
   } catch (error) {
     console.error("Error logging in admin:", error);
     return res.status(500).json({
@@ -178,7 +182,7 @@ const refreshAdminToken = async (req, res) => {
     );
 
     return res.status(200).json(
-      buildAuthResponse(
+      await buildAuthResponse(
         "Token refreshed successfully",
         savedAdmin,
         accessToken,

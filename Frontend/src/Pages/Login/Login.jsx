@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import heroImage from "../../assets/cafeimageLoginpage.png";
 import { ADMIN_LOGIN } from "../../Utils/Constant";
-import { setAuthSession } from "../../Utils/authStorage";
+import { getFirstAccessibleRoute, setAuthSession } from "../../Utils/authStorage";
 
 function Login() {
   const navigate = useNavigate();
@@ -45,11 +45,12 @@ function Login() {
         accessToken: data?.data?.access_token,
         refreshToken: data?.data?.refresh_token,
         admin: data?.data?.admin,
+        menuArray: data?.data?.menu_array,
         persist: true,
       });
 
       toast.success("Login successful");
-      navigate("/category", { replace: true });
+      navigate(getFirstAccessibleRoute(data?.data?.menu_array || []), { replace: true });
     } catch (error) {
       setErrorMessage(error.message || "Login failed");
       toast.error(error.message || "Login failed");
