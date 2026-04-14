@@ -7,6 +7,9 @@ const Card = createSlice({
     categorySelectedItem: [],
     itemData: [],
     itemSelectedItem: [],
+
+
+    //updated
   },
   reducers: {
     setCategoryData: (state, action) => {

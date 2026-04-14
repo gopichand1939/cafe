@@ -19,6 +19,11 @@
       "customers": "Customers",
       "reviews": "Reviews",
       "user_management": "User Management"
+
+
+
+
+      
     },
     "actions": {
       "logout": "Logout"
