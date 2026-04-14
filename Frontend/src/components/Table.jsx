@@ -147,10 +147,10 @@ function Table({
   };
 
   return (
-    <div className="overflow-hidden rounded-[8px] border border-[#d8ece3] bg-white p-[10px] shadow-[0_10px_30px_rgba(30,76,60,0.08)]">
-      <div className="pb-[10px]">
+    <div className="flex h-[calc(100vh-245px)] min-h-[430px] flex-col overflow-hidden rounded-[8px] border border-[#d8ece3] bg-white p-2 shadow-[0_10px_30px_rgba(30,76,60,0.08)]">
+      <div className="shrink-0 pb-2">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="w-full min-[480px]:w-[250px]">
+          <div className="w-full min-[480px]:w-[230px]">
             <SearchBar
               placeholder={searchPlaceholder}
               searchQuery={searchQuery}
@@ -177,11 +177,11 @@ function Table({
         </div>
       </div>
 
-      <div className="max-h-[min(420px,calc(100vh-320px))] min-h-[280px] max-w-full overflow-auto rounded-[8px]">
+      <div className="min-h-0 flex-1 max-w-full overflow-auto rounded-[8px]">
         {loading ? (
-          <div className="grid min-h-[220px] place-items-center gap-[10px] text-[1.05rem] text-gray-500">Loading...</div>
+          <div className="grid min-h-[180px] place-items-center gap-[10px] text-[1.05rem] text-gray-500">Loading...</div>
         ) : filteredData.length === 0 ? (
-          <div className="grid min-h-[220px] place-items-center gap-[10px] text-[1.05rem] text-gray-500">
+          <div className="grid min-h-[180px] place-items-center gap-[10px] text-[1.05rem] text-gray-500">
             <span className="text-[2rem] text-violet-500">!</span>
             <span>No data</span>
           </div>
@@ -193,7 +193,7 @@ function Table({
                   <th
                     key={header.key}
                     onClick={() => handleSort(header.key)}
-                    className="sticky top-0 z-[1] border-b border-[#e3edf6] bg-[#d8f2e6] px-[18px] py-4 text-center text-[#43536f]"
+                    className="sticky top-0 z-[1] border-b border-[#e3edf6] bg-[#d8f2e6] px-3 py-2.5 text-center text-[#43536f]"
                   >
                     <div className="inline-flex items-center gap-1 font-extrabold">{header.label}</div>
                   </th>
@@ -202,13 +202,13 @@ function Table({
                   <th
                     key={header.key}
                     onClick={() => handleSort(header.key)}
-                    className="sticky top-0 right-0 z-[3] border-b border-[#e3edf6] bg-[#d8f2e6] px-[18px] py-4 text-center text-[#43536f]"
+                    className="sticky top-0 right-0 z-[3] border-b border-[#e3edf6] bg-[#d8f2e6] px-3 py-2.5 text-center text-[#43536f]"
                   >
                     <div className="inline-flex items-center gap-1 font-extrabold">{header.label}</div>
                   </th>
                 ))}
                 {rowActions.length > 0 ? (
-                  <th className="sticky top-0 right-0 z-[3] border-b border-[#e3edf6] bg-[#d8f2e6] px-[18px] py-4 text-center text-[#43536f]">
+                  <th className="sticky top-0 right-0 z-[3] border-b border-[#e3edf6] bg-[#d8f2e6] px-3 py-2.5 text-center text-[#43536f]">
                     Actions
                   </th>
                 ) : null}
@@ -218,7 +218,7 @@ function Table({
               {pagedData.map((item) => (
                 <tr key={item.id}>
                   {regularColumns.map((header) => (
-                    <td key={header.key} className="border-b border-[#e3edf6] bg-white px-[18px] py-4 text-center whitespace-nowrap text-[#506079]">
+                    <td key={header.key} className="border-b border-[#e3edf6] bg-white px-3 py-2 text-center whitespace-nowrap text-[#506079]">
                       {header.content
                         ? header.content(item)
                         : header.key.includes("date") || header.key.endsWith("_at")
@@ -227,7 +227,7 @@ function Table({
                     </td>
                   ))}
                   {stickyColumns.map((header) => (
-                    <td key={header.key} className="sticky right-0 z-[2] border-b border-[#e3edf6] bg-white px-[18px] py-4 text-center whitespace-nowrap text-[#506079]">
+                    <td key={header.key} className="sticky right-0 z-[2] border-b border-[#e3edf6] bg-white px-3 py-2 text-center whitespace-nowrap text-[#506079]">
                       {header.content
                         ? header.content(item)
                         : header.key.includes("date") || header.key.endsWith("_at")
@@ -236,7 +236,7 @@ function Table({
                     </td>
                   ))}
                   {rowActions.length > 0 ? (
-                    <td className="sticky right-0 z-[2] border-b border-[#e3edf6] bg-white px-[18px] py-4 text-center whitespace-nowrap text-[#506079]">
+                    <td className="sticky right-0 z-[2] border-b border-[#e3edf6] bg-white px-3 py-2 text-center whitespace-nowrap text-[#506079]">
                       <div className="flex flex-wrap items-center justify-center gap-2.5">
                         {rowActions.map((action) => (
                           <button
@@ -258,7 +258,7 @@ function Table({
         )}
       </div>
 
-      <div className="mt-[14px] flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-2 flex shrink-0 flex-wrap items-center justify-between gap-3">
         <span className="font-bold text-slate-600">
           {totalRowsLabel}: {totalItems}
         </span>

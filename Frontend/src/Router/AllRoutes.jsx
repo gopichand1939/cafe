@@ -56,6 +56,10 @@ export const appRoutes = [
         element: withSuspense(<ModulePlaceholder title="Orders" />),
       },
       {
+        path: "offers",
+        element: withSuspense(<ModulePlaceholder title="Offers" />),
+      },
+      {
         path: "customers",
         element: withSuspense(<ModulePlaceholder title="Customers" />),
       },

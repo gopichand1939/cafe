@@ -1,0 +1,27 @@
+{
+  "sidebar": {
+    "brand": {
+      "eyebrow": "Cafe",
+      "name": "Bagel Master",
+      "collapsedName": "BM",
+      "subtitle": "Admin workspace"
+    },
+    "menu": {
+      "dashboard": "Dashboard",
+      "authentication": "Authentication",
+      "settings": "Settings",
+      "timings": "Timings",
+      "menu_management": "Management",
+      "category": "Category",
+      "items": "Items",
+      "offers": "Offers",
+      "orders": "Orders",
+      "customers": "Customers",
+      "reviews": "Reviews",
+      "user_management": "User Management"
+    },
+    "actions": {
+      "logout": "Logout"
+    }
+  }
+}

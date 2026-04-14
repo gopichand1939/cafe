@@ -15,11 +15,15 @@ function ActionPopover({
   }
 
   const rect = anchorEl.getBoundingClientRect();
+  const popoverWidth = 156;
+  const popoverHeight = 180;
+  const left = Math.max(8, Math.min(rect.right - popoverWidth, window.innerWidth - popoverWidth - 8));
+  const top = Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - popoverHeight - 8));
 
   return (
     <div className="fixed inset-0 z-[999]" onClick={handleClose}>
       <div
-        className="fixed z-[1000] flex min-w-[156px] flex-col gap-[6px] rounded-[8px] border border-[#d8ece3] bg-white p-[14px] shadow-[0_16px_30px_rgba(15,23,42,0.15)]"
+        className={`fixed left-[${Math.round(left)}px] top-[${Math.round(top)}px] z-[1000] flex min-w-[156px] flex-col gap-[6px] rounded-[8px] border border-[#d8ece3] bg-white p-[14px] shadow-[0_16px_30px_rgba(15,23,42,0.15)]`}
         onClick={(event) => event.stopPropagation()}
       >
         <button

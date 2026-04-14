@@ -100,6 +100,11 @@ export const getStoredAdminMenuTree = () => buildMenuTree(getStoredAdminMenus())
 
 export const getFirstAccessibleRoute = (menus = getStoredAdminMenus()) => {
   const sortedMenus = [...menus].sort((a, b) => Number(a.priority || 0) - Number(b.priority || 0));
+  const dashboardMenu = sortedMenus.find((menu) => getMenuRoutePath(menu.menu_key) === "/dashboard");
+
+  if (dashboardMenu) {
+    return "/dashboard";
+  }
 
   for (const menu of sortedMenus) {
     const resolvedPath = getMenuRoutePath(menu.menu_key);

@@ -103,6 +103,7 @@ function AppShell() {
         <Sidebar
           collapsed={!isSidebarOpen && !isMobile}
           onNavigate={isMobile ? () => setIsSidebarOpen(false) : undefined}
+          onLogout={handleLogout}
         />
       </aside>
       <main className={`grid gap-[18px] overflow-hidden overflow-x-hidden px-[18px] pb-[18px] pt-[14px] ${isMobile ? "min-h-screen overflow-auto" : "h-screen grid-rows-[auto_minmax(0,1fr)]"}`}>

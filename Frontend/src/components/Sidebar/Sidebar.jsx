@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { getStoredAdminMenuTree } from "../../Utils/authStorage";
 import { getMenuMatchPaths, getMenuRoutePath } from "../../Utils/menuConfig";
+import en from "../../Utils/i18n/en.json";
 
 function DashboardIcon(props) {
   return (
@@ -172,6 +173,26 @@ function DefaultIcon(props) {
   );
 }
 
+function LogoutIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M10 6H6.5A2.5 2.5 0 0 0 4 8.5v7A2.5 2.5 0 0 0 6.5 18H10"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M14 8l4 4l-4 4M18 12H9"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function ChevronIcon({ open, className = "" }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
@@ -214,7 +235,10 @@ const isPathMatched = (pathname, menuKey = "", children = []) => {
   return children.some((child) => isPathMatched(pathname, child.menu_key, child.children || []));
 };
 
-function Sidebar({ collapsed = false, onNavigate }) {
+const getSidebarLabel = (menu) =>
+  en.sidebar.menu[menu.menu_key] || menu.menu_name || menu.module_name || menu.menu_key;
+
+function Sidebar({ collapsed = false, onNavigate, onLogout }) {
   const location = useLocation();
   const [storedMenus, setStoredMenus] = useState(() => getStoredAdminMenuTree());
 
@@ -270,23 +294,31 @@ function Sidebar({ collapsed = false, onNavigate }) {
   };
 
   return (
-    <div className="flex h-screen flex-col gap-[14px] overflow-hidden bg-white px-4 py-[18px]">
-      <div className={`grid gap-2 ${collapsed ? "justify-items-center pt-2" : "px-2 pb-0.5 pt-[10px]"}`}>
-        <div className={`grid gap-0.5 ${collapsed ? "justify-items-center p-0" : "justify-items-start px-1 pb-1"}`}>
-          {!collapsed ? (
-            <p className="m-0 text-[0.78rem] font-bold uppercase tracking-[0.08em] text-[#57b98f]">Cafe</p>
-          ) : null}
-          <h1 className={`m-0 leading-[1.15] text-[#1f2937] ${collapsed ? "text-base" : "text-[1.35rem]"}`}>
-            {collapsed ? "BM" : "Bagel Master"}
-          </h1>
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f6fffb_48%,#edf8f2_100%)] px-4 py-[18px]">
+      <div className={`${collapsed ? "grid justify-items-center pb-3 pt-1" : "pb-4"}`}>
+        <div className={`border border-[#d8ece3] bg-[linear-gradient(135deg,#ffffff_0%,#ecfdf5_56%,#dcf7e8_100%)] shadow-[0_12px_26px_rgba(45,111,84,0.08)] ${
+          collapsed ? "grid h-14 w-14 place-items-center rounded-2xl" : "rounded-[22px] px-4 py-[18px]"
+        }`}>
+          {collapsed ? (
+            <span className="text-base font-black tracking-tight text-[#2f7d5b]">{en.sidebar.brand.collapsedName}</span>
+          ) : (
+            <div className="grid gap-1">
+              <p className="m-0 text-[0.72rem] font-black uppercase tracking-[0.18em] text-[#57b98f]">{en.sidebar.brand.eyebrow}</p>
+              <h1 className="m-0 text-[1.45rem] font-semibold leading-[1.1] tracking-[0.01em] text-[#0f2742]">
+                {en.sidebar.brand.name}
+              </h1>
+              <span className="text-[0.78rem] font-semibold text-[#4f6f61]">{en.sidebar.brand.subtitle}</span>
+            </div>
+          )}
         </div>
       </div>
 
-      <nav className={`mt-0.5 flex flex-col gap-2 ${collapsed ? "items-center" : "items-stretch"}`}>
+      <nav className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden pr-1 [scrollbar-width:thin] [scrollbar-color:#9ca3af_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-400 ${collapsed ? "flex flex-col items-center gap-2" : "flex flex-col items-stretch gap-2"}`}>
         {normalizedMenu.map((menu) => {
           const hasChildren = Boolean(menu.children?.length);
           const isOpen = hasChildren ? openMenus[menu.menu_id] || false : false;
           const Icon = iconMap[menu.menu_key] || DefaultIcon;
+          const menuLabel = getSidebarLabel(menu);
 
           const parentClassName = `flex items-center gap-3 font-bold text-left no-underline transition-all duration-200 ${
             collapsed
@@ -309,12 +341,12 @@ function Sidebar({ collapsed = false, onNavigate }) {
                 to={menu.resolvedPath}
                 className={parentClassName}
                 onClick={onNavigate}
-                title={collapsed ? menu.menu_name : undefined}
+                title={collapsed ? menuLabel : undefined}
               >
                 <span className={iconWrapClassName}>
                   <Icon className="h-[18px] w-[18px] shrink-0" />
                 </span>
-                {!collapsed ? <span>{menu.menu_name}</span> : null}
+                {!collapsed ? <span>{menuLabel}</span> : null}
               </NavLink>
             );
           }
@@ -325,7 +357,7 @@ function Sidebar({ collapsed = false, onNavigate }) {
                 type="button"
                 className={parentClassName}
                 onClick={() => handleParentToggle(menu.menu_id)}
-                title={collapsed ? menu.menu_name : undefined}
+                title={collapsed ? menuLabel : undefined}
                 aria-expanded={collapsed ? false : isOpen}
               >
                 <span className={iconWrapClassName}>
@@ -333,7 +365,7 @@ function Sidebar({ collapsed = false, onNavigate }) {
                 </span>
                 {!collapsed ? (
                   <>
-                    <span className="flex-1">{menu.menu_name}</span>
+                    <span className="flex-1">{menuLabel}</span>
                     <ChevronIcon open={isOpen} className="h-[18px] w-[18px] shrink-0" />
                   </>
                 ) : null}
@@ -343,6 +375,7 @@ function Sidebar({ collapsed = false, onNavigate }) {
                 <div className="ml-[18px] grid gap-[6px] border-l border-[#d8ece3] pl-4">
                   {menu.children.map((child) => {
                     const ChildIcon = iconMap[child.menu_key] || DefaultIcon;
+                    const childLabel = getSidebarLabel(child);
 
                     return (
                       <NavLink
@@ -360,7 +393,7 @@ function Sidebar({ collapsed = false, onNavigate }) {
                         }`}>
                           <ChildIcon className="h-4 w-4 shrink-0" />
                         </span>
-                        <span>{child.menu_name}</span>
+                        <span>{childLabel}</span>
                       </NavLink>
                     );
                   })}
@@ -370,6 +403,22 @@ function Sidebar({ collapsed = false, onNavigate }) {
           );
         })}
       </nav>
+
+      <div className={`border-t border-[#d8ece3] pt-4 ${collapsed ? "grid justify-items-center" : "grid gap-3"}`}>
+        <button
+          type="button"
+          className={`flex items-center gap-3 rounded-2xl border border-red-100 bg-red-50 font-bold text-red-700 transition-all duration-200 hover:-translate-y-px hover:bg-red-100 ${
+            collapsed ? "h-14 w-14 justify-center px-0" : "min-h-[52px] w-full justify-start px-[14px]"
+          }`}
+          onClick={onLogout}
+          title={collapsed ? en.sidebar.actions.logout : undefined}
+        >
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-white text-red-600">
+            <LogoutIcon className="h-[18px] w-[18px] shrink-0" />
+          </span>
+          {!collapsed ? <span>{en.sidebar.actions.logout}</span> : null}
+        </button>
+      </div>
     </div>
   );
 }

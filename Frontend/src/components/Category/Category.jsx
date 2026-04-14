@@ -85,7 +85,7 @@ function Category() {
       label: "Image",
       content: (item) => (
         <img
-          className="h-[68px] w-[88px] rounded-[8px] object-cover"
+          className="h-11 w-16 rounded-[8px] object-cover"
           src={`${BACKEND_BASE_URL}/images/${item.category_image}`}
           alt={item.category_name}
           onError={(event) => {
@@ -130,7 +130,7 @@ function Category() {
   return (
     <div className="grid min-h-0 content-start gap-[18px]">
       <section className="min-h-0 overflow-hidden rounded-[8px] border border-[#d8ece3] bg-[#e7f7f0] p-[10px]">
-        <div className="flex min-h-[68px] flex-wrap items-center justify-between gap-3 px-[6px] pb-[14px] pt-2">
+        <div className="flex min-h-[56px] flex-wrap items-center justify-between gap-3 px-[6px] pb-2 pt-1">
           <button className="min-w-[92px] rounded-[8px] border-0 bg-[#57b98f] px-4 py-[11px] font-semibold text-white" onClick={() => navigate("/addcategory")}>
             Add
           </button>
