@@ -80,7 +80,7 @@ function DeleteItem() {
   };
 
   if (!item) {
-    return <div className="panel">Loading item...</div>;
+    return <div className="rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">Loading item...</div>;
   }
 
   const displayData = {
@@ -97,29 +97,29 @@ function DeleteItem() {
 
   return (
     <div>
-      <div className="detail-header">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
-          <p className="eyebrow">Items</p>
-          <h2>Delete Item</h2>
+          <p className="m-0 text-[0.78rem] font-bold uppercase tracking-normal text-orange-500">Items</p>
+          <h2 className="mt-2 mb-0 text-[clamp(1.7rem,2vw,2.4rem)] leading-[1.1]">Delete Item</h2>
         </div>
-        <button className="secondary-btn" onClick={() => navigate("/items")}>
+        <button className="self-start rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900 transition hover:-translate-y-px" onClick={() => navigate("/items")}>
           Back
         </button>
       </div>
 
-      <div className="panel detail-panel simple-view-panel">
-        <div className="form-grid">
-          <div className="form-main-column">
+      <div className="mt-[18px] rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">
+        <div className="mt-5 grid items-start gap-[22px] lg:grid-cols-[minmax(0,1fr)_460px]">
+          <div className="grid min-w-0 max-w-[760px] content-start gap-[18px]">
             <KeyValueDisplay data={displayData} />
           </div>
-          <aside className="form-side-column">
-            <div className="field">
-              <span>Category Image Preview</span>
-              <div className="image-upload-box image-upload-box-compact">
+          <aside className="grid min-w-0 max-w-[460px] content-start gap-[18px]">
+            <div className="grid gap-2">
+              <span className="text-[0.92rem] font-semibold text-slate-600">Category Image Preview</span>
+              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[8px] border border-dashed border-slate-300 bg-[#fffaf5]">
                 <img
                   src={`/images/${item.category_image}`}
                   alt={item.category_name || "Category"}
-                  className="preview-image"
+                  className="h-full min-h-[240px] max-h-[280px] w-full object-cover"
                   onError={(event) => {
                     event.currentTarget.src = `https://placehold.co/600x360?text=${encodeURIComponent(
                       item.category_name || "Category"
@@ -128,13 +128,13 @@ function DeleteItem() {
                 />
               </div>
             </div>
-            <div className="field">
-              <span>Item Image Preview</span>
-              <div className="image-upload-box image-upload-box-compact">
+            <div className="grid gap-2">
+              <span className="text-[0.92rem] font-semibold text-slate-600">Item Image Preview</span>
+              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[8px] border border-dashed border-slate-300 bg-[#fffaf5]">
                 <img
                   src={`/images/${item.item_image}`}
                   alt={item.item_name}
-                  className="preview-image"
+                  className="h-full min-h-[240px] max-h-[280px] w-full object-cover"
                   onError={(event) => {
                     event.currentTarget.src = `https://placehold.co/600x360?text=${encodeURIComponent(
                       item.item_name
@@ -147,11 +147,11 @@ function DeleteItem() {
         </div>
       </div>
 
-      <div className="button-row form-actions-row">
-        <button className="danger-btn" onClick={handleDelete} disabled={isDeleting}>
+      <div className="mt-0.5 flex flex-wrap gap-2.5">
+        <button className="rounded-[8px] border-0 bg-red-600 px-4 py-[11px] font-semibold text-white transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0" onClick={handleDelete} disabled={isDeleting}>
           {isDeleting ? "Deleting..." : "Confirm Delete"}
         </button>
-        <button className="secondary-btn" onClick={() => navigate("/items")}>
+        <button className="rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900 transition hover:-translate-y-px" onClick={() => navigate("/items")}>
           Cancel
         </button>
       </div>

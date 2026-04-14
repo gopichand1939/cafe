@@ -1,129 +1,42 @@
-// Frontend/src/components/Dashboard/Dashboard.jsx
+const accentClassMap = {
+  "#22c55e": "bg-green-500",
+  "#f97316": "bg-orange-500",
+  "#3b82f6": "bg-blue-500",
+  "#8b5cf6": "bg-violet-500",
+};
+
 function StatCard({ title, value, note, accent }) {
   return (
-    <div
-      style={{
-        background: "#ffffff",
-        border: "1px solid #d8ece3",
-        borderRadius: 18,
-        padding: 22,
-        boxShadow: "0 10px 30px rgba(30, 76, 60, 0.08)",
-        display: "grid",
-        gap: 10,
-      }}
-    >
-      <div
-        style={{
-          width: 42,
-          height: 42,
-          borderRadius: 12,
-          background: accent,
-          opacity: 0.16,
-        }}
-      />
-      <span
-        style={{
-          color: "#64748b",
-          fontSize: "0.9rem",
-          fontWeight: 700,
-        }}
-      >
-        {title}
-      </span>
-      <strong
-        style={{
-          fontSize: "2rem",
-          lineHeight: 1,
-          color: "#1f2937",
-        }}
-      >
-        {value}
-      </strong>
-      <span
-        style={{
-          color: "#475569",
-          fontSize: "0.95rem",
-        }}
-      >
-        {note}
-      </span>
+    <div className="grid gap-[10px] rounded-[18px] border border-[#d8ece3] bg-white p-[22px] shadow-[0_10px_30px_rgba(30,76,60,0.08)]">
+      <div className={`h-[42px] w-[42px] rounded-xl opacity-15 ${accentClassMap[accent] || "bg-emerald-500"}`} />
+      <span className="text-[0.9rem] font-bold text-slate-500">{title}</span>
+      <strong className="text-[2rem] leading-none text-[#1f2937]">{value}</strong>
+      <span className="text-[0.95rem] text-slate-600">{note}</span>
     </div>
   );
 }
 
 function Dashboard() {
   return (
-    <div
-      style={{
-        display: "grid",
-        gap: 24,
-        alignContent: "start",
-      }}
-    >
-      <section
-        style={{
-          display: "grid",
-          gap: 16,
-          padding: 28,
-          borderRadius: 24,
-          background:
-            "linear-gradient(135deg, rgba(86, 186, 144, 0.18) 0%, rgba(74, 165, 127, 0.08) 100%)",
-          border: "1px solid #d8ece3",
-          boxShadow: "0 12px 30px rgba(30, 76, 60, 0.08)",
-        }}
-      >
-        <p
-          style={{
-            margin: 0,
-            color: "#3f9773",
-            fontSize: "0.82rem",
-            fontWeight: 800,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-          }}
-        >
+    <div className="grid content-start gap-6">
+      <section className="grid gap-4 rounded-3xl border border-[#d8ece3] bg-[linear-gradient(135deg,rgba(86,186,144,0.18)_0%,rgba(74,165,127,0.08)_100%)] p-7 shadow-[0_12px_30px_rgba(30,76,60,0.08)]">
+        <p className="m-0 text-[0.82rem] font-extrabold uppercase tracking-[0.08em] text-[#3f9773]">
           Dashboard
         </p>
 
-        <div
-          style={{
-            display: "grid",
-            gap: 10,
-          }}
-        >
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "clamp(2rem, 3vw, 3rem)",
-              lineHeight: 1.05,
-              color: "#1f2937",
-            }}
-          >
+        <div className="grid gap-[10px]">
+          <h2 className="m-0 text-[clamp(2rem,3vw,3rem)] leading-[1.05] text-[#1f2937]">
             Restaurant control center
           </h2>
 
-          <p
-            style={{
-              margin: 0,
-              maxWidth: 720,
-              color: "#475569",
-              fontSize: "1rem",
-              lineHeight: 1.6,
-            }}
-          >
+          <p className="m-0 max-w-[720px] text-base leading-[1.6] text-slate-600">
             Track menu activity, restaurant availability, and daily operations from one place.
             This page is ready for you to connect live analytics and API-driven metrics later.
           </p>
         </div>
       </section>
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 18,
-        }}
-      >
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-[18px]">
         <StatCard
           title="Restaurant Status"
           value="Active"
@@ -150,57 +63,18 @@ function Dashboard() {
         />
       </section>
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.4fr) minmax(280px, 0.8fr)",
-          gap: 18,
-        }}
-      >
-        <div
-          style={{
-            background: "#ffffff",
-            border: "1px solid #d8ece3",
-            borderRadius: 18,
-            padding: 24,
-            boxShadow: "0 10px 30px rgba(30, 76, 60, 0.08)",
-            display: "grid",
-            gap: 18,
-          }}
-        >
-          <div
-            style={{
-              display: "grid",
-              gap: 8,
-            }}
-          >
-            <strong
-              style={{
-                fontSize: "1.2rem",
-                color: "#1f2937",
-              }}
-            >
-              Quick overview
-            </strong>
+      <section className="grid gap-[18px] lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+        <div className="grid gap-[18px] rounded-[18px] border border-[#d8ece3] bg-white p-6 shadow-[0_10px_30px_rgba(30,76,60,0.08)]">
+          <div className="grid gap-2">
+            <strong className="text-[1.2rem] text-[#1f2937]">Quick overview</strong>
 
-            <p
-              style={{
-                margin: 0,
-                color: "#64748b",
-                lineHeight: 1.6,
-              }}
-            >
+            <p className="m-0 leading-[1.6] text-slate-500">
               Use this space for restaurant insights like total categories, active items, pending
               orders, customer feedback, or sales snapshots.
             </p>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 14,
-            }}
-          >
+          <div className="grid gap-[14px]">
             {[
               "Keep menu categories clean and active.",
               "Update item availability before service hours begin.",
@@ -209,103 +83,30 @@ function Dashboard() {
             ].map((item) => (
               <div
                 key={item}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "14px 16px",
-                  borderRadius: 14,
-                  background: "#f8fcfa",
-                  border: "1px solid #e3f0ea",
-                }}
+                className="flex items-center gap-3 rounded-[14px] border border-[#e3f0ea] bg-[#f8fcfa] px-4 py-[14px]"
               >
-                <span
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: 999,
-                    background: "#57b98f",
-                    flexShrink: 0,
-                  }}
-                />
-                <span
-                  style={{
-                    color: "#334155",
-                    fontWeight: 600,
-                  }}
-                >
-                  {item}
-                </span>
+                <span className="h-[10px] w-[10px] shrink-0 rounded-full bg-[#57b98f]" />
+                <span className="font-semibold text-slate-700">{item}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div
-          style={{
-            background: "#ffffff",
-            border: "1px solid #d8ece3",
-            borderRadius: 18,
-            padding: 24,
-            boxShadow: "0 10px 30px rgba(30, 76, 60, 0.08)",
-            display: "grid",
-            gap: 16,
-            alignContent: "start",
-          }}
-        >
-          <strong
-            style={{
-              fontSize: "1.15rem",
-              color: "#1f2937",
-            }}
-          >
-            Recommended next steps
-          </strong>
+        <div className="grid content-start gap-4 rounded-[18px] border border-[#d8ece3] bg-white p-6 shadow-[0_10px_30px_rgba(30,76,60,0.08)]">
+          <strong className="text-[1.15rem] text-[#1f2937]">Recommended next steps</strong>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 12,
-            }}
-          >
+          <div className="grid gap-3">
             {[
               "Add your first category if the menu is still empty.",
               "Review restaurant timings and automatic active hours.",
               "Connect dashboard cards to live API values.",
             ].map((item, index) => (
-              <div
-                key={item}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "34px 1fr",
-                  gap: 12,
-                  alignItems: "start",
-                }}
-              >
-                <div
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 10,
-                    background: "#eef7f2",
-                    color: "#2f7d5b",
-                    display: "grid",
-                    placeItems: "center",
-                    fontWeight: 800,
-                  }}
-                >
+              <div key={item} className="grid grid-cols-[34px_1fr] items-start gap-3">
+                <div className="grid h-[34px] w-[34px] place-items-center rounded-[10px] bg-[#eef7f2] font-extrabold text-[#2f7d5b]">
                   {index + 1}
                 </div>
 
-                <p
-                  style={{
-                    margin: 0,
-                    color: "#475569",
-                    lineHeight: 1.55,
-                  }}
-                >
-                  {item}
-                </p>
+                <p className="m-0 leading-[1.55] text-slate-600">{item}</p>
               </div>
             ))}
           </div>

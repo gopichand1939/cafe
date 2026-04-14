@@ -147,10 +147,10 @@ function Table({
   };
 
   return (
-    <div className="common-table-card">
-      <div className="common-table-toolbar">
-        <div className="common-table-tools">
-          <div className="common-table-search-wrap">
+    <div className="overflow-hidden rounded-[8px] border border-[#d8ece3] bg-white p-[10px] shadow-[0_10px_30px_rgba(30,76,60,0.08)]">
+      <div className="pb-[10px]">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="w-full min-[480px]:w-[250px]">
             <SearchBar
               placeholder={searchPlaceholder}
               searchQuery={searchQuery}
@@ -158,12 +158,12 @@ function Table({
             />
           </div>
           {filterOptions.map((filter) => (
-            <div key={filter.key} className="common-table-filter">
+            <div key={filter.key} className="flex items-center gap-2 font-semibold text-slate-600">
               <span>{filter.label}:</span>
               <select
                 value={activeFilters[filter.key]}
                 onChange={(event) => handleFilterChange(filter.key, event.target.value)}
-                className="table-filter-select"
+                className="h-10 min-w-[140px] rounded-[8px] border border-slate-300 bg-white px-[10px]"
               >
                 <option value="all">All</option>
                 {filter.options.map((option) => (
@@ -177,36 +177,40 @@ function Table({
         </div>
       </div>
 
-      <div className="common-table-scroll">
+      <div className="max-h-[min(420px,calc(100vh-320px))] min-h-[280px] max-w-full overflow-auto rounded-[8px]">
         {loading ? (
-          <div className="common-table-empty">Loading...</div>
+          <div className="grid min-h-[220px] place-items-center gap-[10px] text-[1.05rem] text-gray-500">Loading...</div>
         ) : filteredData.length === 0 ? (
-          <div className="common-table-empty">
-            <span className="common-table-empty-icon">!</span>
+          <div className="grid min-h-[220px] place-items-center gap-[10px] text-[1.05rem] text-gray-500">
+            <span className="text-[2rem] text-violet-500">!</span>
             <span>No data</span>
           </div>
         ) : (
-          <table className="common-table">
+          <table className="min-w-[760px] w-full table-fixed border-collapse">
             <thead>
               <tr>
                 {regularColumns.map((header) => (
-                  <th key={header.key} onClick={() => handleSort(header.key)}>
-                    <div className="common-table-head">{header.label}</div>
+                  <th
+                    key={header.key}
+                    onClick={() => handleSort(header.key)}
+                    className="sticky top-0 z-[1] border-b border-[#e3edf6] bg-[#d8f2e6] px-[18px] py-4 text-center text-[#43536f]"
+                  >
+                    <div className="inline-flex items-center gap-1 font-extrabold">{header.label}</div>
                   </th>
                 ))}
                 {stickyColumns.map((header) => (
                   <th
                     key={header.key}
                     onClick={() => handleSort(header.key)}
-                    className="common-table-sticky-head"
+                    className="sticky top-0 right-0 z-[3] border-b border-[#e3edf6] bg-[#d8f2e6] px-[18px] py-4 text-center text-[#43536f]"
                   >
-                    <div className="common-table-head">
-                      {header.label}
-                    </div>
+                    <div className="inline-flex items-center gap-1 font-extrabold">{header.label}</div>
                   </th>
                 ))}
                 {rowActions.length > 0 ? (
-                  <th className="common-table-sticky-head">Actions</th>
+                  <th className="sticky top-0 right-0 z-[3] border-b border-[#e3edf6] bg-[#d8f2e6] px-[18px] py-4 text-center text-[#43536f]">
+                    Actions
+                  </th>
                 ) : null}
               </tr>
             </thead>
@@ -214,7 +218,7 @@ function Table({
               {pagedData.map((item) => (
                 <tr key={item.id}>
                   {regularColumns.map((header) => (
-                    <td key={header.key}>
+                    <td key={header.key} className="border-b border-[#e3edf6] bg-white px-[18px] py-4 text-center whitespace-nowrap text-[#506079]">
                       {header.content
                         ? header.content(item)
                         : header.key.includes("date") || header.key.endsWith("_at")
@@ -223,7 +227,7 @@ function Table({
                     </td>
                   ))}
                   {stickyColumns.map((header) => (
-                    <td key={header.key} className="common-table-sticky-cell">
+                    <td key={header.key} className="sticky right-0 z-[2] border-b border-[#e3edf6] bg-white px-[18px] py-4 text-center whitespace-nowrap text-[#506079]">
                       {header.content
                         ? header.content(item)
                         : header.key.includes("date") || header.key.endsWith("_at")
@@ -232,14 +236,14 @@ function Table({
                     </td>
                   ))}
                   {rowActions.length > 0 ? (
-                    <td className="common-table-sticky-cell">
-                      <div className="common-table-actions">
+                    <td className="sticky right-0 z-[2] border-b border-[#e3edf6] bg-white px-[18px] py-4 text-center whitespace-nowrap text-[#506079]">
+                      <div className="flex flex-wrap items-center justify-center gap-2.5">
                         {rowActions.map((action) => (
                           <button
                             key={action.label}
                             type="button"
                             onClick={() => action.handler(item)}
-                            className="table-action-link"
+                            className="bg-transparent font-bold text-blue-600"
                           >
                             {action.label}
                           </button>
@@ -254,23 +258,25 @@ function Table({
         )}
       </div>
 
-      <div className="common-table-pagination">
-        <span className="table-total-text">
+      <div className="mt-[14px] flex flex-wrap items-center justify-between gap-3">
+        <span className="font-bold text-slate-600">
           {totalRowsLabel}: {totalItems}
         </span>
-        <div className="table-pagination-controls">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
-            className="table-page-btn"
+            className="h-[38px] min-w-[68px] rounded-[8px] border border-slate-300 bg-white font-bold disabled:cursor-not-allowed disabled:opacity-50"
             disabled={currentPage <= 1}
             onClick={() => handlePageChange(currentPage - 1, rowsPerPage)}
           >
             Prev
           </button>
-          <span className="table-page-number">{currentPage}</span>
+          <span className="grid h-[38px] min-w-[38px] place-items-center rounded-[8px] bg-blue-50 font-extrabold text-blue-600">
+            {currentPage}
+          </span>
           <button
             type="button"
-            className="table-page-btn"
+            className="h-[38px] min-w-[68px] rounded-[8px] border border-slate-300 bg-white font-bold disabled:cursor-not-allowed disabled:opacity-50"
             disabled={currentPage * rowsPerPage >= totalItems}
             onClick={() => handlePageChange(currentPage + 1, rowsPerPage)}
           >
@@ -279,7 +285,7 @@ function Table({
           <select
             value={rowsPerPage}
             onChange={(event) => handlePageChange(1, Number(event.target.value))}
-            className="table-page-size"
+            className="h-[38px] rounded-[8px] border border-slate-300 bg-white px-[10px]"
           >
             <option value={10}>10 / page</option>
             <option value={20}>20 / page</option>

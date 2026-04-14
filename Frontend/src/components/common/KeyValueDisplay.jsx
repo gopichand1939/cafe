@@ -10,7 +10,7 @@ function KeyValueDisplay({ data, fields = [] }) {
         }));
 
   return (
-    <div className="key-value-grid">
+    <div className="grid gap-[18px] md:grid-cols-2">
       {resolvedFields.map((field) => {
         const content =
           typeof field.render === "function"
@@ -20,10 +20,12 @@ function KeyValueDisplay({ data, fields = [] }) {
         return (
           <div
             key={field.key}
-            className={field.fullWidth ? "key-value-card key-value-card-full" : "key-value-card"}
+            className={`rounded-[8px] border border-slate-200 bg-white px-[18px] py-4 ${
+              field.fullWidth ? "md:col-span-2" : ""
+            }`}
           >
-            <span className="key-value-label">{field.label}</span>
-            <div className="key-value-value">{content}</div>
+            <span className="text-[0.92rem] font-semibold text-slate-600">{field.label}</span>
+            <div className="mt-1.5 break-words text-base">{content}</div>
           </div>
         );
       })}

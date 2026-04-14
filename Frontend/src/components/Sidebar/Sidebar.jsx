@@ -172,9 +172,9 @@ function DefaultIcon(props) {
   );
 }
 
-function ChevronIcon({ open, style }) {
+function ChevronIcon({ open, className = "" }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" style={style}>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
       <path
         d={open ? "M7 14l5-5l5 5" : "M7 10l5 5l5-5"}
         stroke="currentColor"
@@ -269,132 +269,50 @@ function Sidebar({ collapsed = false, onNavigate }) {
     }));
   };
 
-  const colors = {
-    panel: "#ffffff",
-    brand: "#1f2937",
-    accent: "#57b98f",
-    text: "#24324a",
-    iconBg: "#eef4f1",
-    line: "#d8ece3",
-    activeBg: "linear-gradient(135deg, #56ba90 0%, #4aa57f 100%)",
-    activeText: "#ffffff",
-    childActiveBg: "#eef7f2",
-    childActiveText: "#2f7d5b",
-    childIconBg: "#f2f6f4",
-    childIconActiveBg: "#dff3e8",
-  };
-
   return (
-    <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        gap: 14,
-        padding: "18px 16px",
-        background: colors.panel,
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          display: "grid",
-          gap: 8,
-          padding: collapsed ? "8px 0 0" : "10px 8px 2px",
-          justifyItems: collapsed ? "center" : "stretch",
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gap: 2,
-            padding: collapsed ? 0 : "0 4px 4px",
-            justifyItems: collapsed ? "center" : "start",
-          }}
-        >
+    <div className="flex h-screen flex-col gap-[14px] overflow-hidden bg-white px-4 py-[18px]">
+      <div className={`grid gap-2 ${collapsed ? "justify-items-center pt-2" : "px-2 pb-0.5 pt-[10px]"}`}>
+        <div className={`grid gap-0.5 ${collapsed ? "justify-items-center p-0" : "justify-items-start px-1 pb-1"}`}>
           {!collapsed ? (
-            <p
-              style={{
-                margin: 0,
-                fontSize: "0.78rem",
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: colors.accent,
-              }}
-            >
-              Cafe
-            </p>
+            <p className="m-0 text-[0.78rem] font-bold uppercase tracking-[0.08em] text-[#57b98f]">Cafe</p>
           ) : null}
-          <h1
-            style={{
-              margin: 0,
-              fontSize: collapsed ? "1rem" : "1.35rem",
-              lineHeight: 1.15,
-              color: colors.brand,
-            }}
-          >
+          <h1 className={`m-0 leading-[1.15] text-[#1f2937] ${collapsed ? "text-base" : "text-[1.35rem]"}`}>
             {collapsed ? "BM" : "Bagel Master"}
           </h1>
         </div>
       </div>
 
-      <nav
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-          marginTop: 2,
-          alignItems: collapsed ? "center" : "stretch",
-        }}
-      >
+      <nav className={`mt-0.5 flex flex-col gap-2 ${collapsed ? "items-center" : "items-stretch"}`}>
         {normalizedMenu.map((menu) => {
           const hasChildren = Boolean(menu.children?.length);
           const isOpen = hasChildren ? openMenus[menu.menu_id] || false : false;
           const Icon = iconMap[menu.menu_key] || DefaultIcon;
 
-          const parentStyle = {
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            width: collapsed ? 56 : "100%",
-            minHeight: collapsed ? 56 : 54,
-            padding: collapsed ? 0 : "0 14px",
-            justifyContent: collapsed ? "center" : "flex-start",
-            border: 0,
-            borderRadius: collapsed ? 18 : 16,
-            background: menu.isActive ? colors.activeBg : "transparent",
-            color: menu.isActive ? colors.activeText : colors.text,
-            textDecoration: "none",
-            fontWeight: 700,
-            textAlign: "left",
-            boxShadow: menu.isActive ? "0 10px 20px rgba(86, 186, 144, 0.18)" : "none",
-            transform: menu.isActive ? "translateX(2px)" : "none",
-            transition: "all 0.2s ease",
-          };
+          const parentClassName = `flex items-center gap-3 font-bold text-left no-underline transition-all duration-200 ${
+            collapsed
+              ? "h-14 w-14 justify-center rounded-[18px] px-0"
+              : "min-h-[54px] w-full justify-start rounded-2xl px-[14px]"
+          } ${
+            menu.isActive
+              ? "translate-x-[2px] bg-[linear-gradient(135deg,#56ba90_0%,#4aa57f_100%)] text-white shadow-[0_10px_20px_rgba(86,186,144,0.18)]"
+              : "bg-transparent text-[#24324a]"
+          }`;
 
-          const iconWrapStyle = {
-            width: 32,
-            height: 32,
-            display: "grid",
-            placeItems: "center",
-            borderRadius: 10,
-            background: menu.isActive ? "rgba(255, 255, 255, 0.18)" : colors.iconBg,
-            color: "currentColor",
-            flexShrink: 0,
-          };
+          const iconWrapClassName = `grid h-8 w-8 shrink-0 place-items-center rounded-[10px] ${
+            menu.isActive ? "bg-white/20" : "bg-[#eef4f1]"
+          }`;
 
           if (!hasChildren && menu.resolvedPath) {
             return (
               <NavLink
                 key={menu.menu_id}
                 to={menu.resolvedPath}
-                style={parentStyle}
+                className={parentClassName}
                 onClick={onNavigate}
                 title={collapsed ? menu.menu_name : undefined}
               >
-                <span style={iconWrapStyle}>
-                  <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
+                <span className={iconWrapClassName}>
+                  <Icon className="h-[18px] w-[18px] shrink-0" />
                 </span>
                 {!collapsed ? <span>{menu.menu_name}</span> : null}
               </NavLink>
@@ -402,35 +320,27 @@ function Sidebar({ collapsed = false, onNavigate }) {
           }
 
           return (
-            <div key={menu.menu_id} style={{ display: "grid", gap: 8, width: "100%" }}>
+            <div key={menu.menu_id} className="grid w-full gap-2">
               <button
                 type="button"
-                style={parentStyle}
+                className={parentClassName}
                 onClick={() => handleParentToggle(menu.menu_id)}
                 title={collapsed ? menu.menu_name : undefined}
                 aria-expanded={collapsed ? false : isOpen}
               >
-                <span style={iconWrapStyle}>
-                  <Icon style={{ width: 18, height: 18, flexShrink: 0 }} />
+                <span className={iconWrapClassName}>
+                  <Icon className="h-[18px] w-[18px] shrink-0" />
                 </span>
                 {!collapsed ? (
                   <>
-                    <span style={{ flex: 1 }}>{menu.menu_name}</span>
-                    <ChevronIcon open={isOpen} style={{ width: 18, height: 18, flexShrink: 0 }} />
+                    <span className="flex-1">{menu.menu_name}</span>
+                    <ChevronIcon open={isOpen} className="h-[18px] w-[18px] shrink-0" />
                   </>
                 ) : null}
               </button>
 
               {!collapsed && isOpen ? (
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 6,
-                    marginLeft: 18,
-                    paddingLeft: 16,
-                    borderLeft: `1px solid ${colors.line}`,
-                  }}
-                >
+                <div className="ml-[18px] grid gap-[6px] border-l border-[#d8ece3] pl-4">
                   {menu.children.map((child) => {
                     const ChildIcon = iconMap[child.menu_key] || DefaultIcon;
 
@@ -438,36 +348,17 @@ function Sidebar({ collapsed = false, onNavigate }) {
                       <NavLink
                         key={child.menu_id}
                         to={child.resolvedPath || "#"}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 10,
-                          minHeight: 44,
-                          padding: "0 12px",
-                          borderRadius: 12,
-                          background: child.isActive ? colors.childActiveBg : "transparent",
-                          color: child.isActive ? colors.childActiveText : "#51607a",
-                          textDecoration: "none",
-                          fontWeight: 600,
-                          transition: "all 0.2s ease",
-                        }}
+                        className={`flex min-h-11 items-center gap-[10px] rounded-xl px-3 no-underline font-semibold transition-all duration-200 ${
+                          child.isActive
+                            ? "translate-x-[2px] bg-[#eef7f2] text-[#2f7d5b]"
+                            : "bg-transparent text-[#51607a]"
+                        }`}
                         onClick={child.resolvedPath ? onNavigate : undefined}
                       >
-                        <span
-                          style={{
-                            width: 28,
-                            height: 28,
-                            display: "grid",
-                            placeItems: "center",
-                            borderRadius: 8,
-                            background: child.isActive
-                              ? colors.childIconActiveBg
-                              : colors.childIconBg,
-                            color: "currentColor",
-                            flexShrink: 0,
-                          }}
-                        >
-                          <ChildIcon style={{ width: 16, height: 16, flexShrink: 0 }} />
+                        <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-[8px] ${
+                          child.isActive ? "bg-[#dff3e8]" : "bg-[#f2f6f4]"
+                        }`}>
+                          <ChildIcon className="h-4 w-4 shrink-0" />
                         </span>
                         <span>{child.menu_name}</span>
                       </NavLink>

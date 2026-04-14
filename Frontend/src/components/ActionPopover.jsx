@@ -17,31 +17,29 @@ function ActionPopover({
   const rect = anchorEl.getBoundingClientRect();
 
   return (
-    <div className="action-popover-overlay" onClick={handleClose}>
+    <div className="fixed inset-0 z-[999]" onClick={handleClose}>
       <div
-        className="action-popover"
-        style={{
-          position: "fixed",
-          top: rect.bottom + 6,
-          left: rect.left - 120,
-          zIndex: 1000,
-        }}
+        className="fixed z-[1000] flex min-w-[156px] flex-col gap-[6px] rounded-[8px] border border-[#d8ece3] bg-white p-[14px] shadow-[0_16px_30px_rgba(15,23,42,0.15)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <button className="action-popover-close" onClick={handleClose} type="button">
+        <button
+          className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-transparent"
+          onClick={handleClose}
+          type="button"
+        >
           x
         </button>
 
         {!hideEdit ? (
           <button
             type="button"
-            className="action-popover-item"
+            className="flex items-center gap-[10px] rounded-[8px] bg-transparent px-[10px] py-2 text-left hover:bg-slate-50"
             onClick={() => {
               onEdit?.(selectedRow);
               handleClose();
             }}
           >
-            <span className="action-icon edit" />
+            <span className="h-[10px] w-[10px] rounded-full bg-blue-600" />
             <span>Edit</span>
           </button>
         ) : null}
@@ -49,13 +47,13 @@ function ActionPopover({
         {!hideView ? (
           <button
             type="button"
-            className="action-popover-item"
+            className="flex items-center gap-[10px] rounded-[8px] bg-transparent px-[10px] py-2 text-left hover:bg-slate-50"
             onClick={() => {
               onView?.(selectedRow);
               handleClose();
             }}
           >
-            <span className="action-icon view" />
+            <span className="h-[10px] w-[10px] rounded-full bg-slate-500" />
             <span>View</span>
           </button>
         ) : null}
@@ -63,13 +61,13 @@ function ActionPopover({
         {!hideDelete ? (
           <button
             type="button"
-            className="action-popover-item"
+            className="flex items-center gap-[10px] rounded-[8px] bg-transparent px-[10px] py-2 text-left hover:bg-slate-50"
             onClick={() => {
               onDelete?.(selectedRow);
               handleClose();
             }}
           >
-            <span className="action-icon delete" />
+            <span className="h-[10px] w-[10px] rounded-full bg-red-600" />
             <span>Delete</span>
           </button>
         ) : null}

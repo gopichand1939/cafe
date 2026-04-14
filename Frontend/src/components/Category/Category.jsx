@@ -85,7 +85,7 @@ function Category() {
       label: "Image",
       content: (item) => (
         <img
-          className="table-thumb"
+          className="h-[68px] w-[88px] rounded-[8px] object-cover"
           src={`${BACKEND_BASE_URL}/images/${item.category_image}`}
           alt={item.category_name}
           onError={(event) => {
@@ -101,7 +101,7 @@ function Category() {
       key: "category_description",
       label: "Description",
       content: (item) => (
-        <span className="table-description-cell" title={item.category_description || "-"}>
+        <span className="inline-block max-w-[220px] overflow-hidden text-ellipsis align-middle" title={item.category_description || "-"}>
           {item.category_description || "-"}
         </span>
       ),
@@ -118,7 +118,7 @@ function Category() {
       content: (rowData) => (
         <button
           type="button"
-          className="row-menu-button"
+          className="h-9 w-9 rounded-[8px] border-0 bg-transparent text-[1.3rem] font-extrabold text-blue-600"
           onClick={(event) => handleOpenActions(event, rowData)}
         >
           ...
@@ -128,16 +128,16 @@ function Category() {
   ];
 
   return (
-    <div className="category-admin-page">
-      <section className="content-band">
-        <div className="content-band-top">
-          <button className="primary-btn admin-add-btn" onClick={() => navigate("/addcategory")}>
+    <div className="grid min-h-0 content-start gap-[18px]">
+      <section className="min-h-0 overflow-hidden rounded-[8px] border border-[#d8ece3] bg-[#e7f7f0] p-[10px]">
+        <div className="flex min-h-[68px] flex-wrap items-center justify-between gap-3 px-[6px] pb-[14px] pt-2">
+          <button className="min-w-[92px] rounded-[8px] border-0 bg-[#57b98f] px-4 py-[11px] font-semibold text-white" onClick={() => navigate("/addcategory")}>
             Add
           </button>
-          <div className="admin-breadcrumb">
+          <div className="flex items-center gap-[10px] font-semibold text-slate-500">
             <span>Home</span>
             <span>/</span>
-            <strong>Category</strong>
+            <strong className="text-[#3f9773]">Category</strong>
           </div>
         </div>
 

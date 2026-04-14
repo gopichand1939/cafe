@@ -84,7 +84,7 @@ function EditItem() {
   };
 
   if (isLoading) {
-    return <div className="panel">Loading item...</div>;
+    return <div className="rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">Loading item...</div>;
   }
 
   return <ItemForm selectedItem={item} onSubmit={handleSubmit} isSubmitting={isSubmitting} />;

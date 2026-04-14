@@ -4,11 +4,6 @@ import { ToastContainer } from "react-toastify";
 import { Provider } from "react-redux";
 import Store from "./Redux/Store";
 import appRouter from "./Router/Router";
-import "./App.css";
-
-if (typeof window !== "undefined") {
-  import("react-toastify/dist/ReactToastify.css");
-}
 
 function ToastWithTheme() {
   return (
@@ -23,7 +18,6 @@ function ToastWithTheme() {
       pauseOnFocusLoss
       draggable
       pauseOnHover
-      toastClassName="toast-roboto-condensed"
     />
   );
 }
@@ -32,7 +26,7 @@ function App() {
   return (
     <Provider store={Store}>
       <ToastWithTheme />
-      <div className="App">
+      <div className="h-screen overflow-hidden">
         <RouterProvider router={appRouter} />
       </div>
     </Provider>

@@ -139,15 +139,15 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
   };
 
   return (
-    <div className="form-page">
-      <div className="panel form-panel">
-        <div className="form-title-row">
+    <div className="grid gap-6">
+      <div className="rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
           <div>
-            <p className="eyebrow">Items</p>
-            <h2>{selectedItem ? "Edit Item" : "Create Item"}</h2>
+            <p className="m-0 text-[0.78rem] font-bold uppercase tracking-normal text-orange-500">Items</p>
+            <h2 className="mt-2 mb-0 text-[clamp(1.7rem,2vw,2.4rem)] leading-[1.1]">{selectedItem ? "Edit Item" : "Create Item"}</h2>
           </div>
           <button
-            className="secondary-btn form-header-back-btn"
+            className="min-w-[92px] self-start rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900"
             type="button"
             onClick={() => navigate("/items")}
           >
@@ -155,13 +155,14 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="form-grid">
-          <div className="form-main-column">
-            <label className="field">
-              <span>Category</span>
+        <form onSubmit={handleSubmit} className="mt-5 grid items-start gap-[22px] lg:grid-cols-[minmax(0,1fr)_460px]">
+          <div className="grid min-w-0 max-w-[760px] content-start gap-[18px]">
+            <label className="grid gap-2">
+              <span className="text-[0.92rem] font-semibold text-slate-600">Category</span>
               <select
                 value={formData.category_id}
                 onChange={(event) => setFieldValue("category_id", event.target.value)}
+                className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
               >
                 <option value="">Select category</option>
                 {categories.map((category) => (
@@ -170,22 +171,23 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
                   </option>
                 ))}
               </select>
-              {errors.category_id ? <small>{errors.category_id}</small> : null}
+              {errors.category_id ? <small className="text-red-600">{errors.category_id}</small> : null}
             </label>
 
-            <label className="field">
-              <span>Item Name</span>
+            <label className="grid gap-2">
+              <span className="text-[0.92rem] font-semibold text-slate-600">Item Name</span>
               <input
                 type="text"
                 value={formData.item_name}
                 onChange={(event) => setFieldValue("item_name", event.target.value)}
                 placeholder="Enter item name"
+                className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
               />
-              {errors.item_name ? <small>{errors.item_name}</small> : null}
+              {errors.item_name ? <small className="text-red-600">{errors.item_name}</small> : null}
             </label>
 
-            <label className="field">
-              <span>Description</span>
+            <label className="grid gap-2">
+              <span className="text-[0.92rem] font-semibold text-slate-600">Description</span>
               <textarea
                 rows="5"
                 value={formData.item_description}
@@ -193,89 +195,90 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
                   setFieldValue("item_description", event.target.value)
                 }
                 placeholder="Enter item description"
+                className="min-h-[150px] w-full resize-y rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
               />
-              {errors.item_description ? <small>{errors.item_description}</small> : null}
+              {errors.item_description ? <small className="text-red-600">{errors.item_description}</small> : null}
             </label>
 
-            <label className="field">
-              <span>Upload Item Image</span>
-              <input type="file" accept="image/*" onChange={handleImagePick} />
-              <small className="hint">{imageLabel}</small>
-              {errors.item_image ? <small>{errors.item_image}</small> : null}
+            <label className="grid gap-2">
+              <span className="text-[0.92rem] font-semibold text-slate-600">Upload Item Image</span>
+              <input className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none" type="file" accept="image/*" onChange={handleImagePick} />
+              <small className="text-slate-500">{imageLabel}</small>
+              {errors.item_image ? <small className="text-red-600">{errors.item_image}</small> : null}
             </label>
 
-            <label className="field">
-              <span>Stored Image Path</span>
-              <input type="text" value={formData.item_image} readOnly />
+            <label className="grid gap-2">
+              <span className="text-[0.92rem] font-semibold text-slate-600">Stored Image Path</span>
+              <input className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none" type="text" value={formData.item_image} readOnly />
             </label>
 
             {selectedItem ? (
-              <label className="toggle-field">
-                <span>Active Status</span>
+              <label className="grid gap-2">
+                <span className="text-[0.92rem] font-semibold text-slate-600">Active Status</span>
                 <button
                   type="button"
-                  className={formData.is_active ? "toggle on" : "toggle"}
+                  className={`inline-flex w-fit items-center gap-2.5 rounded-full border border-slate-300 px-[14px] py-2 pl-2 ${formData.is_active ? "bg-emerald-50 text-green-800" : "bg-white text-slate-700"}`}
                   onClick={() => setFieldValue("is_active", !formData.is_active)}
                 >
-                  <span />
+                  <span className={`h-6 w-6 rounded-full ${formData.is_active ? "bg-green-500" : "bg-slate-400"}`} />
                   {formData.is_active ? "Active" : "Inactive"}
                 </button>
               </label>
             ) : null}
           </div>
 
-          <aside className="form-side-column">
-            <div className="field">
-              <span>Category Preview</span>
-              <div className="image-upload-box image-upload-box-compact">
+          <aside className="grid min-w-0 max-w-[460px] content-start gap-[18px]">
+            <div className="grid gap-2">
+              <span className="text-[0.92rem] font-semibold text-slate-600">Category Preview</span>
+              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[8px] border border-dashed border-slate-300 bg-[#fffaf5]">
                 {selectedCategoryData?.category_image ? (
                   <img
                     src={`${BACKEND_BASE_URL}/images/${selectedCategoryData.category_image}`}
                     alt={selectedCategoryData.category_name}
-                    className="preview-image"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="image-placeholder">
+                  <div className="p-6 text-center text-slate-600">
                     <p>Select category to preview it here.</p>
                   </div>
                 )}
               </div>
 
-              <div className="preview-meta-card">
-                <span className="preview-meta-label">Selected category</span>
-                <strong className="preview-meta-value">
+              <div className="grid gap-[6px] rounded-[8px] border border-slate-200 bg-white p-[14px]">
+                <span className="text-[0.86rem] font-semibold text-slate-500">Selected category</span>
+                <strong className="break-words text-[0.95rem] text-slate-800">
                   {selectedCategoryData?.category_name || "No category selected"}
                 </strong>
               </div>
             </div>
 
-            <div className="field">
-              <span>Item Image Preview</span>
-              <div className="image-upload-box image-upload-box-compact">
+            <div className="grid gap-2">
+              <span className="text-[0.92rem] font-semibold text-slate-600">Item Image Preview</span>
+              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[8px] border border-dashed border-slate-300 bg-[#fffaf5]">
                 {previewUrl ? (
-                  <img src={previewUrl} alt="Item preview" className="preview-image" />
+                  <img src={previewUrl} alt="Item preview" className="h-full w-full object-cover" />
                 ) : formData.item_image ? (
                   <img
                     src={`${BACKEND_BASE_URL}/images/${formData.item_image}`}
                     alt="Item preview"
-                    className="preview-image"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="image-placeholder">
+                  <div className="p-6 text-center text-slate-600">
                     <p>Choose an image to preview it here.</p>
                   </div>
                 )}
               </div>
 
-              <div className="preview-meta-card">
-                <span className="preview-meta-label">Selected file</span>
-                <strong className="preview-meta-value">{imageLabel}</strong>
+              <div className="grid gap-[6px] rounded-[8px] border border-slate-200 bg-white p-[14px]">
+                <span className="text-[0.86rem] font-semibold text-slate-500">Selected file</span>
+                <strong className="break-words text-[0.95rem] text-slate-800">{imageLabel}</strong>
               </div>
             </div>
           </aside>
 
-          <div className="button-row field-full form-actions-row">
-            <button className="primary-btn" type="submit" disabled={isSubmitting}>
+          <div className="flex flex-wrap gap-2.5 lg:col-span-2">
+            <button className="rounded-[8px] border-0 bg-orange-500 px-4 py-[11px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-55" type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Submitting..." : "Submit"}
             </button>
           </div>
