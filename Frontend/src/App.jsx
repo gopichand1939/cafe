@@ -1,8 +1,10 @@
+// Frontend/src/App.jsx
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { Provider } from "react-redux";
 import Store from "./Redux/Store";
 import AppShell from "./components/common/AppShell";
+import Dashboard from "./components/Dashboard/Dashboard";
 import {
   AddCategory,
   Category,
@@ -17,6 +19,7 @@ import {
   Item,
   ViewItem,
 } from "./components/Items";
+import RestaurantTimings from "./components/Restaurant/RestaurantTimings";
 import Login from "./Pages/Login/Login";
 import Register from "./Pages/Register/Register";
 import { getAccessToken } from "./Utils/authStorage";
@@ -58,7 +61,7 @@ function PublicOnlyRoute() {
   const accessToken = getAccessToken();
 
   if (accessToken) {
-    return <Navigate to="/category" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;
@@ -75,9 +78,11 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
             </Route>
+
             <Route element={<ProtectedRoutes />}>
               <Route element={<AppShell />}>
-                <Route path="/" element={<Navigate to="/category" replace />} />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/category" element={<Category />} />
                 <Route path="/addcategory" element={<AddCategory />} />
                 <Route path="/viewcategory/:id" element={<ViewCategory />} />
@@ -88,8 +93,10 @@ function App() {
                 <Route path="/viewitem/:id" element={<ViewItem />} />
                 <Route path="/edititem/:id" element={<EditItem />} />
                 <Route path="/deleteitem/:id" element={<DeleteItem />} />
+                <Route path="/timings" element={<RestaurantTimings />} />
               </Route>
             </Route>
+
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </BrowserRouter>

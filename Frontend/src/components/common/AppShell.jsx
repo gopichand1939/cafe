@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "../Sidebar/Sidebar";
 import { ADMIN_LOGOUT, APP_TITLE } from "../../Utils/Constant";
@@ -23,6 +23,8 @@ function AppShell() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 960);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 960);
   const [adminProfile, setAdminProfile] = useState(() => getStoredAdminProfile());
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -43,6 +45,17 @@ function AppShell() {
 
   useEffect(() => {
     setAdminProfile(getStoredAdminProfile());
+  }, []);
+
+  useEffect(() => {
+    const handleDocumentClick = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleDocumentClick);
+    return () => document.removeEventListener("mousedown", handleDocumentClick);
   }, []);
 
   const handleToggleSidebar = () => {
@@ -99,16 +112,46 @@ function AppShell() {
             <strong>{APP_TITLE}</strong>
           </div>
           <div className="topbar-actions">
-            <div className="topbar-profile">
-              <div className="topbar-profile-copy">
-                <strong>{adminProfile?.name || "Cafe Admin"}</strong>
-                <span>{adminProfile?.email || "admin@bagelmastercafe.com"}</span>
-              </div>
-              <div className="topbar-avatar">{avatarLabel}</div>
+            <div className="topbar-profile-menu" ref={profileMenuRef}>
+              <button
+                type="button"
+                className="topbar-profile-button"
+                onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+              >
+                <div className="topbar-profile">
+                  <div className="topbar-profile-copy">
+                    <strong>{adminProfile?.name || "Cafe Admin"}</strong>
+                    <span>{adminProfile?.email || "admin@bagelmastercafe.com"}</span>
+                  </div>
+                  <div className="topbar-avatar">{avatarLabel}</div>
+                </div>
+              </button>
+
+              {isProfileMenuOpen ? (
+                <div className="topbar-profile-dropdown">
+                  <button
+                    type="button"
+                    className="topbar-profile-dropdown-item"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      navigate("/timings");
+                    }}
+                  >
+                    Timings
+                  </button>
+                  <button
+                    type="button"
+                    className="topbar-profile-dropdown-item danger"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      handleLogout();
+                    }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : null}
             </div>
-            <button type="button" className="ghost-btn" onClick={handleLogout}>
-              Logout
-            </button>
           </div>
         </header>
         <section className="outlet-host">

@@ -25,5 +25,7 @@ export const ADMIN_FORGOT_PASSWORD = `${BACKEND_BASE_URL}/admin/forgot-password`
 export const ADMIN_RESET_PASSWORD = `${BACKEND_BASE_URL}/admin/reset-password`;
 export const ADMIN_CHANGE_PASSWORD = `${BACKEND_BASE_URL}/admin/change-password`;
 export const ADMIN_PROFILE = `${BACKEND_BASE_URL}/admin/profile`;
+export const RESTAURANT_SETTINGS = `${BACKEND_BASE_URL}/restaurant/settings`;
+export const RESTAURANT_TOGGLE_STATUS = `${BACKEND_BASE_URL}/restaurant/toggle-status`;
 
 export const APP_TITLE = "Bagel Master Cafe";
