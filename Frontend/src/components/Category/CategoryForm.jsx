@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BACKEND_BASE_URL } from "../../Utils/Constant";
+import ImageDropZone from "../common/ImageDropZone";
 
 const getInitialFormState = (selectedCategory) => ({
   category_name: selectedCategory?.category_name || "",
@@ -51,9 +52,7 @@ function CategoryForm({ selectedCategory, onSubmit, isSubmitting }) {
     setErrors((prev) => ({ ...prev, [field]: null }));
   };
 
-  const handleImagePick = (event) => {
-    const file = event.target.files?.[0];
-
+  const handleImageSelect = (file) => {
     if (!file) {
       return;
     }
@@ -150,12 +149,13 @@ function CategoryForm({ selectedCategory, onSubmit, isSubmitting }) {
               ) : null}
             </label>
 
-            <label className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Upload Category Image</span>
-              <input className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none" type="file" accept="image/*" onChange={handleImagePick} />
-              <small className="text-slate-500">{imageLabel}</small>
-              {errors.category_image ? <small className="text-red-600">{errors.category_image}</small> : null}
-            </label>
+            <ImageDropZone
+              label="Upload Category Image"
+              imageLabel={imageLabel}
+              error={errors.category_image}
+              onFileSelect={handleImageSelect}
+              onError={(message) => setErrors((prev) => ({ ...prev, category_image: message }))}
+            />
 
             <label className="grid gap-2">
               <span className="text-[0.92rem] font-semibold text-slate-600">Stored Image Path</span>

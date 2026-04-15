@@ -1,7 +1,7 @@
 const db = require("../config/db");
 
 const itemModel = {
-  createItem: async (category_id, item_name, item_description, item_image) => {
+  createItem: async (category_id, item_name, item_description, item_image, price, discount_price, preparation_time, is_popular, is_new, is_veg) => {
     const query = `
       WITH category_target AS (
         SELECT id
@@ -10,8 +10,8 @@ const itemModel = {
           AND is_deleted = 0
       )
       INSERT INTO items
-      (category_id, item_name, item_description, item_image)
-      SELECT $1::INT, $2::VARCHAR(255), $3::TEXT, $4::VARCHAR(255)
+      (category_id, item_name, item_description, item_image, price, discount_price, preparation_time, is_popular, is_new, is_veg)
+      SELECT $1::INT, $2::VARCHAR(255), $3::TEXT, $4::VARCHAR(255), $5::DECIMAL(10,2), $6::DECIMAL(10,2), $7::INT, $8::SMALLINT, $9::SMALLINT, $10::SMALLINT
       WHERE EXISTS (SELECT 1 FROM category_target)
         AND NOT EXISTS (
           SELECT 1
@@ -22,7 +22,7 @@ const itemModel = {
         )
       RETURNING *;
     `;
-    const values = [category_id, item_name, item_description, item_image];
+    const values = [category_id, item_name, item_description, item_image, price, discount_price, preparation_time, is_popular, is_new, is_veg];
     const result = await db.query(query, values);
     return result.rows[0] || null;
   },
@@ -37,6 +37,12 @@ const itemModel = {
         items.item_name,
         items.item_description,
         items.item_image,
+        items.price,
+        items.discount_price,
+        items.preparation_time,
+        items.is_popular,
+        items.is_new,
+        items.is_veg,
         items.created_at,
         items.updated_at,
         items.is_deleted,
@@ -62,6 +68,12 @@ const itemModel = {
         items.item_name,
         items.item_description,
         items.item_image,
+        items.price,
+        items.discount_price,
+        items.preparation_time,
+        items.is_popular,
+        items.is_new,
+        items.is_veg,
         items.created_at,
         items.updated_at,
         items.is_deleted,
@@ -81,7 +93,13 @@ const itemModel = {
     item_name,
     item_description,
     item_image,
-    is_active
+    is_active,
+    price,
+    discount_price,
+    preparation_time,
+    is_popular,
+    is_new,
+    is_veg
   ) => {
     const query = `
       WITH target AS (
@@ -116,6 +134,12 @@ const itemModel = {
             (SELECT item_image FROM target LIMIT 1)
           ),
           is_active = $6::SMALLINT,
+          price = $7::DECIMAL(10,2),
+          discount_price = $8::DECIMAL(10,2),
+          preparation_time = $9::INT,
+          is_popular = $10::SMALLINT,
+          is_new = $11::SMALLINT,
+          is_veg = $12::SMALLINT,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $1::INT
           AND is_deleted = 0
@@ -132,6 +156,12 @@ const itemModel = {
         updated.item_name,
         updated.item_description,
         updated.item_image,
+        updated.price,
+        updated.discount_price,
+        updated.preparation_time,
+        updated.is_popular,
+        updated.is_new,
+        updated.is_veg,
         updated.created_at,
         updated.updated_at,
         updated.is_deleted,
@@ -139,7 +169,7 @@ const itemModel = {
       FROM (SELECT 1) AS base
       LEFT JOIN updated ON TRUE;
     `;
-    const values = [id, category_id, item_name, item_description, item_image, is_active];
+    const values = [id, category_id, item_name, item_description, item_image, is_active, price, discount_price, preparation_time, is_popular, is_new, is_veg];
     const result = await db.query(query, values);
     return result.rows[0];
   },

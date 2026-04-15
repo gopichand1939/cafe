@@ -1,8 +1,8 @@
 // Deployed backend
-export const BACKEND_BASE_URL = "https://cafe-backend-pdkr.onrender.com";
+// export const BACKEND_BASE_URL = "https://cafe-backend-pdkr.onrender.com";
 
 // Local backend
-// export const BACKEND_BASE_URL = "http://localhost:15013";
+export const BACKEND_BASE_URL = "http://localhost:15013";
 
 export const CATEGORY_CREATE = `${BACKEND_BASE_URL}/category/create_category`;
 export const CATEGORY_LIST = `${BACKEND_BASE_URL}/category/category_list`;

@@ -2,7 +2,7 @@ const itemModel = require("./itemModel");
 
 const createItem = async (req, res) => {
   try {
-    const { category_id, item_name, item_description } = req.body;
+    const { category_id, item_name, item_description, price, discount_price, preparation_time, is_popular, is_new, is_veg } = req.body;
 
     if (!category_id || !item_name || !String(item_name).trim()) {
       return res.status(400).json({
@@ -15,6 +15,12 @@ const createItem = async (req, res) => {
     const normalizedImage = req.file
       ? `item-images/${req.file.filename}`
       : null;
+    const normalizedPrice = price != null ? parseFloat(price) : 0.00;
+    const normalizedDiscountPrice = discount_price != null && discount_price !== "" ? parseFloat(discount_price) : null;
+    const normalizedPrepTime = preparation_time != null && preparation_time !== "" ? parseInt(preparation_time, 10) : null;
+    const normalizedPopular = Number(is_popular) === 1 ? 1 : 0;
+    const normalizedNew = Number(is_new) === 1 ? 1 : 0;
+    const normalizedVeg = Number(is_veg) === 1 ? 1 : 0;
 
     if (!normalizedImage) {
       return res.status(400).json({
@@ -27,7 +33,13 @@ const createItem = async (req, res) => {
       category_id,
       normalizedName,
       item_description || null,
-      normalizedImage
+      normalizedImage,
+      normalizedPrice,
+      normalizedDiscountPrice,
+      normalizedPrepTime,
+      normalizedPopular,
+      normalizedNew,
+      normalizedVeg
     );
 
     if (!data) {
@@ -133,6 +145,12 @@ const updateItem = async (req, res) => {
       item_name,
       item_description,
       is_active = 1,
+      price,
+      discount_price,
+      preparation_time,
+      is_popular,
+      is_new,
+      is_veg,
     } = req.body;
 
     if (!id || !category_id || !item_name || !String(item_name).trim()) {
@@ -147,6 +165,12 @@ const updateItem = async (req, res) => {
       ? `item-images/${req.file.filename}`
       : null;
     const normalizedActive = Number(is_active) === 0 ? 0 : 1;
+    const normalizedPrice = price != null ? parseFloat(price) : 0.00;
+    const normalizedDiscountPrice = discount_price != null && discount_price !== "" ? parseFloat(discount_price) : null;
+    const normalizedPrepTime = preparation_time != null && preparation_time !== "" ? parseInt(preparation_time, 10) : null;
+    const normalizedPopular = Number(is_popular) === 1 ? 1 : 0;
+    const normalizedNew = Number(is_new) === 1 ? 1 : 0;
+    const normalizedVeg = Number(is_veg) === 1 ? 1 : 0;
 
     const data = await itemModel.updateItem(
       id,
@@ -154,7 +178,13 @@ const updateItem = async (req, res) => {
       normalizedName,
       item_description || null,
       normalizedImage,
-      normalizedActive
+      normalizedActive,
+      normalizedPrice,
+      normalizedDiscountPrice,
+      normalizedPrepTime,
+      normalizedPopular,
+      normalizedNew,
+      normalizedVeg
     );
 
     if (!data?.target_exists) {

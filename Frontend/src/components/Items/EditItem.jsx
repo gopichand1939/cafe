@@ -59,6 +59,16 @@ function EditItem() {
       formData.append("item_name", payload.item_name);
       formData.append("item_description", payload.item_description);
       formData.append("is_active", payload.is_active);
+      formData.append("price", payload.price);
+      formData.append("is_popular", payload.is_popular);
+      formData.append("is_new", payload.is_new);
+      formData.append("is_veg", payload.is_veg);
+      if (payload.discount_price != null) {
+        formData.append("discount_price", payload.discount_price);
+      }
+      if (payload.preparation_time != null) {
+        formData.append("preparation_time", payload.preparation_time);
+      }
       if (payload.item_image_file) {
         formData.append("item_image", payload.item_image_file);
       }

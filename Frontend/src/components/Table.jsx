@@ -39,6 +39,15 @@ function Table({
   const stickyColumns = headers.filter((header) => header?.sticky);
   const regularColumns = headers.filter((header) => !header?.sticky);
 
+  // Calculate cumulative right offsets for sticky columns (rightmost = 0, then accumulate)
+  const stickyRightOffsets = [];
+  let cumulativeRight = 0;
+  for (let i = stickyColumns.length - 1; i >= 0; i--) {
+    stickyRightOffsets[i] = cumulativeRight;
+    const colWidth = parseInt(stickyColumns[i].width, 10) || 80;
+    cumulativeRight += colWidth;
+  }
+
   useEffect(() => {
     if (propPageSize) {
       setRowsPerPage(propPageSize);
@@ -147,7 +156,7 @@ function Table({
   };
 
   return (
-    <div className="flex h-[calc(100vh-245px)] min-h-[430px] flex-col overflow-hidden rounded-[8px] border border-[#d8ece3] bg-white p-2 shadow-[0_10px_30px_rgba(30,76,60,0.08)]">
+    <div className="flex h-[calc(100vh-180px)] min-h-[430px] flex-col overflow-hidden rounded-[8px] border border-[#d8ece3] bg-white p-2 shadow-[0_10px_30px_rgba(30,76,60,0.08)]">
       <div className="shrink-0 pb-2">
         <div className="flex flex-wrap items-center gap-3">
           <div className="w-full min-[480px]:w-[230px]">
@@ -186,7 +195,7 @@ function Table({
             <span>No data</span>
           </div>
         ) : (
-          <table className="min-w-[760px] w-full table-fixed border-collapse">
+          <table className="w-full border-collapse" style={{ tableLayout: 'auto' }}>
             <thead>
               <tr>
                 {regularColumns.map((header) => (
@@ -194,15 +203,17 @@ function Table({
                     key={header.key}
                     onClick={() => handleSort(header.key)}
                     className="sticky top-0 z-[1] border-b border-[#e3edf6] bg-[#d8f2e6] px-3 py-2.5 text-center text-[#43536f]"
+                    style={header.width ? { width: header.width } : undefined}
                   >
                     <div className="inline-flex items-center gap-1 font-extrabold">{header.label}</div>
                   </th>
                 ))}
-                {stickyColumns.map((header) => (
+                {stickyColumns.map((header, idx) => (
                   <th
                     key={header.key}
                     onClick={() => handleSort(header.key)}
-                    className="sticky top-0 right-0 z-[3] border-b border-[#e3edf6] bg-[#d8f2e6] px-3 py-2.5 text-center text-[#43536f]"
+                    className="sticky top-0 z-[3] border-b border-[#e3edf6] bg-[#d8f2e6] px-3 py-2.5 text-center text-[#43536f]"
+                    style={{ right: `${stickyRightOffsets[idx]}px`, width: header.width || undefined }}
                   >
                     <div className="inline-flex items-center gap-1 font-extrabold">{header.label}</div>
                   </th>
@@ -226,8 +237,8 @@ function Table({
                         : item[header.key] ?? "-"}
                     </td>
                   ))}
-                  {stickyColumns.map((header) => (
-                    <td key={header.key} className="sticky right-0 z-[2] border-b border-[#e3edf6] bg-white px-3 py-2 text-center whitespace-nowrap text-[#506079]">
+                  {stickyColumns.map((header, idx) => (
+                    <td key={header.key} className="sticky z-[2] border-b border-[#e3edf6] bg-white px-3 py-2 text-center whitespace-nowrap text-[#506079]" style={{ right: `${stickyRightOffsets[idx]}px` }}>
                       {header.content
                         ? header.content(item)
                         : header.key.includes("date") || header.key.endsWith("_at")
@@ -258,25 +269,25 @@ function Table({
         )}
       </div>
 
-      <div className="mt-2 flex shrink-0 flex-wrap items-center justify-between gap-3">
-        <span className="font-bold text-slate-600">
+      <div className="mt-1 flex shrink-0 flex-wrap items-center justify-between gap-2 px-1 py-1">
+        <span className="text-[0.85rem] font-bold text-slate-600">
           {totalRowsLabel}: {totalItems}
         </span>
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            className="h-[38px] min-w-[68px] rounded-[8px] border border-slate-300 bg-white font-bold disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-[32px] min-w-[58px] rounded-[6px] border border-slate-300 bg-white text-[0.85rem] font-bold disabled:cursor-not-allowed disabled:opacity-50"
             disabled={currentPage <= 1}
             onClick={() => handlePageChange(currentPage - 1, rowsPerPage)}
           >
             Prev
           </button>
-          <span className="grid h-[38px] min-w-[38px] place-items-center rounded-[8px] bg-blue-50 font-extrabold text-blue-600">
+          <span className="grid h-[32px] min-w-[32px] place-items-center rounded-[6px] bg-blue-50 text-[0.85rem] font-extrabold text-blue-600">
             {currentPage}
           </span>
           <button
             type="button"
-            className="h-[38px] min-w-[68px] rounded-[8px] border border-slate-300 bg-white font-bold disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-[32px] min-w-[58px] rounded-[6px] border border-slate-300 bg-white text-[0.85rem] font-bold disabled:cursor-not-allowed disabled:opacity-50"
             disabled={currentPage * rowsPerPage >= totalItems}
             onClick={() => handlePageChange(currentPage + 1, rowsPerPage)}
           >
@@ -285,7 +296,7 @@ function Table({
           <select
             value={rowsPerPage}
             onChange={(event) => handlePageChange(1, Number(event.target.value))}
-            className="h-[38px] rounded-[8px] border border-slate-300 bg-white px-[10px]"
+            className="h-[32px] rounded-[6px] border border-slate-300 bg-white px-[8px] text-[0.85rem]"
           >
             <option value={10}>10 / page</option>
             <option value={20}>20 / page</option>

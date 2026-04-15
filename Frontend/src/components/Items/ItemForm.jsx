@@ -2,12 +2,28 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BACKEND_BASE_URL, CATEGORY_GET } from "../../Utils/Constant";
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
+import ImageDropZone from "../common/ImageDropZone";
 
 const getInitialFormState = (selectedItem) => ({
   category_id: selectedItem?.category_id ? String(selectedItem.category_id) : "",
   item_name: selectedItem?.item_name || "",
   item_description: selectedItem?.item_description || "",
   item_image: selectedItem?.item_image || "",
+  price: selectedItem?.price != null ? String(selectedItem.price) : "",
+  discount_price: selectedItem?.discount_price != null ? String(selectedItem.discount_price) : "",
+  preparation_time: selectedItem?.preparation_time != null ? String(selectedItem.preparation_time) : "",
+  is_popular:
+    selectedItem && typeof selectedItem.is_popular !== "undefined"
+      ? Number(selectedItem.is_popular) === 1
+      : false,
+  is_new:
+    selectedItem && typeof selectedItem.is_new !== "undefined"
+      ? Number(selectedItem.is_new) === 1
+      : false,
+  is_veg:
+    selectedItem && typeof selectedItem.is_veg !== "undefined"
+      ? Number(selectedItem.is_veg) === 1
+      : true,
   is_active:
     selectedItem && typeof selectedItem.is_active !== "undefined"
       ? Number(selectedItem.is_active) === 1
@@ -81,9 +97,7 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
     setErrors((prev) => ({ ...prev, [field]: null }));
   };
 
-  const handleImagePick = (event) => {
-    const file = event.target.files?.[0];
-
+  const handleImageSelect = (file) => {
     if (!file) {
       return;
     }
@@ -116,6 +130,18 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
       nextErrors.item_image = "Item image path is required";
     }
 
+    if (formData.price !== "" && (isNaN(Number(formData.price)) || Number(formData.price) < 0)) {
+      nextErrors.price = "Price must be a valid positive number";
+    }
+
+    if (formData.discount_price !== "" && (isNaN(Number(formData.discount_price)) || Number(formData.discount_price) < 0)) {
+      nextErrors.discount_price = "Discount price must be a valid positive number";
+    }
+
+    if (formData.preparation_time !== "" && (isNaN(Number(formData.preparation_time)) || Number(formData.preparation_time) < 0)) {
+      nextErrors.preparation_time = "Preparation time must be a valid positive number";
+    }
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -134,6 +160,12 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
       item_description: formData.item_description.trim(),
       item_image: formData.item_image.trim(),
       item_image_file: selectedFile,
+      price: formData.price !== "" ? parseFloat(formData.price) : 0,
+      discount_price: formData.discount_price !== "" ? parseFloat(formData.discount_price) : null,
+      preparation_time: formData.preparation_time !== "" ? parseInt(formData.preparation_time, 10) : null,
+      is_popular: formData.is_popular ? 1 : 0,
+      is_new: formData.is_new ? 1 : 0,
+      is_veg: formData.is_veg ? 1 : 0,
       is_active: formData.is_active ? 1 : 0,
     });
   };
@@ -201,16 +233,97 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
             </label>
 
             <label className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Upload Item Image</span>
-              <input className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none" type="file" accept="image/*" onChange={handleImagePick} />
-              <small className="text-slate-500">{imageLabel}</small>
-              {errors.item_image ? <small className="text-red-600">{errors.item_image}</small> : null}
+              <span className="text-[0.92rem] font-semibold text-slate-600">Price (£)</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.price}
+                onChange={(event) => setFieldValue("price", event.target.value)}
+                placeholder="e.g. 5.95"
+                className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
+              />
+              {errors.price ? <small className="text-red-600">{errors.price}</small> : null}
             </label>
+
+            <label className="grid gap-2">
+              <span className="text-[0.92rem] font-semibold text-slate-600">Discount Price (£)</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.discount_price}
+                onChange={(event) => setFieldValue("discount_price", event.target.value)}
+                placeholder="e.g. 4.50 (leave empty for no discount)"
+                className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
+              />
+              {errors.discount_price ? <small className="text-red-600">{errors.discount_price}</small> : null}
+            </label>
+
+            <label className="grid gap-2">
+              <span className="text-[0.92rem] font-semibold text-slate-600">Preparation Time (minutes)</span>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                value={formData.preparation_time}
+                onChange={(event) => setFieldValue("preparation_time", event.target.value)}
+                placeholder="e.g. 25"
+                className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
+              />
+              {errors.preparation_time ? <small className="text-red-600">{errors.preparation_time}</small> : null}
+            </label>
+
+            <ImageDropZone
+              label="Upload Item Image"
+              imageLabel={imageLabel}
+              error={errors.item_image}
+              onFileSelect={handleImageSelect}
+              onError={(message) => setErrors((prev) => ({ ...prev, item_image: message }))}
+            />
 
             <label className="grid gap-2">
               <span className="text-[0.92rem] font-semibold text-slate-600">Stored Image Path</span>
               <input className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none" type="text" value={formData.item_image} readOnly />
             </label>
+
+            <div className="flex flex-wrap gap-4">
+              <label className="grid gap-2">
+                <span className="text-[0.92rem] font-semibold text-slate-600">Popular</span>
+                <button
+                  type="button"
+                  className={`inline-flex w-fit items-center gap-2.5 rounded-full border border-slate-300 px-[14px] py-2 pl-2 ${formData.is_popular ? "bg-amber-50 text-amber-800" : "bg-white text-slate-700"}`}
+                  onClick={() => setFieldValue("is_popular", !formData.is_popular)}
+                >
+                  <span className={`h-6 w-6 rounded-full ${formData.is_popular ? "bg-amber-500" : "bg-slate-400"}`} />
+                  {formData.is_popular ? "Popular" : "Not Popular"}
+                </button>
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-[0.92rem] font-semibold text-slate-600">New Item</span>
+                <button
+                  type="button"
+                  className={`inline-flex w-fit items-center gap-2.5 rounded-full border border-slate-300 px-[14px] py-2 pl-2 ${formData.is_new ? "bg-blue-50 text-blue-800" : "bg-white text-slate-700"}`}
+                  onClick={() => setFieldValue("is_new", !formData.is_new)}
+                >
+                  <span className={`h-6 w-6 rounded-full ${formData.is_new ? "bg-blue-500" : "bg-slate-400"}`} />
+                  {formData.is_new ? "NEW" : "Not New"}
+                </button>
+              </label>
+
+              <label className="grid gap-2">
+                <span className="text-[0.92rem] font-semibold text-slate-600">Veg / Non-Veg</span>
+                <button
+                  type="button"
+                  className={`inline-flex w-fit items-center gap-2.5 rounded-full border border-slate-300 px-[14px] py-2 pl-2 ${formData.is_veg ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"}`}
+                  onClick={() => setFieldValue("is_veg", !formData.is_veg)}
+                >
+                  <span className={`h-6 w-6 rounded-full ${formData.is_veg ? "bg-green-500" : "bg-red-500"}`} />
+                  {formData.is_veg ? "Veg 🟢" : "Non-Veg 🔴"}
+                </button>
+              </label>
+            </div>
 
             {selectedItem ? (
               <label className="grid gap-2">
