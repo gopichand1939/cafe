@@ -17,7 +17,7 @@ const MENU_ROUTE_MAP = {
   },
   menu_management: {
     path: "",
-    matchPaths: ["/category", "/addcategory", "/viewcategory/", "/editcategory/", "/deletecategory/", "/items", "/additem", "/viewitem/", "/edititem/", "/deleteitem/"],
+    matchPaths: ["/category", "/addcategory", "/viewcategory/", "/editcategory/", "/deletecategory/", "/items", "/additem", "/viewitem/", "/edititem/", "/deleteitem/", "/addon", "/addaddon", "/viewaddon/", "/editaddon/", "/deleteaddon/"],
   },
   category: {
     path: "/category",
@@ -26,6 +26,10 @@ const MENU_ROUTE_MAP = {
   items: {
     path: "/items",
     matchPaths: ["/items", "/additem", "/viewitem/", "/edititem/", "/deleteitem/"],
+  },
+  addon: {
+    path: "/addon",
+    matchPaths: ["/addon", "/addaddon", "/viewaddon/", "/editaddon/", "/deleteaddon/"],
   },
   offers: {
     path: "/offers",

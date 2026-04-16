@@ -221,6 +221,7 @@ const iconMap = {
   user_management: UserManagementIcon,
   category: CategoryIcon,
   items: ItemIcon,
+  addon: ItemIcon,
 };
 
 const isPathMatched = (pathname, menuKey = "", children = []) => {

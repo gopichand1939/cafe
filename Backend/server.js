@@ -4,6 +4,7 @@ const express = require("express");
 const path = require("path");
 const categoryRoutes = require("./category/categoryRoutes");
 const itemRoutes = require("./items/itemRoutes");
+const addonRoutes = require("./addons/addonRoutes");
 const adminRoutes = require("./Login/adminRoutes");
 const adminModel = require("./Login/adminModel");
 const menuAccessModel = require("./Access/menuAccessModel");
@@ -46,6 +47,7 @@ app.get("/", (req, res) => {
 
 app.use("/category", categoryRoutes);
 app.use("/items", itemRoutes);
+app.use("/addons", addonRoutes);
 app.use("/admin", adminRoutes);
 app.use("/restaurant", restaurantSettingsRoutes);
 

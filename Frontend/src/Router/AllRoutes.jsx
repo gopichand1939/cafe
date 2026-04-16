@@ -2,6 +2,7 @@ import { lazy } from "react";
 import { Navigate } from "react-router-dom";
 import { AddCategory, Category, DeleteCategory, EditCategory, ViewCategory } from "../components/Category";
 import { AddItem, DeleteItem, EditItem, Item, ViewItem } from "../components/Items";
+import { AddAddon, Addon, DeleteAddon, EditAddon, ViewAddon } from "../components/Addons";
 import { getFirstAccessibleRoute } from "../Utils/authStorage";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
@@ -58,6 +59,26 @@ export const appRoutes = [
       {
         path: "offers",
         element: withSuspense(<ModulePlaceholder title="Offers" />),
+      },
+      {
+        path: "addon",
+        element: withSuspense(<Addon />),
+      },
+      {
+        path: "addaddon",
+        element: withSuspense(<AddAddon />),
+      },
+      {
+        path: "viewaddon/:id",
+        element: withSuspense(<ViewAddon />),
+      },
+      {
+        path: "editaddon/:id",
+        element: withSuspense(<EditAddon />),
+      },
+      {
+        path: "deleteaddon/:id",
+        element: withSuspense(<DeleteAddon />),
       },
       {
         path: "customers",

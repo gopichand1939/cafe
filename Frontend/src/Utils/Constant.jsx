@@ -17,6 +17,13 @@ export const ITEM_BY_ID = `${BACKEND_BASE_URL}/items/get_item_byId`;
 export const ITEM_UPDATE = `${BACKEND_BASE_URL}/items/update_item`;
 export const ITEM_DELETE = `${BACKEND_BASE_URL}/items/delete_item`;
 
+export const ADDON_CREATE = `${BACKEND_BASE_URL}/addons/create_addon`;
+export const ADDON_LIST = `${BACKEND_BASE_URL}/addons/addon_list`;
+export const ADDON_BY_ID = `${BACKEND_BASE_URL}/addons/get_addon_byId`;
+export const ADDON_UPDATE = `${BACKEND_BASE_URL}/addons/update_addon`;
+export const ADDON_DELETE = `${BACKEND_BASE_URL}/addons/delete_addon`;
+export const ADDON_BY_ITEM = `${BACKEND_BASE_URL}/addons/get_addons_by_item`;
+
 export const ADMIN_REGISTER = `${BACKEND_BASE_URL}/admin/register`;
 export const ADMIN_LOGIN = `${BACKEND_BASE_URL}/admin/login`;
 export const ADMIN_REFRESH_TOKEN = `${BACKEND_BASE_URL}/admin/refresh-token`;
