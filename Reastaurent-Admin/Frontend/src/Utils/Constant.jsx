@@ -1,6 +1,5 @@
 export const BACKEND_BASE_URL = (
-  import.meta.env.VITE_BACKEND_BASE_URL || "http://localhost:15013"
-).replace(/\/+$/g, "");
+  import.meta.env.VITE_BACKEND_BASE_URL)
 
 export const CATEGORY_CREATE = `${BACKEND_BASE_URL}/category/create_category`;
 export const CATEGORY_LIST = `${BACKEND_BASE_URL}/category/category_list`;

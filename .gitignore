@@ -5,8 +5,8 @@ Reastaurent-Admin/Backend/node_modules/
 Reastaurent-Admin/Frontend/node_modules/
 Reastaurent-customer/Backend/node_modules/
 Reastaurent-customer/Frontend/node_modules/
-Reastaurent-Admin/Frontend/.env
-Reastaurent-customer/Frontend/.env
+# Reastaurent-Admin/Frontend/.env
+# Reastaurent-customer/Frontend/.env
 
 dist/
 build/
