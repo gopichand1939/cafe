@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+Backend/node_modules/
+Frontend/node_modules/
+
+# Environment files
+
+
+# Build output
+dist/
+build/
+.vercel/
