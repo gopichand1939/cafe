@@ -46,6 +46,7 @@ setInterval(async () => {
 }, KEEP_ALIVE_MS);
 
 module.exports = {
+  poolConfig,
   query: (text, params) => pool.query(text, params),
   pool,
   warmUp,

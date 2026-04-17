@@ -1,23 +1,15 @@
 const db = require("./config/db");
 const { attachImageUrl } = require("./media");
+const {
+  cache,
+  isCacheValid,
+  setAddonsCache,
+  setCategoryCache,
+  setItemsCache,
+} = require("./cache/menuCache");
 
-// ─── In-Memory Cache ───────────────────────────────────────
-const cache = {
-  categories: { data: null, timestamp: 0 },
-  items: {},  // keyed by category_id
-  addons: {}, // keyed by item_id
-};
-
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-const isCacheValid = (entry) => {
-  return entry && entry.data && (Date.now() - entry.timestamp) < CACHE_TTL;
-};
-
-// ─── GET CATEGORIES (cached) ──────────────────────────────
 const getCategory = async (req, res) => {
   try {
-    // Return cached data if fresh
     if (isCacheValid(cache.categories)) {
       return res.status(200).json({
         success: true,
@@ -37,10 +29,11 @@ const getCategory = async (req, res) => {
       ORDER BY id
     `);
 
-    const categories = result.rows.map((row) => attachImageUrl(req, row, "category_image"));
+    const categories = result.rows.map((row) =>
+      attachImageUrl(req, row, "category_image")
+    );
 
-    // Update cache
-    cache.categories = { data: categories, timestamp: Date.now() };
+    setCategoryCache(categories);
 
     return res.status(200).json({
       success: true,
@@ -56,7 +49,6 @@ const getCategory = async (req, res) => {
   }
 };
 
-// ─── GET ITEMS BY CATEGORY (cached + paginated) ──────────
 const getItemsByCategory = async (req, res) => {
   try {
     const { category_id, page = 1, limit = 5 } = req.body;
@@ -68,9 +60,10 @@ const getItemsByCategory = async (req, res) => {
       });
     }
 
-    const cacheKey = `${category_id}_${page}_${limit}`;
+    const pageNumber = Number(page) || 1;
+    const limitNumber = Number(limit) || 5;
+    const cacheKey = `${category_id}_${pageNumber}_${limitNumber}`;
 
-    // Return cached data if fresh
     if (isCacheValid(cache.items[cacheKey])) {
       return res.status(200).json({
         ...cache.items[cacheKey].data,
@@ -78,7 +71,7 @@ const getItemsByCategory = async (req, res) => {
       });
     }
 
-    const offset = (page - 1) * limit;
+    const offset = (pageNumber - 1) * limitNumber;
 
     const itemsQuery = `
       SELECT
@@ -103,35 +96,34 @@ const getItemsByCategory = async (req, res) => {
     `;
 
     const countQuery = `
-      SELECT COUNT(*) FROM items
+      SELECT COUNT(*) AS total
+      FROM items
       WHERE category_id = $1
         AND is_deleted = 0
         AND is_active = 1
     `;
 
     const [itemsResult, countResult] = await Promise.all([
-      db.query(itemsQuery, [category_id, limit, offset]),
+      db.query(itemsQuery, [category_id, limitNumber, offset]),
       db.query(countQuery, [category_id]),
     ]);
 
-    const totalItems = parseInt(countResult.rows[0].count);
-    const totalPages = Math.ceil(totalItems / limit);
-
+    const totalItems = parseInt(countResult.rows[0].total, 10) || 0;
+    const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limitNumber);
     const items = itemsResult.rows.map((row) => attachImageUrl(req, row, "item_image"));
 
     const responseData = {
       success: true,
       data: items,
       pagination: {
-        currentPage: page,
+        currentPage: pageNumber,
         totalPages,
         totalItems,
-        limit,
+        limit: limitNumber,
       },
     };
 
-    // Update cache
-    cache.items[cacheKey] = { data: responseData, timestamp: Date.now() };
+    setItemsCache(cacheKey, responseData);
 
     return res.status(200).json(responseData);
   } catch (error) {
@@ -203,8 +195,8 @@ const getItemAddons = async (req, res) => {
       db.query(countQuery, [item_id]),
     ]);
 
-    const totalRecords = parseInt(countResult.rows[0].total, 10);
-    const totalPages = Math.ceil(totalRecords / limitNumber) || 1;
+    const totalRecords = parseInt(countResult.rows[0].total, 10) || 0;
+    const totalPages = totalRecords === 0 ? 0 : Math.ceil(totalRecords / limitNumber);
 
     const responseData = {
       success: true,
@@ -218,7 +210,7 @@ const getItemAddons = async (req, res) => {
       },
     };
 
-    cache.addons[cacheKey] = { data: responseData, timestamp: Date.now() };
+    setAddonsCache(cacheKey, responseData);
 
     return res.status(200).json(responseData);
   } catch (error) {

@@ -1,53 +1,80 @@
+const http = require("http");
 const express = require("express");
 const cors = require("cors");
+
 require("dotenv").config();
 
 const db = require("./config/db");
 const routes = require("./AllGetRouter");
+const {
+  createMenuUpdatesGateway,
+} = require("./realtime/menuUpdatesGateway");
+const {
+  startMenuChangeSubscriber,
+} = require("./realtime/menuChangeSubscriber");
 
 const app = express();
+const server = http.createServer(app);
+const menuUpdatesGateway = createMenuUpdatesGateway(server);
 
 app.use(cors());
 app.use(express.json());
-
-// ✅ Static folder for images
 app.use("/images", express.static("public"));
 
-// ✅ Response time header (for monitoring)
 app.use((req, res, next) => {
-  const start = Date.now();
+  const startedAt = Date.now();
+
   res.on("finish", () => {
-    const duration = Date.now() - start;
+    const duration = Date.now() - startedAt;
+
     if (duration > 1000) {
-      console.warn(`⚠️ Slow request: ${req.method} ${req.url} - ${duration}ms`);
+      console.warn(`Slow request: ${req.method} ${req.url} took ${duration}ms`);
     }
   });
+
   next();
 });
 
 app.use("/api", routes);
 
-// ✅ Health check endpoint
-app.get("/health", async (req, res) => {
+app.get("/health", async (_req, res) => {
   try {
-    const start = Date.now();
+    const startedAt = Date.now();
     await db.query("SELECT 1");
-    res.json({ status: "ok", dbLatency: `${Date.now() - start}ms` });
-  } catch (err) {
-    res.status(503).json({ status: "error", message: err.message });
+
+    res.json({
+      status: "ok",
+      dbLatency: `${Date.now() - startedAt}ms`,
+      websocketClients: menuUpdatesGateway.getClientCount(),
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: "error",
+      message: error.message,
+    });
   }
 });
 
-const PORT = process.env.PORT || 15014;
+const PORT = Number(process.env.PORT) || 15014;
 
 const startServer = async () => {
-  // ✅ Pre-warm DB connection before accepting requests
-  console.log("⏳ Warming up database connection...");
-  await db.warmUp();
+  try {
+    console.log("Warming up database connection...");
+    await db.warmUp();
 
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-  });
+    startMenuChangeSubscriber({
+      onMenuChange: (change) => {
+        menuUpdatesGateway.broadcastMenuUpdate(change);
+      },
+    });
+
+    server.listen(PORT, () => {
+      console.log(`Customer backend running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start customer backend:", error);
+    process.exit(1);
+  }
 };
 
 startServer();

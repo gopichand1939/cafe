@@ -2,6 +2,10 @@ const categoryModel = require("./categoryModel");
 const db = require("../config/db");
 const { attachImageFields } = require("../utils/media");
 const { uploadImage } = require("../utils/storageService");
+const { publishMenuChangeSafely } = require("../realtime/menuEvents");
+
+const toRealtimeCategory = (req, category) =>
+  category ? attachImageFields(req, category, ["category_image"]) : null;
 
 const toListCategoryResponse = (req, category) => {
   const hydratedCategory = attachImageFields(req, category, ["category_image"]);
@@ -54,6 +58,14 @@ const createCategory = async (req, res) => {
         message: "Category name already exists",
       });
     }
+
+    await publishMenuChangeSafely({
+      entity: "category",
+      action: "created",
+      entityId: data.id,
+      categoryId: data.id,
+      entityData: toRealtimeCategory(req, data),
+    });
 
     return res.status(200).json({
       success: true,
@@ -195,6 +207,14 @@ const updateCategory = async (req, res) => {
       ...updatedCategory
     } = data;
 
+    await publishMenuChangeSafely({
+      entity: "category",
+      action: "updated",
+      entityId: updatedCategory.id,
+      categoryId: updatedCategory.id,
+      entityData: toRealtimeCategory(req, updatedCategory),
+    });
+
     return res.status(200).json({
       success: true,
       message: "Category updated successfully",
@@ -229,6 +249,14 @@ const deleteCategory = async (req, res) => {
     }
 
     await categoryModel.deleteCategory(id);
+
+    await publishMenuChangeSafely({
+      entity: "category",
+      action: "deleted",
+      entityId: existingCategory.id,
+      categoryId: existingCategory.id,
+      entityData: toRealtimeCategory(req, existingCategory),
+    });
 
     return res.status(200).json({
       success: true,

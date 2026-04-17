@@ -1,4 +1,5 @@
 const addonModel = require("./addonModel");
+const { publishMenuChangeSafely } = require("../realtime/menuEvents");
 
 const createAddon = async (req, res) => {
   try {
@@ -54,6 +55,14 @@ const createAddon = async (req, res) => {
         message: "Invalid item or add-on already exists in this group for this item",
       });
     }
+
+    await publishMenuChangeSafely({
+      entity: "addon",
+      action: "created",
+      entityId: data.id,
+      itemId: data.item_id,
+      entityData: data,
+    });
 
     return res.status(200).json({
       success: true,
@@ -171,6 +180,14 @@ const updateAddon = async (req, res) => {
       });
     }
 
+    const existingAddon = await addonModel.getAddonById(id);
+    if (!existingAddon) {
+      return res.status(404).json({
+        success: false,
+        message: "Add-on not found",
+      });
+    }
+
     const normalizedId = parseInt(id, 10);
     const normalizedItemId = parseInt(item_id, 10);
     const normalizedGroup = String(addon_group).trim();
@@ -217,13 +234,6 @@ const updateAddon = async (req, res) => {
       normalizedActive
     );
 
-    if (!data?.target_exists) {
-      return res.status(404).json({
-        success: false,
-        message: "Add-on not found",
-      });
-    }
-
     if (!data?.item_exists) {
       return res.status(404).json({
         success: false,
@@ -244,6 +254,15 @@ const updateAddon = async (req, res) => {
       duplicate_exists,
       ...updatedAddon
     } = data;
+
+    await publishMenuChangeSafely({
+      entity: "addon",
+      action: "updated",
+      entityId: updatedAddon.id,
+      itemId: updatedAddon.item_id,
+      previousItemId: existingAddon.item_id,
+      entityData: updatedAddon,
+    });
 
     return res.status(200).json({
       success: true,
@@ -287,6 +306,14 @@ const deleteAddon = async (req, res) => {
     }
 
     await addonModel.deleteAddon(normalizedId);
+
+    await publishMenuChangeSafely({
+      entity: "addon",
+      action: "deleted",
+      entityId: existingAddon.id,
+      itemId: existingAddon.item_id,
+      entityData: existingAddon,
+    });
 
     return res.status(200).json({
       success: true,

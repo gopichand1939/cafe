@@ -1,6 +1,10 @@
 const itemModel = require("./itemModel");
 const { attachImageFields } = require("../utils/media");
 const { uploadImage } = require("../utils/storageService");
+const { publishMenuChangeSafely } = require("../realtime/menuEvents");
+
+const toRealtimeItem = (req, item) =>
+  item ? attachImageFields(req, item, ["item_image"]) : null;
 
 const toListItemResponse = (req, item) => {
   const hydratedItem = attachImageFields(req, item, ["category_image", "item_image"]);
@@ -75,6 +79,15 @@ const createItem = async (req, res) => {
         message: "Invalid category or item name already exists in this category",
       });
     }
+
+    await publishMenuChangeSafely({
+      entity: "item",
+      action: "created",
+      entityId: data.id,
+      categoryId: data.category_id,
+      itemId: data.id,
+      entityData: toRealtimeItem(req, data),
+    });
 
     return res.status(200).json({
       success: true,
@@ -187,6 +200,14 @@ const updateItem = async (req, res) => {
       });
     }
 
+    const existingItem = await itemModel.getItemById(id);
+    if (!existingItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Item not found",
+      });
+    }
+
     const normalizedName = String(item_name).trim();
     const uploadedImage = req.file
       ? await uploadImage({ req, file: req.file, folderName: "item-images" })
@@ -215,13 +236,6 @@ const updateItem = async (req, res) => {
       normalizedVeg
     );
 
-    if (!data?.target_exists) {
-      return res.status(404).json({
-        success: false,
-        message: "Item not found",
-      });
-    }
-
     if (!data?.category_exists) {
       return res.status(404).json({
         success: false,
@@ -242,6 +256,16 @@ const updateItem = async (req, res) => {
       duplicate_exists,
       ...updatedItem
     } = data;
+
+    await publishMenuChangeSafely({
+      entity: "item",
+      action: "updated",
+      entityId: updatedItem.id,
+      categoryId: updatedItem.category_id,
+      itemId: updatedItem.id,
+      previousCategoryId: existingItem.category_id,
+      entityData: toRealtimeItem(req, updatedItem),
+    });
 
     return res.status(200).json({
       success: true,
@@ -277,6 +301,15 @@ const deleteItem = async (req, res) => {
     }
 
     await itemModel.deleteItem(id);
+
+    await publishMenuChangeSafely({
+      entity: "item",
+      action: "deleted",
+      entityId: existingItem.id,
+      categoryId: existingItem.category_id,
+      itemId: existingItem.id,
+      entityData: toRealtimeItem(req, existingItem),
+    });
 
     return res.status(200).json({
       success: true,

@@ -1,14 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import Header from "./components/Header";
 import CategoryBar from "./components/CategoryBar";
 import ItemGrid from "./components/ItemGrid";
 import CartDrawer from "./components/CartDrawer";
 import AddonModal from "./components/AddonModal";
 import {
-  CATEGORY_LIST,
-  ITEM_ADDONS,
-  ITEMS_BY_CATEGORY,
-} from "./Utils/Constant";
+  fetchCategories,
+  fetchItemAddons,
+  fetchItemsByCategory,
+} from "./services/menuApi";
+import {
+  applyAddonChange,
+  applyCategoryChange,
+  applyItemChange,
+} from "./realtime/applyMenuChange";
+import { useMenuUpdates } from "./realtime/useMenuUpdates";
 
 function App() {
   const [categories, setCategories] = useState([]);
@@ -24,48 +30,217 @@ function App() {
   const [addonModalOpen, setAddonModalOpen] = useState(false);
   const [loadingAddons, setLoadingAddons] = useState(false);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await fetch(CATEGORY_LIST, { method: "POST" });
-        const data = await res.json();
-        if (data.success && data.data.length > 0) {
-          setCategories(data.data);
-          setSelectedCategory(data.data[0].id);
-        }
-      } catch (err) {
-        console.error("Failed to fetch categories:", err);
-      } finally {
-        setLoadingCategories(false);
-      }
-    };
+  const selectedCategoryRef = useRef(selectedCategory);
+  const selectedItemRef = useRef(selectedItem);
+  const itemsRef = useRef(items);
+  const addonCacheRef = useRef(addonCache);
+  const selectedItemAddonsRef = useRef(selectedItemAddons);
+  const skipNextSelectedCategoryFetchRef = useRef(false);
 
-    fetchCategories();
+  useEffect(() => {
+    selectedCategoryRef.current = selectedCategory;
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    selectedItemRef.current = selectedItem;
+  }, [selectedItem]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  useEffect(() => {
+    addonCacheRef.current = addonCache;
+  }, [addonCache]);
+
+  useEffect(() => {
+    selectedItemAddonsRef.current = selectedItemAddons;
+  }, [selectedItemAddons]);
+
+  const loadCategories = useEffectEvent(async (preferredCategoryId = null) => {
+    setLoadingCategories(true);
+
+    try {
+      const nextCategories = await fetchCategories();
+      const requestedCategoryId =
+        preferredCategoryId ?? selectedCategoryRef.current;
+      const hasRequestedCategory = nextCategories.some(
+        (category) => category.id === requestedCategoryId
+      );
+      const nextSelectedCategory = hasRequestedCategory
+        ? requestedCategoryId
+        : nextCategories[0]?.id ?? null;
+
+      setCategories(nextCategories);
+      setSelectedCategory(nextSelectedCategory);
+
+      return nextSelectedCategory;
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+      setCategories([]);
+      setSelectedCategory(null);
+      return null;
+    } finally {
+      setLoadingCategories(false);
+    }
+  });
+
+  const loadItems = useEffectEvent(async (categoryId) => {
+    if (!categoryId) {
+      setItems([]);
+      return [];
+    }
+
+    setLoadingItems(true);
+
+    try {
+      const nextItems = await fetchItemsByCategory(categoryId);
+      setItems(nextItems);
+      return nextItems;
+    } catch (error) {
+      console.error("Failed to fetch items:", error);
+      setItems([]);
+      return [];
+    } finally {
+      setLoadingItems(false);
+    }
+  });
+
+  const loadAddonsForItem = useEffectEvent(
+    async (item, options = {}) => {
+      const { useCache = true, openModal = true } = options;
+
+      if (!item) {
+        return [];
+      }
+
+      setLoadingAddons(true);
+
+      try {
+        if (useCache && addonCache[item.id]) {
+          const cachedAddons = addonCache[item.id];
+
+          setSelectedItemAddons(cachedAddons);
+
+          if (openModal && cachedAddons.length > 0) {
+            setAddonModalOpen(true);
+          }
+
+          return cachedAddons;
+        }
+
+        const addons = await fetchItemAddons(item.id);
+
+        setAddonCache((prev) => ({
+          ...prev,
+          [item.id]: addons,
+        }));
+        setSelectedItemAddons(addons);
+
+        if (openModal) {
+          setAddonModalOpen(addons.length > 0);
+        }
+
+        return addons;
+      } catch (error) {
+        console.error("Failed to fetch item addons:", error);
+        setSelectedItemAddons([]);
+        if (openModal) {
+          setAddonModalOpen(false);
+        }
+        return [];
+      } finally {
+        setLoadingAddons(false);
+      }
+    }
+  );
+
+  useMenuUpdates((payload) => {
+    console.log("[menu-events][customer-frontend] menu.updated received:", payload);
+
+    if (payload.entity === "category") {
+      console.log("[menu-events][customer-frontend] Applying category change without refetch");
+
+      let nextSelectedCategory = selectedCategoryRef.current;
+
+      setCategories((prevCategories) => {
+        const nextState = applyCategoryChange({
+          categories: prevCategories,
+          selectedCategory: selectedCategoryRef.current,
+          change: payload,
+        });
+
+        nextSelectedCategory = nextState.selectedCategory;
+        return nextState.categories;
+      });
+
+      if (nextSelectedCategory !== selectedCategoryRef.current) {
+        skipNextSelectedCategoryFetchRef.current = true;
+        setSelectedCategory(nextSelectedCategory);
+        setItems([]);
+      }
+
+      return;
+    }
+
+    if (payload.entity === "item") {
+      console.log("[menu-events][customer-frontend] Applying item change without refetch");
+
+      const nextItemState = applyItemChange({
+        items: itemsRef.current,
+        selectedCategory: selectedCategoryRef.current,
+        selectedItem: selectedItemRef.current,
+        change: payload,
+      });
+
+      setItems(nextItemState.items);
+      setSelectedItem(nextItemState.selectedItem);
+
+      if (
+        selectedItemRef.current &&
+        Number(selectedItemRef.current.id) === Number(payload.entityId) &&
+        (payload.action === "deleted" ||
+          Number(payload.entityData?.is_active ?? 1) !== 1 ||
+          Number(payload.entityData?.is_deleted ?? 0) !== 0)
+      ) {
+        setAddonModalOpen(false);
+        setSelectedItemAddons([]);
+      }
+
+      return;
+    }
+
+    if (payload.entity === "addon") {
+      console.log("[menu-events][customer-frontend] Applying addon change without refetch");
+
+      const nextAddonState = applyAddonChange({
+        addonCache: addonCacheRef.current,
+        selectedItem: selectedItemRef.current,
+        selectedItemAddons: selectedItemAddonsRef.current,
+        change: payload,
+      });
+
+      setAddonCache(nextAddonState.addonCache);
+      setSelectedItemAddons(nextAddonState.selectedItemAddons);
+    }
+  });
+
+  useEffect(() => {
+    void loadCategories();
   }, []);
 
   useEffect(() => {
-    if (!selectedCategory) return;
+    if (!selectedCategory) {
+      setItems([]);
+      return;
+    }
 
-    const fetchItems = async () => {
-      setLoadingItems(true);
-      try {
-        const res = await fetch(ITEMS_BY_CATEGORY, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ category_id: selectedCategory }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          setItems(data.data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch items:", err);
-      } finally {
-        setLoadingItems(false);
-      }
-    };
+    if (skipNextSelectedCategoryFetchRef.current) {
+      skipNextSelectedCategoryFetchRef.current = false;
+      return;
+    }
 
-    fetchItems();
+    void loadItems(selectedCategory);
   }, [selectedCategory]);
 
   const buildCartItem = (item, selectedAddons = []) => {
@@ -121,41 +296,16 @@ function App() {
     }
 
     setSelectedItem(item);
-    setLoadingAddons(true);
 
-    try {
-      if (addonCache[item.id]) {
-        const cachedAddons = addonCache[item.id];
-        if (cachedAddons.length > 0) {
-          setSelectedItemAddons(cachedAddons);
-          setAddonModalOpen(true);
-        } else {
-          closeAddonModal();
-        }
-        return;
-      }
+    const addons = await loadAddonsForItem(item, {
+      useCache: true,
+      openModal: false,
+    });
 
-      const res = await fetch(ITEM_ADDONS, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item_id: item.id }),
-      });
-      const data = await res.json();
-      const addons = data.success ? data.data || [] : [];
-
-      setAddonCache((prev) => ({ ...prev, [item.id]: addons }));
-
-      if (addons.length > 0) {
-        setSelectedItemAddons(addons);
-        setAddonModalOpen(true);
-      } else {
-        closeAddonModal();
-      }
-    } catch (err) {
-      console.error("Failed to fetch item addons:", err);
+    if (addons.length > 0) {
+      setAddonModalOpen(true);
+    } else {
       closeAddonModal();
-    } finally {
-      setLoadingAddons(false);
     }
   };
 
