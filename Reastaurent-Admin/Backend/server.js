@@ -10,6 +10,8 @@ const adminModel = require("./Login/adminModel");
 const menuAccessModel = require("./Access/menuAccessModel");
 const restaurantSettingsRoutes = require("./restaurant/restaurantSettingsRoutes");
 const restaurantSettingsModel = require("./restaurant/restaurantSettingsModel");
+const customerRoutes = require("./customer/customerRoutes");
+const orderRoutes = require("./orders/orderRoutes");
 
 const app = express();
 const imageCacheMaxAge = Number(process.env.IMAGE_CACHE_MAX_AGE || 604800);
@@ -62,6 +64,8 @@ app.use("/items", itemRoutes);
 app.use("/addons", addonRoutes);
 app.use("/admin", adminRoutes);
 app.use("/restaurant", restaurantSettingsRoutes);
+app.use("/customer", customerRoutes);
+app.use("/orders", orderRoutes);
 
 const PORT = Number(process.env.PORT) || 5000;
 

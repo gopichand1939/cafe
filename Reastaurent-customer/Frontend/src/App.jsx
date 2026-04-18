@@ -4,6 +4,7 @@ import CategoryBar from "./components/CategoryBar";
 import ItemGrid from "./components/ItemGrid";
 import CartDrawer from "./components/CartDrawer";
 import AddonModal from "./components/AddonModal";
+import CustomerDrawer from "./components/CustomerDrawer";
 import {
   fetchCategories,
   fetchItemAddons,
@@ -15,6 +16,8 @@ import {
   applyItemChange,
 } from "./realtime/applyMenuChange";
 import { useMenuUpdates } from "./realtime/useMenuUpdates";
+import { customerAuthStorage } from "./auth/customerAuthStorage";
+import { fetchCustomerProfile } from "./services/customerProfileApi";
 
 function App() {
   const [categories, setCategories] = useState([]);
@@ -29,6 +32,10 @@ function App() {
   const [selectedItemAddons, setSelectedItemAddons] = useState([]);
   const [addonModalOpen, setAddonModalOpen] = useState(false);
   const [loadingAddons, setLoadingAddons] = useState(false);
+  const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
+  const [customer, setCustomer] = useState(customerAuthStorage.getCustomer());
+  const [customerDrawerTab, setCustomerDrawerTab] = useState("profile");
+  const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
   const selectedCategoryRef = useRef(selectedCategory);
   const selectedItemRef = useRef(selectedItem);
@@ -106,54 +113,52 @@ function App() {
     }
   });
 
-  const loadAddonsForItem = useEffectEvent(
-    async (item, options = {}) => {
-      const { useCache = true, openModal = true } = options;
+  const loadAddonsForItem = useEffectEvent(async (item, options = {}) => {
+    const { useCache = true, openModal = true } = options;
 
-      if (!item) {
-        return [];
-      }
-
-      setLoadingAddons(true);
-
-      try {
-        if (useCache && addonCache[item.id]) {
-          const cachedAddons = addonCache[item.id];
-
-          setSelectedItemAddons(cachedAddons);
-
-          if (openModal && cachedAddons.length > 0) {
-            setAddonModalOpen(true);
-          }
-
-          return cachedAddons;
-        }
-
-        const addons = await fetchItemAddons(item.id);
-
-        setAddonCache((prev) => ({
-          ...prev,
-          [item.id]: addons,
-        }));
-        setSelectedItemAddons(addons);
-
-        if (openModal) {
-          setAddonModalOpen(addons.length > 0);
-        }
-
-        return addons;
-      } catch (error) {
-        console.error("Failed to fetch item addons:", error);
-        setSelectedItemAddons([]);
-        if (openModal) {
-          setAddonModalOpen(false);
-        }
-        return [];
-      } finally {
-        setLoadingAddons(false);
-      }
+    if (!item) {
+      return [];
     }
-  );
+
+    setLoadingAddons(true);
+
+    try {
+      if (useCache && addonCache[item.id]) {
+        const cachedAddons = addonCache[item.id];
+
+        setSelectedItemAddons(cachedAddons);
+
+        if (openModal && cachedAddons.length > 0) {
+          setAddonModalOpen(true);
+        }
+
+        return cachedAddons;
+      }
+
+      const addons = await fetchItemAddons(item.id);
+
+      setAddonCache((prev) => ({
+        ...prev,
+        [item.id]: addons,
+      }));
+      setSelectedItemAddons(addons);
+
+      if (openModal) {
+        setAddonModalOpen(addons.length > 0);
+      }
+
+      return addons;
+    } catch (error) {
+      console.error("Failed to fetch item addons:", error);
+      setSelectedItemAddons([]);
+      if (openModal) {
+        setAddonModalOpen(false);
+      }
+      return [];
+    } finally {
+      setLoadingAddons(false);
+    }
+  });
 
   useMenuUpdates((payload) => {
     console.log("[menu-events][customer-frontend] menu.updated received:", payload);
@@ -227,6 +232,38 @@ function App() {
 
   useEffect(() => {
     void loadCategories();
+  }, []);
+
+  useEffect(() => {
+    const accessToken = customerAuthStorage.getAccessToken();
+
+    if (!accessToken) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadCustomerProfile = async () => {
+      try {
+        const profile = await fetchCustomerProfile(accessToken);
+
+        if (!isCancelled) {
+          customerAuthStorage.updateCustomer(profile);
+          setCustomer(profile);
+        }
+      } catch (_error) {
+        customerAuthStorage.clearSession();
+        if (!isCancelled) {
+          setCustomer(null);
+        }
+      }
+    };
+
+    void loadCustomerProfile();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -354,7 +391,19 @@ function App() {
         padding: 0,
       }}
     >
-      <Header cartCount={cartCount} onCartClick={() => setCartOpen(true)} />
+      <Header
+        cartCount={cartCount}
+        customer={customer}
+        onCustomerClick={() => {
+          setCartOpen(false);
+          setCustomerDrawerTab("profile");
+          setCustomerDrawerOpen(true);
+        }}
+        onCartClick={() => {
+          setCustomerDrawerOpen(false);
+          setCartOpen(true);
+        }}
+      />
       <CategoryBar
         categories={categories}
         selectedCategory={selectedCategory}
@@ -372,11 +421,32 @@ function App() {
       {cartOpen && (
         <CartDrawer
           cart={cart}
+          customer={customer}
           onClose={() => setCartOpen(false)}
           onAdd={addToCart}
           onRemove={removeFromCart}
+          onClearCart={() => setCart([])}
+          onRequireSignIn={() => {
+            setCartOpen(false);
+            setCustomerDrawerTab("profile");
+            setCustomerDrawerOpen(true);
+          }}
+          onOrderPlaced={() => {
+            setOrdersRefreshKey((prev) => prev + 1);
+            setCartOpen(false);
+            setCustomerDrawerTab("orders");
+            setCustomerDrawerOpen(true);
+          }}
         />
       )}
+      <CustomerDrawer
+        open={customerDrawerOpen}
+        onClose={() => setCustomerDrawerOpen(false)}
+        customer={customer}
+        onCustomerChange={setCustomer}
+        initialTab={customerDrawerTab}
+        ordersRefreshKey={ordersRefreshKey}
+      />
       {addonModalOpen && selectedItem && (
         <AddonModal
           item={selectedItem}

@@ -1,6 +1,53 @@
+import { useEffect, useState } from "react";
+import { customerAuthStorage } from "../auth/customerAuthStorage";
 import { getImageUrl } from "../Utils/imageUrl";
+import { placeCustomerOrder } from "../services/orderApi";
 
-function CartDrawer({ cart, onClose, onAdd, onRemove }) {
+const inputStyle = {
+  width: "100%",
+  padding: "12px 14px",
+  borderRadius: "14px",
+  border: "1px solid rgba(255,255,255,0.1)",
+  background: "rgba(255,255,255,0.05)",
+  color: "#fff",
+  fontSize: "14px",
+  boxSizing: "border-box",
+  outline: "none",
+};
+
+function CartDrawer({
+  cart,
+  customer,
+  onClose,
+  onAdd,
+  onRemove,
+  onClearCart,
+  onRequireSignIn,
+  onOrderPlaced,
+}) {
+  const [deliveryForm, setDeliveryForm] = useState({
+    recipient_name: customer?.name || "",
+    phone: customer?.phone || "",
+    line1: "",
+    line2: "",
+    landmark: "",
+    city: "",
+    state: "",
+    pincode: "",
+  });
+  const [orderNotes, setOrderNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    setDeliveryForm((prev) => ({
+      ...prev,
+      recipient_name: customer?.name || prev.recipient_name || "",
+      phone: customer?.phone || prev.phone || "",
+    }));
+  }, [customer]);
+
   const total = cart.reduce((sum, item) => {
     const price =
       item.discount_price && item.discount_price < item.price
@@ -11,6 +58,95 @@ function CartDrawer({ cart, onClose, onAdd, onRemove }) {
   }, 0);
 
   const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+
+  const handleFieldChange = (field, value) => {
+    setDeliveryForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const resetMessages = () => {
+    setErrorMessage("");
+    setSuccessMessage("");
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!customer) {
+      setErrorMessage("Please sign in before placing your order.");
+      setSuccessMessage("");
+      onRequireSignIn?.();
+      return;
+    }
+
+    if (
+      !deliveryForm.line1.trim() ||
+      !deliveryForm.city.trim() ||
+      !deliveryForm.pincode.trim()
+    ) {
+      setErrorMessage(
+        "Please add address line 1, city, and pincode before placing the order."
+      );
+      setSuccessMessage("");
+      return;
+    }
+
+    setSubmitting(true);
+    resetMessages();
+
+    try {
+      const accessToken = customerAuthStorage.getAccessToken();
+
+      if (!accessToken) {
+        throw new Error("Please sign in again before placing your order.");
+      }
+
+      const order = await placeCustomerOrder(
+        {
+          items: cart.map((item) => ({
+            item_id: item.id,
+            quantity: item.qty,
+            selected_addons: item.selected_addons || [],
+            item_notes: item.item_notes || "",
+          })),
+          delivery_address: {
+            recipient_name: deliveryForm.recipient_name.trim(),
+            phone: deliveryForm.phone.trim(),
+            line1: deliveryForm.line1.trim(),
+            line2: deliveryForm.line2.trim(),
+            landmark: deliveryForm.landmark.trim(),
+            city: deliveryForm.city.trim(),
+            state: deliveryForm.state.trim(),
+            pincode: deliveryForm.pincode.trim(),
+          },
+          order_notes: orderNotes.trim(),
+          payment_method: "cash_on_delivery",
+        },
+        accessToken
+      );
+
+      setSuccessMessage(
+        `Order placed successfully. Order number: ${order.order_number}`
+      );
+      onClearCart?.();
+      onOrderPlaced?.(order);
+      setOrderNotes("");
+      setDeliveryForm({
+        recipient_name: customer?.name || "",
+        phone: customer?.phone || "",
+        line1: "",
+        line2: "",
+        landmark: "",
+        city: "",
+        state: "",
+        pincode: "",
+      });
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -32,7 +168,7 @@ function CartDrawer({ cart, onClose, onAdd, onRemove }) {
           top: 0,
           right: 0,
           bottom: 0,
-          width: "min(400px, 90vw)",
+          width: "min(420px, 92vw)",
           background: "linear-gradient(180deg, #1a1a2e 0%, #0f0c29 100%)",
           borderLeft: "1px solid rgba(255,255,255,0.08)",
           zIndex: 201,
@@ -87,7 +223,7 @@ function CartDrawer({ cart, onClose, onAdd, onRemove }) {
               justifyContent: "center",
             }}
           >
-            ×
+            x
           </button>
         </div>
 
@@ -112,7 +248,21 @@ function CartDrawer({ cart, onClose, onAdd, onRemove }) {
                 gap: "12px",
               }}
             >
-              <div style={{ fontSize: "48px" }}>🛒</div>
+              <div
+                style={{
+                  width: "72px",
+                  height: "72px",
+                  borderRadius: "20px",
+                  background: "rgba(255,255,255,0.06)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  fontWeight: 800,
+                }}
+              >
+                Cart
+              </div>
               <p
                 style={{
                   fontSize: "15px",
@@ -124,155 +274,261 @@ function CartDrawer({ cart, onClose, onAdd, onRemove }) {
               </p>
             </div>
           ) : (
-            cart.map((item) => {
-              const price =
-                item.discount_price && item.discount_price < item.price
-                  ? item.discount_price
-                  : item.price;
-              const linePrice =
-                (Number(price) + Number(item.addon_total || 0)) * item.qty;
+            <>
+              {cart.map((item) => {
+                const price =
+                  item.discount_price && item.discount_price < item.price
+                    ? item.discount_price
+                    : item.price;
+                const linePrice =
+                  (Number(price) + Number(item.addon_total || 0)) * item.qty;
 
-              return (
-                <div
-                  key={item.cart_key || item.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: "14px",
-                    padding: "14px",
-                    background: "rgba(255,255,255,0.04)",
-                    borderRadius: "14px",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                  }}
-                >
-                  {getImageUrl(item, "item_image") ? (
-                    <img
-                      src={getImageUrl(item, "item_image")}
-                      alt={item.item_name}
-                      style={{
-                        width: "56px",
-                        height: "56px",
-                        borderRadius: "10px",
-                        objectFit: "cover",
-                        flexShrink: 0,
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "56px",
-                        height: "56px",
-                        borderRadius: "10px",
-                        background: "rgba(255,255,255,0.08)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "24px",
-                        flexShrink: 0,
-                      }}
-                    >
-                      🍽️
-                    </div>
-                  )}
+                return (
+                  <div
+                    key={item.cart_key || item.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "14px",
+                      padding: "14px",
+                      background: "rgba(255,255,255,0.04)",
+                      borderRadius: "14px",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                    }}
+                  >
+                    {getImageUrl(item, "item_image") ? (
+                      <img
+                        src={getImageUrl(item, "item_image")}
+                        alt={item.item_name}
+                        style={{
+                          width: "56px",
+                          height: "56px",
+                          borderRadius: "10px",
+                          objectFit: "cover",
+                          flexShrink: 0,
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "56px",
+                          height: "56px",
+                          borderRadius: "10px",
+                          background: "rgba(255,255,255,0.08)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "24px",
+                          color: "#fff",
+                          fontWeight: 800,
+                          flexShrink: 0,
+                        }}
+                      >
+                        F
+                      </div>
+                    )}
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h4
-                      style={{
-                        margin: 0,
-                        fontSize: "14px",
-                        fontWeight: 600,
-                        color: "#fff",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {item.item_name}
-                    </h4>
-                    {item.selected_addons?.length > 0 && (
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4
+                        style={{
+                          margin: 0,
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#fff",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {item.item_name}
+                      </h4>
+                      {item.selected_addons?.length > 0 ? (
+                        <p
+                          style={{
+                            margin: "6px 0 0",
+                            fontSize: "12px",
+                            color: "rgba(255,255,255,0.48)",
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {item.selected_addons
+                            .map((addon) => addon.addon_name)
+                            .join(", ")}
+                        </p>
+                      ) : null}
                       <p
                         style={{
                           margin: "6px 0 0",
-                          fontSize: "12px",
-                          color: "rgba(255,255,255,0.48)",
-                          lineHeight: 1.5,
+                          fontSize: "14px",
+                          fontWeight: 700,
+                          color: "#f59e0b",
                         }}
                       >
-                        {item.selected_addons
-                          .map((addon) => addon.addon_name)
-                          .join(", ")}
+                        Rs {linePrice.toFixed(2)}
                       </p>
-                    )}
-                    <p
-                      style={{
-                        margin: "6px 0 0",
-                        fontSize: "14px",
-                        fontWeight: 700,
-                        color: "#f59e0b",
-                      }}
-                    >
-                      ₹{linePrice.toFixed(2)}
-                    </p>
-                  </div>
+                    </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0",
-                      background: "rgba(255,255,255,0.08)",
-                      borderRadius: "10px",
-                      overflow: "hidden",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <button
-                      onClick={() => onRemove(item.id, item.cart_key)}
+                    <div
                       style={{
-                        background: "transparent",
-                        border: "none",
-                        color: "#fff",
-                        fontSize: "15px",
-                        fontWeight: 700,
-                        padding: "6px 10px",
-                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0,
+                        background: "rgba(255,255,255,0.08)",
+                        borderRadius: "10px",
+                        overflow: "hidden",
+                        flexShrink: 0,
                       }}
                     >
-                      −
-                    </button>
-                    <span
-                      style={{
-                        fontSize: "13px",
-                        fontWeight: 700,
-                        color: "#fff",
-                        minWidth: "18px",
-                        textAlign: "center",
-                      }}
-                    >
-                      {item.qty}
-                    </span>
-                    <button
-                      onClick={() => onAdd(item)}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        color: "#fff",
-                        fontSize: "15px",
-                        fontWeight: 700,
-                        padding: "6px 10px",
-                        cursor: "pointer",
-                      }}
-                    >
-                      +
-                    </button>
+                      <button
+                        onClick={() => onRemove(item.id, item.cart_key)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: "#fff",
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          padding: "6px 10px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        -
+                      </button>
+                      <span
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: "#fff",
+                          minWidth: "18px",
+                          textAlign: "center",
+                        }}
+                      >
+                        {item.qty}
+                      </span>
+                      <button
+                        onClick={() => onAdd(item)}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          color: "#fff",
+                          fontSize: "15px",
+                          fontWeight: 700,
+                          padding: "6px 10px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
+                );
+              })}
+
+              <div
+                style={{
+                  padding: "16px",
+                  borderRadius: "16px",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  display: "grid",
+                  gap: "10px",
+                }}
+              >
+                <h3 style={{ margin: 0, color: "#fff", fontSize: "16px" }}>
+                  Delivery Details
+                </h3>
+                <input
+                  type="text"
+                  value={deliveryForm.recipient_name}
+                  onChange={(event) =>
+                    handleFieldChange("recipient_name", event.target.value)
+                  }
+                  placeholder="Recipient name"
+                  style={inputStyle}
+                />
+                <input
+                  type="tel"
+                  value={deliveryForm.phone}
+                  onChange={(event) =>
+                    handleFieldChange("phone", event.target.value)
+                  }
+                  placeholder="Phone number"
+                  style={inputStyle}
+                />
+                <textarea
+                  value={deliveryForm.line1}
+                  onChange={(event) =>
+                    handleFieldChange("line1", event.target.value)
+                  }
+                  placeholder="Address line 1"
+                  rows={2}
+                  style={{ ...inputStyle, resize: "vertical" }}
+                />
+                <input
+                  type="text"
+                  value={deliveryForm.line2}
+                  onChange={(event) =>
+                    handleFieldChange("line2", event.target.value)
+                  }
+                  placeholder="Address line 2"
+                  style={inputStyle}
+                />
+                <input
+                  type="text"
+                  value={deliveryForm.landmark}
+                  onChange={(event) =>
+                    handleFieldChange("landmark", event.target.value)
+                  }
+                  placeholder="Landmark"
+                  style={inputStyle}
+                />
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: "10px",
+                  }}
+                >
+                  <input
+                    type="text"
+                    value={deliveryForm.city}
+                    onChange={(event) =>
+                      handleFieldChange("city", event.target.value)
+                    }
+                    placeholder="City"
+                    style={inputStyle}
+                  />
+                  <input
+                    type="text"
+                    value={deliveryForm.state}
+                    onChange={(event) =>
+                      handleFieldChange("state", event.target.value)
+                    }
+                    placeholder="State"
+                    style={inputStyle}
+                  />
                 </div>
-              );
-            })
+                <input
+                  type="text"
+                  value={deliveryForm.pincode}
+                  onChange={(event) =>
+                    handleFieldChange("pincode", event.target.value)
+                  }
+                  placeholder="Pincode"
+                  style={inputStyle}
+                />
+                <textarea
+                  value={orderNotes}
+                  onChange={(event) => setOrderNotes(event.target.value)}
+                  placeholder="Order notes"
+                  rows={3}
+                  style={{ ...inputStyle, resize: "vertical" }}
+                />
+              </div>
+            </>
           )}
         </div>
 
-        {cart.length > 0 && (
+        {cart.length > 0 ? (
           <div
             style={{
               padding: "20px 24px",
@@ -303,10 +559,42 @@ function CartDrawer({ cart, onClose, onAdd, onRemove }) {
                   color: "#fff",
                 }}
               >
-                ₹{total.toFixed(2)}
+                Rs {total.toFixed(2)}
               </span>
             </div>
+            {errorMessage ? (
+              <div
+                style={{
+                  marginBottom: "12px",
+                  padding: "12px 14px",
+                  borderRadius: "12px",
+                  background: "rgba(239,68,68,0.12)",
+                  border: "1px solid rgba(239,68,68,0.24)",
+                  color: "#fecaca",
+                  fontSize: "13px",
+                }}
+              >
+                {errorMessage}
+              </div>
+            ) : null}
+            {successMessage ? (
+              <div
+                style={{
+                  marginBottom: "12px",
+                  padding: "12px 14px",
+                  borderRadius: "12px",
+                  background: "rgba(34,197,94,0.14)",
+                  border: "1px solid rgba(34,197,94,0.24)",
+                  color: "#bbf7d0",
+                  fontSize: "13px",
+                }}
+              >
+                {successMessage}
+              </div>
+            ) : null}
             <button
+              onClick={handlePlaceOrder}
+              disabled={submitting}
               style={{
                 width: "100%",
                 padding: "14px",
@@ -319,12 +607,17 @@ function CartDrawer({ cart, onClose, onAdd, onRemove }) {
                 cursor: "pointer",
                 boxShadow: "0 4px 20px rgba(245,158,11,0.3)",
                 letterSpacing: "0.5px",
+                opacity: submitting ? 0.7 : 1,
               }}
             >
-              Place Order
+              {customer
+                ? submitting
+                  ? "Placing Order..."
+                  : "Place Order"
+                : "Sign In To Order"}
             </button>
           </div>
-        )}
+        ) : null}
       </div>
 
       <style>{`
@@ -335,10 +628,6 @@ function CartDrawer({ cart, onClose, onAdd, onRemove }) {
         @keyframes slideIn {
           from { transform: translateX(100%); }
           to { transform: translateX(0); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 0.8; }
         }
       `}</style>
     </>

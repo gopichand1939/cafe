@@ -37,11 +37,15 @@ const MENU_ROUTE_MAP = {
   },
   orders: {
     path: "/orders",
-    matchPaths: ["/orders"],
+    matchPaths: ["/orders", "/addorder", "/vieworder/", "/editorder/", "/deleteorder/"],
+  },
+  customer: {
+    path: "/customer",
+    matchPaths: ["/customer", "/customers", "/addcustomer", "/viewcustomer/", "/editcustomer/", "/deletecustomer/"],
   },
   customers: {
     path: "/customers",
-    matchPaths: ["/customers"],
+    matchPaths: ["/customer", "/customers", "/addcustomer", "/viewcustomer/", "/editcustomer/", "/deletecustomer/"],
   },
   reviews: {
     path: "/reviews",

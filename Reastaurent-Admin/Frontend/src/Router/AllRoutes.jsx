@@ -3,6 +3,8 @@ import { Navigate } from "react-router-dom";
 import { AddCategory, Category, DeleteCategory, EditCategory, ViewCategory } from "../components/Category";
 import { AddItem, DeleteItem, EditItem, Item, ViewItem } from "../components/Items";
 import { AddAddon, Addon, DeleteAddon, EditAddon, ViewAddon } from "../components/Addons";
+import { AddCustomer, Customer, DeleteCustomer, EditCustomer, ViewCustomer } from "../components/customer";
+import { AddOrder, DeleteOrder, EditOrder, Order, ViewOrder } from "../components/Orders";
 import { getFirstAccessibleRoute } from "../Utils/authStorage";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
@@ -54,7 +56,23 @@ export const appRoutes = [
       },
       {
         path: "orders",
-        element: withSuspense(<ModulePlaceholder title="Orders" />),
+        element: withSuspense(<Order />),
+      },
+      {
+        path: "addorder",
+        element: withSuspense(<AddOrder />),
+      },
+      {
+        path: "vieworder/:id",
+        element: withSuspense(<ViewOrder />),
+      },
+      {
+        path: "editorder/:id",
+        element: withSuspense(<EditOrder />),
+      },
+      {
+        path: "deleteorder/:id",
+        element: withSuspense(<DeleteOrder />),
       },
       {
         path: "offers",
@@ -81,8 +99,28 @@ export const appRoutes = [
         element: withSuspense(<DeleteAddon />),
       },
       {
+        path: "customer",
+        element: withSuspense(<Customer />),
+      },
+      {
         path: "customers",
-        element: withSuspense(<ModulePlaceholder title="Customers" />),
+        element: withSuspense(<Customer />),
+      },
+      {
+        path: "addcustomer",
+        element: withSuspense(<AddCustomer />),
+      },
+      {
+        path: "viewcustomer/:id",
+        element: withSuspense(<ViewCustomer />),
+      },
+      {
+        path: "editcustomer/:id",
+        element: withSuspense(<EditCustomer />),
+      },
+      {
+        path: "deletecustomer/:id",
+        element: withSuspense(<DeleteCustomer />),
       },
       {
         path: "reviews",

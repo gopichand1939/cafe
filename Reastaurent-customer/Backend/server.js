@@ -5,13 +5,19 @@ const cors = require("cors");
 require("dotenv").config();
 
 const db = require("./config/db");
-const routes = require("./AllGetRouter");
+const menuRoutes = require("./menu/menuRoutes");
+const customerAuthRoutes = require("./auth/customerAuthRoutes");
+const customerProfileRoutes = require("./customer/customerProfileRoutes");
+const customerOrderRoutes = require("./orders/orderRoutes");
 const {
   createMenuUpdatesGateway,
 } = require("./realtime/menuUpdatesGateway");
 const {
   startMenuChangeSubscriber,
 } = require("./realtime/menuChangeSubscriber");
+const {
+  startOrderChangeSubscriber,
+} = require("./realtime/orderChangeSubscriber");
 
 const app = express();
 const server = http.createServer(app);
@@ -35,7 +41,10 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/api", routes);
+app.use("/api", menuRoutes);
+app.use("/api/auth", customerAuthRoutes);
+app.use("/api/customer", customerProfileRoutes);
+app.use("/api/orders", customerOrderRoutes);
 
 app.get("/health", async (_req, res) => {
   try {
@@ -65,6 +74,11 @@ const startServer = async () => {
     startMenuChangeSubscriber({
       onMenuChange: (change) => {
         menuUpdatesGateway.broadcastMenuUpdate(change);
+      },
+    });
+    startOrderChangeSubscriber({
+      onOrderChange: (change) => {
+        menuUpdatesGateway.broadcastOrderUpdate(change);
       },
     });
 

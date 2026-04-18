@@ -9,9 +9,10 @@ const Card = createSlice({
     itemSelectedItem: [],
     addonData: [],
     addonSelectedItem: null,
-
-
-    //updated
+    customerData: [],
+    customerSelectedItem: null,
+    orderData: [],
+    orderSelectedItem: null,
   },
   reducers: {
     setCategoryData: (state, action) => {
@@ -32,6 +33,18 @@ const Card = createSlice({
     setAddonSelectedItem: (state, action) => {
       state.addonSelectedItem = action.payload;
     },
+    setCustomerData: (state, action) => {
+      state.customerData = action.payload;
+    },
+    setCustomerSelectedItem: (state, action) => {
+      state.customerSelectedItem = action.payload;
+    },
+    setOrderData: (state, action) => {
+      state.orderData = action.payload;
+    },
+    setOrderSelectedItem: (state, action) => {
+      state.orderSelectedItem = action.payload;
+    },
     clearCategoryData: (state) => {
       state.categoryData = [];
       state.categorySelectedItem = [];
@@ -39,6 +52,10 @@ const Card = createSlice({
       state.itemSelectedItem = [];
       state.addonData = [];
       state.addonSelectedItem = null;
+      state.customerData = [];
+      state.customerSelectedItem = null;
+      state.orderData = [];
+      state.orderSelectedItem = null;
     },
   },
 });
@@ -50,6 +67,10 @@ export const {
   setItemSelectedItem,
   setAddonData,
   setAddonSelectedItem,
+  setCustomerData,
+  setCustomerSelectedItem,
+  setOrderData,
+  setOrderSelectedItem,
   clearCategoryData,
 } = Card.actions;
 

@@ -4,6 +4,7 @@ const MENU_SOCKET_PATH = "/ws";
 const MENU_SOCKET_MESSAGE_TYPES = {
   CONNECTED: "menu.connected",
   UPDATED: "menu.updated",
+  ORDER_UPDATED: "order.updated",
 };
 
 const createMenuUpdatesGateway = (server) => {
@@ -54,8 +55,30 @@ const createMenuUpdatesGateway = (server) => {
     }
   };
 
+  const broadcastOrderUpdate = (change) => {
+    console.log(
+      `[order-events][customer-backend] Broadcasting order update to ${webSocketServer.clients.size} client(s):`,
+      change
+    );
+
+    const message = JSON.stringify({
+      type: MENU_SOCKET_MESSAGE_TYPES.ORDER_UPDATED,
+      payload: {
+        ...change,
+        broadcastAt: new Date().toISOString(),
+      },
+    });
+
+    for (const client of webSocketServer.clients) {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    }
+  };
+
   return {
     broadcastMenuUpdate,
+    broadcastOrderUpdate,
     getClientCount: () => webSocketServer.clients.size,
   };
 };
