@@ -13,7 +13,7 @@ const getCustomerAudio = () => {
   if (!customerAudioRef) {
     const audio = new Audio(customerBeepUrl);
     audio.preload = "auto";
-    audio.loop = true;
+    audio.loop = true; 
     audio.volume = 1;
     customerAudioRef = audio;
   }
