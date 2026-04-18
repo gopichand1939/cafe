@@ -16,8 +16,14 @@ import {
   applyItemChange,
 } from "./realtime/applyMenuChange";
 import { useMenuUpdates } from "./realtime/useMenuUpdates";
+import { useCustomerRealtimeUpdates } from "./realtime/useCustomerRealtimeUpdates";
 import { customerAuthStorage } from "./auth/customerAuthStorage";
 import { fetchCustomerProfile } from "./services/customerProfileApi";
+import { fetchCustomerUnreadNotificationSummary } from "./services/customerNotificationApi";
+import {
+  startCustomerNotificationAlert,
+  stopCustomerNotificationAlert,
+} from "./Utils/notificationSound";
 
 function App() {
   const [categories, setCategories] = useState([]);
@@ -36,6 +42,11 @@ function App() {
   const [customer, setCustomer] = useState(customerAuthStorage.getCustomer());
   const [customerDrawerTab, setCustomerDrawerTab] = useState("profile");
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
+  const [notificationsRefreshKey, setNotificationsRefreshKey] = useState(0);
+  const [notificationSummary, setNotificationSummary] = useState({
+    unreadCount: 0,
+    notifications: [],
+  });
 
   const selectedCategoryRef = useRef(selectedCategory);
   const selectedItemRef = useRef(selectedItem);
@@ -43,6 +54,8 @@ function App() {
   const addonCacheRef = useRef(addonCache);
   const selectedItemAddonsRef = useRef(selectedItemAddons);
   const skipNextSelectedCategoryFetchRef = useRef(false);
+  const previousNotificationCountRef = useRef(0);
+  const hasLoadedNotificationSummaryRef = useRef(false);
 
   useEffect(() => {
     selectedCategoryRef.current = selectedCategory;
@@ -280,6 +293,70 @@ function App() {
     void loadItems(selectedCategory);
   }, [selectedCategory]);
 
+  useEffect(() => {
+    const accessToken = customerAuthStorage.getAccessToken();
+
+    if (!customer?.id || !accessToken) {
+      previousNotificationCountRef.current = 0;
+      hasLoadedNotificationSummaryRef.current = false;
+      setNotificationSummary({
+        unreadCount: 0,
+        notifications: [],
+      });
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadNotificationSummary = async () => {
+      try {
+        const summary = await fetchCustomerUnreadNotificationSummary(accessToken, 10);
+
+        if (!isCancelled) {
+          const nextUnreadCount = Number(summary?.unreadCount || 0);
+          const previousUnreadCount = previousNotificationCountRef.current;
+
+          if (
+            hasLoadedNotificationSummaryRef.current &&
+            nextUnreadCount > previousUnreadCount
+          ) {
+            startCustomerNotificationAlert();
+          }
+
+          previousNotificationCountRef.current = nextUnreadCount;
+          hasLoadedNotificationSummaryRef.current = true;
+          setNotificationSummary(summary);
+        }
+      } catch (_error) {
+        if (!isCancelled) {
+          previousNotificationCountRef.current = 0;
+          hasLoadedNotificationSummaryRef.current = true;
+          setNotificationSummary({
+            unreadCount: 0,
+            notifications: [],
+          });
+        }
+      }
+    };
+
+    void loadNotificationSummary();
+
+    return () => {
+      isCancelled = true;
+      stopCustomerNotificationAlert();
+    };
+  }, [customer?.id, notificationsRefreshKey]);
+
+  useCustomerRealtimeUpdates({
+    customer,
+    onOrderUpdate: () => {
+      setOrdersRefreshKey((prev) => prev + 1);
+    },
+    onNotificationUpdate: () => {
+      setNotificationsRefreshKey((prev) => prev + 1);
+    },
+  });
+
   const buildCartItem = (item, selectedAddons = []) => {
     const addonIds = selectedAddons.map((addon) => addon.id).sort((a, b) => a - b);
     const cartKey = `${item.id}:${addonIds.join("-") || "base"}`;
@@ -394,9 +471,16 @@ function App() {
       <Header
         cartCount={cartCount}
         customer={customer}
+        notificationCount={notificationSummary.unreadCount}
         onCustomerClick={() => {
           setCartOpen(false);
           setCustomerDrawerTab("profile");
+          setCustomerDrawerOpen(true);
+        }}
+        onNotificationClick={() => {
+          setCartOpen(false);
+          setCustomerDrawerTab("notifications");
+          stopCustomerNotificationAlert();
           setCustomerDrawerOpen(true);
         }}
         onCartClick={() => {
@@ -446,6 +530,9 @@ function App() {
         onCustomerChange={setCustomer}
         initialTab={customerDrawerTab}
         ordersRefreshKey={ordersRefreshKey}
+        notificationsRefreshKey={notificationsRefreshKey}
+        notificationSummary={notificationSummary}
+        onNotificationSummaryChange={setNotificationSummary}
       />
       {addonModalOpen && selectedItem && (
         <AddonModal

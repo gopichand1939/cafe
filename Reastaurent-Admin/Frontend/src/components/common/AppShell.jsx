@@ -1,9 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "../Sidebar/Sidebar";
-import { ADMIN_LOGOUT, APP_TITLE } from "../../Utils/Constant";
+import {
+  ADMIN_LOGOUT,
+  APP_TITLE,
+  NOTIFICATION_MARK_READ,
+  NOTIFICATION_UNREAD_SUMMARY,
+} from "../../Utils/Constant";
 import { clearAuthSession, getStoredAdminProfile } from "../../Utils/authStorage";
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
+import {
+  startAdminNotificationAlert,
+  stopAdminNotificationAlert,
+} from "../../Utils/notificationSound";
 
 function MenuIcon(props) {
   return (
@@ -18,13 +27,39 @@ function MenuIcon(props) {
   );
 }
 
+function NotificationBellIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M12 4.5a4 4 0 0 1 4 4v2.1c0 .8.22 1.58.64 2.25L18 15v1.5H6V15l1.36-2.15c.42-.67.64-1.45.64-2.25V8.5a4 4 0 0 1 4-4Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 18.5a2.2 2.2 0 0 0 4 0"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function AppShell() {
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 960);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 960);
   const [adminProfile, setAdminProfile] = useState(() => getStoredAdminProfile());
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isNotificationMenuOpen, setIsNotificationMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [recentNotifications, setRecentNotifications] = useState([]);
   const profileMenuRef = useRef(null);
+  const notificationMenuRef = useRef(null);
+  const previousUnreadCountRef = useRef(0);
+  const hasLoadedNotificationsRef = useRef(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -52,10 +87,68 @@ function AppShell() {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileMenuOpen(false);
       }
+
+      if (
+        notificationMenuRef.current &&
+        !notificationMenuRef.current.contains(event.target)
+      ) {
+        setIsNotificationMenuOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleDocumentClick);
     return () => document.removeEventListener("mousedown", handleDocumentClick);
+  }, []);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadUnreadSummary = async () => {
+      try {
+        const response = await fetchWithRefreshToken(NOTIFICATION_UNREAD_SUMMARY, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            limit: 6,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to fetch notifications");
+        }
+
+        if (!isCancelled) {
+          const nextUnreadCount = Number(data.data?.unreadCount || 0);
+          const previousUnreadCount = previousUnreadCountRef.current;
+
+          if (
+            hasLoadedNotificationsRef.current &&
+            nextUnreadCount > previousUnreadCount
+          ) {
+            startAdminNotificationAlert();
+          }
+
+          previousUnreadCountRef.current = nextUnreadCount;
+          hasLoadedNotificationsRef.current = true;
+          setUnreadCount(nextUnreadCount);
+          setRecentNotifications(data.data?.notifications || []);
+        }
+      } catch (_error) {
+      }
+    };
+
+    loadUnreadSummary();
+    const intervalId = window.setInterval(loadUnreadSummary, 10000);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
+      stopAdminNotificationAlert();
+    };
   }, []);
 
   const handleToggleSidebar = () => {
@@ -71,6 +164,38 @@ function AppShell() {
     } finally {
       clearAuthSession();
       navigate("/login", { replace: true });
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    try {
+      if (Number(notification?.is_read) !== 1) {
+        const response = await fetchWithRefreshToken(NOTIFICATION_MARK_READ, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id: notification.id }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok && data.success !== false) {
+          setUnreadCount((prev) => Math.max(prev - 1, 0));
+          setRecentNotifications((prev) =>
+            prev.map((item) =>
+              item.id === notification.id
+                ? { ...item, is_read: 1, read_at: data?.data?.read_at || item.read_at }
+                : item
+            )
+          );
+        }
+      }
+    } catch (_error) {
+    } finally {
+      setIsNotificationMenuOpen(false);
+      stopAdminNotificationAlert();
+      navigate(notification?.redirect_path || "/notifications");
     }
   };
 
@@ -121,6 +246,81 @@ function AppShell() {
             <strong className="text-[1.8rem] text-[#1d4f97] max-sm:text-[1.35rem]">{APP_TITLE}</strong>
           </div>
           <div className="flex items-center gap-[14px] max-sm:gap-2.5">
+            <div className="relative" ref={notificationMenuRef}>
+              <button
+                type="button"
+                className="relative grid h-11 w-11 place-items-center rounded-xl border border-[#d8ece3] bg-[#f7fbf9] text-[#1d4f97] shadow-[0_8px_18px_rgba(25,60,48,0.06)]"
+                onClick={() => {
+                  setIsNotificationMenuOpen((prev) => !prev);
+                  stopAdminNotificationAlert();
+                }}
+              >
+                <NotificationBellIcon className="h-5 w-5" />
+                {unreadCount > 0 ? (
+                  <span className="absolute right-[-6px] top-[-6px] grid min-h-[22px] min-w-[22px] place-items-center rounded-full bg-red-500 px-1 text-[0.72rem] font-bold text-white">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                ) : null}
+              </button>
+
+              {isNotificationMenuOpen ? (
+                <div className="absolute right-0 top-[calc(100%+10px)] z-20 w-[min(360px,86vw)] rounded-[8px] border border-[#d8ece3] bg-white p-2 shadow-[0_16px_30px_rgba(15,23,42,0.14)]">
+                  <div className="flex items-center justify-between border-b border-[#eef2f7] px-2 py-2">
+                    <strong className="text-[#1f2937]">Notifications</strong>
+                    <span className="text-[0.82rem] font-semibold text-slate-500">
+                      {unreadCount} unread
+                    </span>
+                  </div>
+
+                  <div className="grid max-h-[360px] overflow-y-auto py-2">
+                    {recentNotifications.length === 0 ? (
+                      <div className="px-2 py-4 text-sm text-slate-500">
+                        No unread notifications
+                      </div>
+                    ) : (
+                      recentNotifications.map((notification) => (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          className={`grid gap-1 rounded-[8px] px-3 py-3 text-left hover:bg-slate-50 ${
+                            Number(notification.is_read) === 1 ? "opacity-70" : ""
+                          }`}
+                          onClick={() => handleNotificationClick(notification)}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <strong className="text-sm text-[#1f2937]">
+                              {notification.title}
+                            </strong>
+                            {Number(notification.is_read) !== 1 ? (
+                              <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[#57b98f]" />
+                            ) : null}
+                          </div>
+                          <span className="text-[0.83rem] text-slate-600">
+                            {notification.message}
+                          </span>
+                          <span className="text-[0.74rem] font-semibold text-slate-400">
+                            {new Date(notification.created_at).toLocaleString()}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="border-t border-[#eef2f7] px-2 pt-2">
+                    <button
+                      type="button"
+                      className="w-full rounded-[8px] bg-transparent px-3 py-2.5 text-left font-bold text-[#1f2937] hover:bg-slate-50"
+                      onClick={() => {
+                        setIsNotificationMenuOpen(false);
+                        navigate("/notifications");
+                      }}
+                    >
+                      View all notifications
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
             <div className="relative" ref={profileMenuRef}>
               <button
                 type="button"

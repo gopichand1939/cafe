@@ -1,8 +1,16 @@
 import { useState } from "react";
 
-function Header({ cartCount, onCartClick, onCustomerClick, customer }) {
+function Header({
+  cartCount,
+  onCartClick,
+  onCustomerClick,
+  onNotificationClick,
+  customer,
+  notificationCount = 0,
+}) {
   const [hovered, setHovered] = useState(false);
   const [customerHovered, setCustomerHovered] = useState(false);
+  const [notificationHovered, setNotificationHovered] = useState(false);
 
   return (
     <header
@@ -103,14 +111,62 @@ function Header({ cartCount, onCartClick, onCustomerClick, customer }) {
           </span>
           <span
             style={{
-              fontWeight: 600,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
           >
             {customer?.name || "Sign In"}
           </span>
+        </button>
+
+        <button
+          onClick={onNotificationClick}
+          onMouseEnter={() => setNotificationHovered(true)}
+          onMouseLeave={() => setNotificationHovered(false)}
+          style={{
+            position: "relative",
+            background: notificationHovered
+              ? "linear-gradient(135deg, rgba(245,158,11,0.95), rgba(239,68,68,0.92))"
+              : "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "14px",
+            padding: "10px 14px",
+            color: "#fff",
+            fontSize: "15px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            transition: "all 0.3s ease",
+          }}
+        >
+          N
+          <span style={{ fontWeight: 600 }}>Alerts</span>
+          {notificationCount > 0 ? (
+            <span
+              style={{
+                position: "absolute",
+                top: "-6px",
+                right: "-6px",
+                background: "#ef4444",
+                color: "#fff",
+                fontSize: "11px",
+                fontWeight: 700,
+                minWidth: "22px",
+                height: "22px",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0 6px",
+                boxShadow: "0 2px 8px rgba(239,68,68,0.5)",
+              }}
+            >
+              {notificationCount > 99 ? "99+" : notificationCount}
+            </span>
+          ) : null}
         </button>
 
         <button

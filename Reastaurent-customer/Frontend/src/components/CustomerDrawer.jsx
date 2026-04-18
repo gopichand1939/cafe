@@ -11,6 +11,12 @@ import {
   updateCustomerProfile,
 } from "../services/customerProfileApi";
 import { fetchMyOrders } from "../services/orderApi";
+import {
+  fetchCustomerNotifications,
+  fetchCustomerUnreadNotificationSummary,
+  markAllCustomerNotificationsAsRead,
+  markCustomerNotificationAsRead,
+} from "../services/customerNotificationApi";
 
 const animationStyles = `
   @keyframes customerOverlayFadeIn {
@@ -41,6 +47,18 @@ const inputStyle = {
   fontSize: "14px",
   boxSizing: "border-box",
   outline: "none",
+};
+
+const primaryButtonStyle = {
+  width: "100%",
+  padding: "13px 16px",
+  background: "linear-gradient(135deg, #f59e0b, #ef4444)",
+  border: "none",
+  borderRadius: "14px",
+  color: "#fff",
+  fontSize: "14px",
+  fontWeight: 700,
+  cursor: "pointer",
 };
 
 const formatDateTime = (value) => {
@@ -187,8 +205,8 @@ function GuestView({ onAuthenticated }) {
             lineHeight: 1.6,
           }}
         >
-          Once signed in, this right-side panel will show your profile, my
-          orders, my account, and address details.
+          Once signed in, this right-side panel will show your profile, orders,
+          notifications, account, and address details.
         </p>
 
         <div style={{ marginTop: "16px" }}>
@@ -308,54 +326,18 @@ function GuestView({ onAuthenticated }) {
           </button>
         </form>
       </div>
-
-      <div style={cardStyle}>
-        <h4 style={{ margin: 0, color: "#fff", fontSize: "16px" }}>
-          After sign in
-        </h4>
-        <div style={{ marginTop: "14px", display: "grid", gap: "10px" }}>
-          {[
-            "My Profile with name, email, and phone",
-            "My Orders area for customer-specific order history",
-            "My Account section for password update",
-            "Address section for delivery details",
-          ].map((item) => (
-            <div
-              key={item}
-              style={{
-                padding: "12px 14px",
-                borderRadius: "14px",
-                background: "rgba(255,255,255,0.03)",
-                color: "rgba(255,255,255,0.72)",
-                fontSize: "13px",
-              }}
-            >
-              {item}
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
-
-const primaryButtonStyle = {
-  width: "100%",
-  padding: "13px 16px",
-  background: "linear-gradient(135deg, #f59e0b, #ef4444)",
-  border: "none",
-  borderRadius: "14px",
-  color: "#fff",
-  fontSize: "14px",
-  fontWeight: 700,
-  cursor: "pointer",
-};
 
 function SignedInView({
   customer,
   onCustomerChange,
   initialTab = "profile",
   ordersRefreshKey = 0,
+  notificationsRefreshKey = 0,
+  notificationSummary,
+  onNotificationSummaryChange,
 }) {
   const [activeTab, setActiveTab] = useState(initialTab || "profile");
   const [profileForm, setProfileForm] = useState({
@@ -375,6 +357,10 @@ function SignedInView({
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersError, setOrdersError] = useState("");
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
+  const [markingAllRead, setMarkingAllRead] = useState(false);
 
   useEffect(() => {
     setActiveTab(initialTab || "profile");
@@ -428,15 +414,72 @@ function SignedInView({
     };
   }, [activeTab, ordersRefreshKey]);
 
+  useEffect(() => {
+    if (activeTab !== "notifications") {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadNotifications = async () => {
+      setNotificationsLoading(true);
+      setNotificationsError("");
+
+      try {
+        const accessToken = customerAuthStorage.getAccessToken();
+        const result = await fetchCustomerNotifications(accessToken, {
+          page: 1,
+          limit: 30,
+        });
+
+        if (!cancelled) {
+          setNotifications(result.data || []);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setNotifications([]);
+          setNotificationsError(error.message);
+        }
+      } finally {
+        if (!cancelled) {
+          setNotificationsLoading(false);
+        }
+      }
+    };
+
+    void loadNotifications();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, notificationsRefreshKey]);
+
   const tabs = useMemo(
     () => [
       { key: "profile", label: "My Profile" },
       { key: "orders", label: "My Orders" },
+      {
+        key: "notifications",
+        label: `Notifications${notificationSummary?.unreadCount ? ` (${notificationSummary.unreadCount})` : ""}`,
+      },
       { key: "account", label: "My Account" },
       { key: "address", label: "Address" },
     ],
-    []
+    [notificationSummary?.unreadCount]
   );
+
+  const refreshNotificationSummary = async () => {
+    try {
+      const accessToken = customerAuthStorage.getAccessToken();
+      const summary = await fetchCustomerUnreadNotificationSummary(accessToken, 10);
+      onNotificationSummaryChange(summary);
+    } catch (_error) {
+      onNotificationSummaryChange({
+        unreadCount: 0,
+        notifications: [],
+      });
+    }
+  };
 
   const saveProfile = async (event) => {
     event.preventDefault();
@@ -452,6 +495,7 @@ function SignedInView({
       customerAuthStorage.updateCustomer(updatedCustomer);
       onCustomerChange(updatedCustomer);
       setMessage("Profile updated successfully");
+      await refreshNotificationSummary();
     } catch (error) {
       setErrorMessage(error.message);
     } finally {
@@ -472,6 +516,10 @@ function SignedInView({
       );
       customerAuthStorage.clearSession();
       onCustomerChange(null);
+      onNotificationSummaryChange({
+        unreadCount: 0,
+        notifications: [],
+      });
     } catch (error) {
       setErrorMessage(error.message);
     } finally {
@@ -489,7 +537,65 @@ function SignedInView({
       // Keep local logout smooth even if the request fails.
     } finally {
       customerAuthStorage.clearSession();
+      onNotificationSummaryChange({
+        unreadCount: 0,
+        notifications: [],
+      });
       onCustomerChange(null);
+    }
+  };
+
+  const openNotification = async (notification) => {
+    if (!notification) {
+      return;
+    }
+
+    try {
+      if (Number(notification.is_read) !== 1) {
+        const accessToken = customerAuthStorage.getAccessToken();
+        await markCustomerNotificationAsRead(notification.id, accessToken);
+        setNotifications((prev) =>
+          prev.map((entry) =>
+            entry.id === notification.id
+              ? {
+                  ...entry,
+                  is_read: 1,
+                  read_at: new Date().toISOString(),
+                }
+              : entry
+          )
+        );
+        await refreshNotificationSummary();
+      }
+
+      const nextTab = String(notification.redirect_path || "notifications").trim();
+      if (nextTab) {
+        setActiveTab(nextTab);
+      }
+    } catch (error) {
+      setNotificationsError(error.message);
+    }
+  };
+
+  const markAllRead = async () => {
+    setMarkingAllRead(true);
+    setNotificationsError("");
+
+    try {
+      const accessToken = customerAuthStorage.getAccessToken();
+      await markAllCustomerNotificationsAsRead(accessToken);
+      setNotifications((prev) =>
+        prev.map((entry) => ({
+          ...entry,
+          is_read: 1,
+          read_at: entry.read_at || new Date().toISOString(),
+        }))
+      );
+      await refreshNotificationSummary();
+    } catch (error) {
+      setNotificationsError(error.message);
+    } finally {
+      setMarkingAllRead(false);
     }
   };
 
@@ -821,6 +927,163 @@ function SignedInView({
         </div>
       ) : null}
 
+      {activeTab === "notifications" ? (
+        <div style={cardStyle}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <h4 style={{ margin: 0, color: "#fff", fontSize: "18px" }}>
+                Notifications
+              </h4>
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  color: "rgba(255,255,255,0.55)",
+                  fontSize: "13px",
+                }}
+              >
+                Customer actions and order updates for this signed-in account.
+              </p>
+            </div>
+            <button
+              onClick={markAllRead}
+              disabled={markingAllRead}
+              style={{
+                padding: "10px 14px",
+                borderRadius: "12px",
+                border: "1px solid rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.05)",
+                color: "#fff",
+                cursor: "pointer",
+                fontWeight: 700,
+              }}
+            >
+              {markingAllRead ? "Please wait..." : "Mark all read"}
+            </button>
+          </div>
+
+          {notificationsError ? (
+            <div
+              style={{
+                marginTop: "16px",
+                padding: "12px 14px",
+                borderRadius: "12px",
+                background: "rgba(239,68,68,0.12)",
+                border: "1px solid rgba(239,68,68,0.24)",
+                color: "#fecaca",
+                fontSize: "13px",
+              }}
+            >
+              {notificationsError}
+            </div>
+          ) : null}
+
+          <div style={{ marginTop: "16px", display: "grid", gap: "10px" }}>
+            {notificationsLoading ? (
+              <div
+                style={{
+                  padding: "14px",
+                  borderRadius: "14px",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "rgba(255,255,255,0.72)",
+                  fontSize: "13px",
+                }}
+              >
+                Loading notifications...
+              </div>
+            ) : null}
+
+            {!notificationsLoading && notifications.length === 0 ? (
+              <div
+                style={{
+                  padding: "14px",
+                  borderRadius: "14px",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "rgba(255,255,255,0.72)",
+                  fontSize: "13px",
+                  lineHeight: 1.6,
+                }}
+              >
+                No notifications yet. New customer actions like register, login,
+                profile updates, and order updates will appear here.
+              </div>
+            ) : null}
+
+            {notifications.map((notification) => (
+              <button
+                key={notification.id}
+                onClick={() => void openNotification(notification)}
+                style={{
+                  textAlign: "left",
+                  padding: "14px",
+                  borderRadius: "14px",
+                  background:
+                    Number(notification.is_read) === 1
+                      ? "rgba(255,255,255,0.03)"
+                      : "linear-gradient(135deg, rgba(245,158,11,0.16), rgba(239,68,68,0.12))",
+                  border:
+                    Number(notification.is_read) === 1
+                      ? "1px solid rgba(255,255,255,0.08)"
+                      : "1px solid rgba(245,158,11,0.24)",
+                  color: "#fff",
+                  cursor: "pointer",
+                  display: "grid",
+                  gap: "8px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "12px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ fontWeight: 700 }}>{notification.title}</div>
+                  <div
+                    style={{
+                      color:
+                        Number(notification.is_read) === 1
+                          ? "rgba(255,255,255,0.45)"
+                          : "#fde68a",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {Number(notification.is_read) === 1 ? "Read" : "New"}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    color: "rgba(255,255,255,0.72)",
+                    fontSize: "13px",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {notification.message}
+                </div>
+                <div
+                  style={{
+                    color: "rgba(255,255,255,0.45)",
+                    fontSize: "12px",
+                  }}
+                >
+                  {formatDateTime(notification.created_at)}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {activeTab === "account" ? (
         <>
           <form onSubmit={submitPasswordChange} style={cardStyle}>
@@ -943,6 +1206,9 @@ function CustomerDrawer({
   onCustomerChange,
   initialTab = "profile",
   ordersRefreshKey = 0,
+  notificationsRefreshKey = 0,
+  notificationSummary,
+  onNotificationSummaryChange,
 }) {
   if (!open) {
     return null;
@@ -952,11 +1218,14 @@ function CustomerDrawer({
     onCustomerChange(sessionCustomer);
 
     try {
-      const freshProfile = await fetchCustomerProfile(
-        customerAuthStorage.getAccessToken()
-      );
+      const accessToken = customerAuthStorage.getAccessToken();
+      const [freshProfile, summary] = await Promise.all([
+        fetchCustomerProfile(accessToken),
+        fetchCustomerUnreadNotificationSummary(accessToken, 10),
+      ]);
       customerAuthStorage.updateCustomer(freshProfile);
       onCustomerChange(freshProfile);
+      onNotificationSummaryChange(summary);
     } catch (_error) {
       onCustomerChange(sessionCustomer);
     }
@@ -1011,7 +1280,7 @@ function CustomerDrawer({
               }}
             >
               {customer
-                ? "Your personal area for profile, account, orders, and address."
+                ? "Your personal area for profile, notifications, account, orders, and address."
                 : "Sign in once and this right-side panel becomes your personal profile area."}
             </p>
           </div>
@@ -1045,6 +1314,9 @@ function CustomerDrawer({
               onCustomerChange={onCustomerChange}
               initialTab={initialTab}
               ordersRefreshKey={ordersRefreshKey}
+              notificationsRefreshKey={notificationsRefreshKey}
+              notificationSummary={notificationSummary}
+              onNotificationSummaryChange={onNotificationSummaryChange}
             />
           ) : (
             <GuestView onAuthenticated={handleAuthenticated} />

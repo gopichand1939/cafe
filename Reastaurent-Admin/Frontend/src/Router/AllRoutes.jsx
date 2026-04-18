@@ -5,6 +5,7 @@ import { AddItem, DeleteItem, EditItem, Item, ViewItem } from "../components/Ite
 import { AddAddon, Addon, DeleteAddon, EditAddon, ViewAddon } from "../components/Addons";
 import { AddCustomer, Customer, DeleteCustomer, EditCustomer, ViewCustomer } from "../components/customer";
 import { AddOrder, DeleteOrder, EditOrder, Order, ViewOrder } from "../components/Orders";
+import { DeleteNotification, Notification, ViewNotification } from "../components/Notifications";
 import { getFirstAccessibleRoute } from "../Utils/authStorage";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
@@ -129,6 +130,18 @@ export const appRoutes = [
       {
         path: "user-management",
         element: withSuspense(<ModulePlaceholder title="User Management" />),
+      },
+      {
+        path: "notifications",
+        element: withSuspense(<Notification />),
+      },
+      {
+        path: "viewnotification/:id",
+        element: withSuspense(<ViewNotification />),
+      },
+      {
+        path: "deletenotification/:id",
+        element: withSuspense(<DeleteNotification />),
       },
       {
         path: "timings",

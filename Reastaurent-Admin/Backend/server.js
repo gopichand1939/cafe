@@ -12,6 +12,9 @@ const restaurantSettingsRoutes = require("./restaurant/restaurantSettingsRoutes"
 const restaurantSettingsModel = require("./restaurant/restaurantSettingsModel");
 const customerRoutes = require("./customer/customerRoutes");
 const orderRoutes = require("./orders/orderRoutes");
+const notificationRoutes = require("./notifications/notificationRoutes");
+const { startOrderChangeSubscriber } = require("./realtime/orderChangeSubscriber");
+const { startCustomerChangeSubscriber } = require("./realtime/customerChangeSubscriber");
 
 const app = express();
 const imageCacheMaxAge = Number(process.env.IMAGE_CACHE_MAX_AGE || 604800);
@@ -66,6 +69,7 @@ app.use("/admin", adminRoutes);
 app.use("/restaurant", restaurantSettingsRoutes);
 app.use("/customer", customerRoutes);
 app.use("/orders", orderRoutes);
+app.use("/notifications", notificationRoutes);
 
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -74,6 +78,8 @@ const startServer = async () => {
     await adminModel.ensureAdminTable();
     await menuAccessModel.ensureAccessControlData();
     await restaurantSettingsModel.ensureRestaurantSettingsTable();
+    startOrderChangeSubscriber();
+    startCustomerChangeSubscriber();
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

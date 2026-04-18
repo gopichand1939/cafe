@@ -55,6 +55,10 @@ const MENU_ROUTE_MAP = {
     path: "/user-management",
     matchPaths: ["/user-management"],
   },
+  notifications: {
+    path: "/notifications",
+    matchPaths: ["/notifications", "/viewnotification/", "/deletenotification/"],
+  },
 };
 
 export const getMenuRouteConfig = (menuKey = "") => MENU_ROUTE_MAP[menuKey] || null;

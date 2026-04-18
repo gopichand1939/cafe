@@ -49,5 +49,12 @@ export const ORDER_BY_ID = `${BACKEND_BASE_URL}/orders/get_order_byId`;
 export const ORDER_UPDATE_STATUS = `${BACKEND_BASE_URL}/orders/update_order_status`;
 export const ORDER_DELETE = `${BACKEND_BASE_URL}/orders/delete_order`;
 
+export const NOTIFICATION_LIST = `${BACKEND_BASE_URL}/notifications/notification_list`;
+export const NOTIFICATION_BY_ID = `${BACKEND_BASE_URL}/notifications/get_notification_byId`;
+export const NOTIFICATION_MARK_READ = `${BACKEND_BASE_URL}/notifications/mark_notification_as_read`;
+export const NOTIFICATION_MARK_ALL_READ = `${BACKEND_BASE_URL}/notifications/mark_all_notifications_as_read`;
+export const NOTIFICATION_DELETE = `${BACKEND_BASE_URL}/notifications/delete_notification`;
+export const NOTIFICATION_UNREAD_SUMMARY = `${BACKEND_BASE_URL}/notifications/unread_notification_summary`;
+
 
 export const APP_TITLE = "Bagel Master Cafe";

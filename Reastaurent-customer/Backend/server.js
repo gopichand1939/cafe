@@ -9,6 +9,7 @@ const menuRoutes = require("./menu/menuRoutes");
 const customerAuthRoutes = require("./auth/customerAuthRoutes");
 const customerProfileRoutes = require("./customer/customerProfileRoutes");
 const customerOrderRoutes = require("./orders/orderRoutes");
+const customerNotificationRoutes = require("./notifications/notificationRoutes");
 const {
   createMenuUpdatesGateway,
 } = require("./realtime/menuUpdatesGateway");
@@ -18,6 +19,12 @@ const {
 const {
   startOrderChangeSubscriber,
 } = require("./realtime/orderChangeSubscriber");
+const {
+  startNotificationChangeSubscriber,
+} = require("./realtime/notificationChangeSubscriber");
+const {
+  createNotificationFromOrderChangeSafely,
+} = require("./notifications/notificationService");
 
 const app = express();
 const server = http.createServer(app);
@@ -45,6 +52,7 @@ app.use("/api", menuRoutes);
 app.use("/api/auth", customerAuthRoutes);
 app.use("/api/customer", customerProfileRoutes);
 app.use("/api/orders", customerOrderRoutes);
+app.use("/api/notifications", customerNotificationRoutes);
 
 app.get("/health", async (_req, res) => {
   try {
@@ -79,6 +87,12 @@ const startServer = async () => {
     startOrderChangeSubscriber({
       onOrderChange: (change) => {
         menuUpdatesGateway.broadcastOrderUpdate(change);
+        void createNotificationFromOrderChangeSafely(change);
+      },
+    });
+    startNotificationChangeSubscriber({
+      onNotificationChange: (change) => {
+        menuUpdatesGateway.broadcastNotificationUpdate(change);
       },
     });
 

@@ -43,6 +43,11 @@ export const CUSTOMER_UPDATE_PROFILE = `${API_BASE_URL}/customer/update-profile`
 export const CUSTOMER_PLACE_ORDER = `${API_BASE_URL}/orders/place-order`;
 export const CUSTOMER_MY_ORDERS = `${API_BASE_URL}/orders/my-orders`;
 export const CUSTOMER_ORDER_DETAILS = `${API_BASE_URL}/orders/order-details`;
+export const CUSTOMER_NOTIFICATION_LIST = `${API_BASE_URL}/notifications/list`;
+export const CUSTOMER_NOTIFICATION_BY_ID = `${API_BASE_URL}/notifications/by-id`;
+export const CUSTOMER_NOTIFICATION_MARK_READ = `${API_BASE_URL}/notifications/mark-as-read`;
+export const CUSTOMER_NOTIFICATION_MARK_ALL_READ = `${API_BASE_URL}/notifications/mark-all-as-read`;
+export const CUSTOMER_NOTIFICATION_UNREAD_SUMMARY = `${API_BASE_URL}/notifications/unread-summary`;
 
 export const MENU_UPDATES_WS_URL =
   trimTrailingSlash(import.meta.env.VITE_MENU_UPDATES_WS_URL) ||

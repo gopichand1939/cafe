@@ -1,4 +1,7 @@
 const customerProfileModel = require("./customerProfileModel");
+const {
+  createCustomerNotificationSafely,
+} = require("../notifications/notificationService");
 
 const getProfile = async (req, res) => {
   try {
@@ -17,7 +20,7 @@ const getProfile = async (req, res) => {
   }
 };
 
-const updateProfile = async (req, res) => {
+const updateProfileWithNotification = async (req, res) => {
   try {
     const { name, email, phone } = req.body;
 
@@ -56,10 +59,24 @@ const updateProfile = async (req, res) => {
       });
     }
 
+    const sanitizedCustomer = customerProfileModel.sanitizeCustomer(result);
+
+    await createCustomerNotificationSafely({
+      customerId: req.customer.id,
+      notificationType: "profile_alert",
+      entity: "customer",
+      action: "profile_updated",
+      entityId: req.customer.id,
+      title: "Profile updated",
+      message: "Your customer profile details were updated successfully.",
+      redirectPath: "profile",
+      payload: sanitizedCustomer,
+    });
+
     return res.status(200).json({
       success: true,
       message: "Profile updated successfully",
-      data: customerProfileModel.sanitizeCustomer(result),
+      data: sanitizedCustomer,
     });
   } catch (error) {
     console.error("Error updating customer profile:", error);
@@ -72,5 +89,5 @@ const updateProfile = async (req, res) => {
 
 module.exports = {
   getProfile,
-  updateProfile,
+  updateProfile: updateProfileWithNotification,
 };

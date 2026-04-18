@@ -131,6 +131,26 @@ function UserManagementIcon(props) {
   );
 }
 
+function NotificationsIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M12 4.5a4 4 0 0 1 4 4v2.1c0 .8.22 1.58.64 2.25L18 15v1.5H6V15l1.36-2.15c.42-.67.64-1.45.64-2.25V8.5a4 4 0 0 1 4-4Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 18.5a2.2 2.2 0 0 0 4 0"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function CategoryIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
@@ -219,6 +239,7 @@ const iconMap = {
   reviews: ReviewsIcon,
   "user-management": UserManagementIcon,
   user_management: UserManagementIcon,
+  notifications: NotificationsIcon,
   category: CategoryIcon,
   items: ItemIcon,
   addon: ItemIcon,

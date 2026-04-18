@@ -1,6 +1,9 @@
 const bcrypt = require("bcryptjs");
 const customerAuthModel = require("./customerAuthModel");
 const {
+  createCustomerNotificationSafely,
+} = require("../notifications/notificationService");
+const {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
@@ -78,6 +81,22 @@ const registerCustomer = async (req, res) => {
       refreshExpiryDate
     );
 
+    await createCustomerNotificationSafely({
+      customerId: savedCustomer.id,
+      notificationType: "account_alert",
+      entity: "customer",
+      action: "registered",
+      entityId: savedCustomer.id,
+      title: "Welcome to Flavour Hub",
+      message: "Your customer account was created successfully.",
+      redirectPath: "profile",
+      payload: {
+        customerId: savedCustomer.id,
+        name: savedCustomer.name,
+        email: savedCustomer.email,
+      },
+    });
+
     return res
       .status(201)
       .json(
@@ -134,6 +153,22 @@ const loginCustomer = async (req, res) => {
       hashToken(refreshToken),
       refreshExpiryDate
     );
+
+    await createCustomerNotificationSafely({
+      customerId: savedCustomer.id,
+      notificationType: "account_alert",
+      entity: "customer",
+      action: "logged_in",
+      entityId: savedCustomer.id,
+      title: "Signed in successfully",
+      message: "You signed in to your customer account.",
+      redirectPath: "profile",
+      payload: {
+        customerId: savedCustomer.id,
+        name: savedCustomer.name,
+        lastLoginAt: savedCustomer.last_login_at,
+      },
+    });
 
     return res
       .status(200)
@@ -218,6 +253,20 @@ const logoutCustomer = async (req, res) => {
       });
     }
 
+    await createCustomerNotificationSafely({
+      customerId: req.customer.id,
+      notificationType: "account_alert",
+      entity: "customer",
+      action: "logged_out",
+      entityId: req.customer.id,
+      title: "Signed out",
+      message: "You signed out from your customer account.",
+      redirectPath: "profile",
+      payload: {
+        customerId: req.customer.id,
+      },
+    });
+
     return res.status(200).json({
       success: true,
       message: "Logout successful",
@@ -273,6 +322,20 @@ const changePassword = async (req, res) => {
       req.customer.id,
       await bcrypt.hash(String(new_password), 10)
     );
+
+    await createCustomerNotificationSafely({
+      customerId: req.customer.id,
+      notificationType: "security_alert",
+      entity: "customer",
+      action: "password_changed",
+      entityId: req.customer.id,
+      title: "Password changed",
+      message: "Your account password was changed successfully.",
+      redirectPath: "account",
+      payload: {
+        customerId: req.customer.id,
+      },
+    });
 
     return res.status(200).json({
       success: true,
