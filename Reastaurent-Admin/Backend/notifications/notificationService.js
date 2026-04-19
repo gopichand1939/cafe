@@ -127,7 +127,7 @@ const createNotificationFromChange = async ({
     payload,
   });
 
-  if (notification) {
+  if (notification && notification.wasExisting !== true) {
     await publishNotificationChangeSafely({
       entity: "notification",
       action: "created",
