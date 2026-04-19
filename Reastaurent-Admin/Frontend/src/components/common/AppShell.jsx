@@ -54,6 +54,7 @@ function NotificationBellIcon(props) {
 
 function AppShell() {
   const NEW_NOTIFICATION_HIGHLIGHT_MS = 30000;
+  const LIVE_POPUP_DURATION_MS = 8000;
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 960);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 960);
@@ -63,10 +64,10 @@ function AppShell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [recentNotifications, setRecentNotifications] = useState([]);
   const [highlightedNotificationIds, setHighlightedNotificationIds] = useState([]);
+  const [livePopupNotification, setLivePopupNotification] = useState(null);
   const profileMenuRef = useRef(null);
   const notificationMenuRef = useRef(null);
-  const previousUnreadCountRef = useRef(0);
-  const hasLoadedNotificationsRef = useRef(false);
+  const livePopupTimeoutRef = useRef(null);
 
   const highlightNotification = (notificationId) => {
     if (!notificationId) {
@@ -82,6 +83,55 @@ function AppShell() {
         prev.filter((value) => value !== Number(notificationId))
       );
     }, NEW_NOTIFICATION_HIGHLIGHT_MS);
+  };
+
+  const showLivePopup = (notification) => {
+    if (!notification?.id) {
+      return;
+    }
+
+    if (livePopupTimeoutRef.current) {
+      clearTimeout(livePopupTimeoutRef.current);
+      livePopupTimeoutRef.current = null;
+    }
+
+    setLivePopupNotification(notification);
+
+    livePopupTimeoutRef.current = window.setTimeout(() => {
+      setLivePopupNotification(null);
+      livePopupTimeoutRef.current = null;
+    }, LIVE_POPUP_DURATION_MS);
+  };
+
+  const refreshUnreadSummary = async ({ shouldPlayAdminBeep = false } = {}) => {
+    try {
+      const response = await fetchWithRefreshToken(NOTIFICATION_UNREAD_SUMMARY, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          limit: 6,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || data.success === false) {
+        return null;
+      }
+
+      if (shouldPlayAdminBeep) {
+        startAdminNotificationAlert();
+      }
+
+      setUnreadCount(Number(data.data?.unreadCount || 0));
+      setRecentNotifications(data.data?.notifications || []);
+
+      return data.data || null;
+    } catch (_error) {
+      return null;
+    }
   };
 
   useEffect(() => {
@@ -139,40 +189,10 @@ function AppShell() {
     let isCancelled = false;
 
     const loadUnreadSummary = async () => {
-      try {
-        const response = await fetchWithRefreshToken(NOTIFICATION_UNREAD_SUMMARY, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            limit: 6,
-          }),
-        });
+      const data = await refreshUnreadSummary();
 
-        const data = await response.json();
-
-        if (!response.ok || data.success === false) {
-          throw new Error(data.message || "Failed to fetch notifications");
-        }
-
-        if (!isCancelled) {
-          const nextUnreadCount = Number(data.data?.unreadCount || 0);
-          const previousUnreadCount = previousUnreadCountRef.current;
-
-          if (
-            hasLoadedNotificationsRef.current &&
-            nextUnreadCount > previousUnreadCount
-          ) {
-            startAdminNotificationAlert();
-          }
-
-          previousUnreadCountRef.current = nextUnreadCount;
-          hasLoadedNotificationsRef.current = true;
-          setUnreadCount(nextUnreadCount);
-          setRecentNotifications(data.data?.notifications || []);
-        }
-      } catch (_error) {
+      if (isCancelled || !data) {
+        return;
       }
     };
 
@@ -181,55 +201,53 @@ function AppShell() {
     return () => {
       isCancelled = true;
       stopAdminNotificationAlert();
+      if (livePopupTimeoutRef.current) {
+        clearTimeout(livePopupTimeoutRef.current);
+        livePopupTimeoutRef.current = null;
+      }
     };
   }, []);
 
   useAdminRealtimeUpdates({
+    onOrderUpdate: async (change) => {
+      const shouldRefreshNotificationsFromOrderEvent =
+        String(change?.action || "").toLowerCase() === "created" &&
+        String(change?.source || "").toLowerCase() !== "admin-backend";
+
+      if (shouldRefreshNotificationsFromOrderEvent) {
+        await refreshUnreadSummary({
+          shouldPlayAdminBeep: true,
+        });
+      }
+    },
     onNotificationUpdate: async (change) => {
       try {
-        const response = await fetchWithRefreshToken(NOTIFICATION_UNREAD_SUMMARY, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            limit: 6,
-          }),
-        });
+        const data = await refreshUnreadSummary();
 
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok || data.success === false) {
+        if (!data) {
           return;
         }
-
-        const nextUnreadCount = Number(data.data?.unreadCount || 0);
-        const previousUnreadCount = previousUnreadCountRef.current;
-
-        if (
-          hasLoadedNotificationsRef.current &&
-          nextUnreadCount > previousUnreadCount
-        ) {
-          startAdminNotificationAlert();
-        }
-
-        previousUnreadCountRef.current = nextUnreadCount;
-        hasLoadedNotificationsRef.current = true;
-        setUnreadCount(nextUnreadCount);
-        setRecentNotifications(data.data?.notifications || []);
 
         if (change?.notificationId || change?.entityId) {
           highlightNotification(change.notificationId || change.entityId);
         }
 
         if (change?.action === "created") {
-          const createdNotification = (data.data?.notifications || []).find(
+          const createdNotification = (data.notifications || []).find(
             (item) =>
               Number(item.id) ===
               Number(change?.notificationId || change?.entityId || 0)
           );
 
           if (createdNotification) {
+            if (
+              String(createdNotification.entity || "").toLowerCase() === "order" &&
+              String(createdNotification.action || "").toLowerCase() === "created" &&
+              String(createdNotification.source || "").toLowerCase() !== "admin-backend"
+            ) {
+              showLivePopup(createdNotification);
+            }
+
             showBrowserNotification({
               title: createdNotification.title || "New notification",
               body: createdNotification.message || "",
@@ -423,6 +441,34 @@ function AppShell() {
                     </button>
                   </div>
                 </div>
+              ) : null}
+
+              {livePopupNotification ? (
+                <button
+                  type="button"
+                  className="absolute right-0 top-[calc(100%+12px)] z-[19] w-[min(330px,82vw)] rounded-[10px] border border-[rgba(249,115,22,0.35)] bg-[linear-gradient(135deg,rgba(255,247,237,0.98)_0%,rgba(255,237,213,0.98)_100%)] p-4 text-left shadow-[0_18px_32px_rgba(249,115,22,0.18)] transition-all duration-300"
+                  onClick={() => {
+                    setLivePopupNotification(null);
+                    setIsNotificationMenuOpen(true);
+                    navigate(livePopupNotification.redirect_path || "/notifications");
+                  }}
+                >
+                  <div className="mb-1 flex items-center justify-between gap-3">
+                    <strong className="text-[0.86rem] uppercase tracking-[0.08em] text-[#ea580c]">
+                      New Message Arrived
+                    </strong>
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#57b98f]" />
+                  </div>
+                  <div className="text-[1rem] font-bold leading-6 text-[#1f2937]">
+                    {livePopupNotification.title}
+                  </div>
+                  <div className="mt-1 text-[0.88rem] leading-6 text-slate-600">
+                    {livePopupNotification.message}
+                  </div>
+                  <div className="mt-2 text-[0.78rem] font-semibold text-slate-400">
+                    {new Date(livePopupNotification.created_at).toLocaleString()}
+                  </div>
+                </button>
               ) : null}
             </div>
             <div className="relative" ref={profileMenuRef}>

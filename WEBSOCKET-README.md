@@ -575,3 +575,79 @@ The actual working flow is:
 7. UI updates instantly without extra API refetch
 
 That is the current clean, reusable, and optimized implementation.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+We are not using socket.io.
+
+We are using:
+
+native browser WebSocket on frontend
+ws package on Node.js backend
+PostgreSQL LISTEN / NOTIFY for event propagation between DB-triggered/backend events and websocket broadcasting
+So current realtime stack is:
+
+frontend: WebSocket
+backend websocket server: ws
+event source/bridge: Postgres pub-sub style pg_notify
+backend subscribers: pg client listeners
+UI updates: websocket messages + local state refresh/highlight
+Why not socket.io:
+
+socket.io is a custom protocol, not plain websocket
+it adds extra features like rooms, fallback transports, built-in reconnection helpers, acknowledgements
+but it also adds more complexity and extra client/server coupling
+What we are using is simpler:
+
+lightweight
+fast
+fewer dependencies
+easier to control
+enough for your current restaurant admin/customer realtime flow
+Is this okay for us?
+
+Yes, for this project, it is okay and good enough.
+It is suitable for:
+
+new order alerts
+order status updates
+customer notifications
+live admin/customer panel updates
+sound alerts
+badge counts
+recent notification popups
+When socket.io would be more useful:
+
+very large scale multi-room realtime apps
+lots of custom acknowledgement workflows
+heavy reconnect/session recovery requirements
+fallback polling support for older environments
+For your project right now:
+
+plain WebSocket + ws is absolutely fine
+especially because your events are straightforward:
+order created
+order updated
+notification created
+customer updated
+So short answer:
+
+we are using plain WebSocket with the ws library, not Socket.IO
+yes, this is okay for your use case
+no immediate need to migrate to Socket.IO
+If you want, I can also give you a very simple comparison table:
+
+WebSocket vs Socket.IO for this project
