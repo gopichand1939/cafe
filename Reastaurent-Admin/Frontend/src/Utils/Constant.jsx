@@ -62,6 +62,9 @@ export const NOTIFICATION_MARK_ALL_READ = `${BACKEND_BASE_URL}/notifications/mar
 export const NOTIFICATION_DELETE = `${BACKEND_BASE_URL}/notifications/delete_notification`;
 export const NOTIFICATION_UNREAD_SUMMARY = `${BACKEND_BASE_URL}/notifications/unread_notification_summary`;
 
+export const MESSAGE_SETTINGS = `${BACKEND_BASE_URL}/messages/settings`;
+export const MESSAGE_TEST_MAIL = `${BACKEND_BASE_URL}/messages/test-mail`;
+
 export const ADMIN_UPDATES_WS_URL =
   trimTrailingSlash(import.meta.env.VITE_ADMIN_UPDATES_WS_URL) ||
   (BACKEND_BASE_URL

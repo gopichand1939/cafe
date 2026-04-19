@@ -6,6 +6,7 @@ import { AddAddon, Addon, DeleteAddon, EditAddon, ViewAddon } from "../component
 import { AddCustomer, Customer, DeleteCustomer, EditCustomer, ViewCustomer } from "../components/customer";
 import { AddOrder, DeleteOrder, EditOrder, Order, ViewOrder } from "../components/Orders";
 import { DeleteNotification, Notification, ViewNotification } from "../components/Notifications";
+import { MessageSettings } from "../components/Messages";
 import { getFirstAccessibleRoute } from "../Utils/authStorage";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
@@ -134,6 +135,10 @@ export const appRoutes = [
       {
         path: "notifications",
         element: withSuspense(<Notification />),
+      },
+      {
+        path: "messages",
+        element: withSuspense(<MessageSettings />),
       },
       {
         path: "viewnotification/:id",

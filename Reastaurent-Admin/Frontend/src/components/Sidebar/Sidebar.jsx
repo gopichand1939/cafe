@@ -151,6 +151,25 @@ function NotificationsIcon(props) {
   );
 }
 
+function MessagesIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v9A2.5 2.5 0 0 1 16.5 19h-9A2.5 2.5 0 0 1 5 16.5v-9Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="m7.5 8.5 4.5 3.5 4.5-3.5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function CategoryIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
@@ -240,6 +259,7 @@ const iconMap = {
   "user-management": UserManagementIcon,
   user_management: UserManagementIcon,
   notifications: NotificationsIcon,
+  messages: MessagesIcon,
   category: CategoryIcon,
   items: ItemIcon,
   addon: ItemIcon,

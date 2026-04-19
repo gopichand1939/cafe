@@ -19,7 +19,9 @@
       "orders": "Orders",
       "customers": "Customers",
       "reviews": "Reviews",
-      "user_management": "User Management"
+      "user_management": "User Management",
+      "notifications": "Notifications",
+      "messages": "Messages"
 
 
 

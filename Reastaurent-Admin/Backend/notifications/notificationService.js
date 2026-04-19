@@ -1,32 +1,42 @@
 const notificationModel = require("./notificationModel");
 const { publishNotificationChangeSafely } = require("../realtime/notificationEvents");
+const {
+  sendAdminNotificationMailSafely,
+  sendCustomerNotificationMailSafely,
+} = require("../pushmail/mailService");
+
+const humanize = (value = "") =>
+  String(value || "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (match) => match.toUpperCase());
 
 const buildOrderNotificationContent = (change) => {
   const orderNumber =
     change?.entityData?.order_number || `#${change?.orderId || change?.entityId || ""}`;
   const customerName = change?.entityData?.customer_name || "Customer";
   const orderStatus = change?.entityData?.order_status || "placed";
+  const statusLabel = humanize(orderStatus);
 
   switch (change?.action) {
     case "created":
       return {
         notificationType: "order_alert",
-        title: `New order ${orderNumber}`,
-        message: `${customerName} placed a new order with status ${orderStatus}.`,
+        title: `New order placed: ${orderNumber}`,
+        message: `${customerName} placed a new order. Current status: ${statusLabel}.`,
         redirectPath: "/orders",
       };
     case "updated":
       return {
         notificationType: "order_alert",
-        title: `Order ${orderNumber} updated`,
-        message: `${customerName}'s order is now ${String(orderStatus).replace(/_/g, " ")}.`,
+        title: `Order ${orderNumber} ${String(orderStatus || "").replace(/_/g, " ")}`,
+        message: `${customerName}'s order status changed to ${statusLabel}.`,
         redirectPath: "/orders",
       };
     case "deleted":
       return {
         notificationType: "order_alert",
         title: `Order ${orderNumber} deleted`,
-        message: `${customerName}'s order entry was deleted.`,
+        message: `${customerName}'s order record was deleted.`,
         redirectPath: "/orders",
       };
     default:
@@ -74,6 +84,18 @@ const buildCustomerNotificationContent = (change) => {
   }
 };
 
+const resolveTargetAdmin = ({ payload }) => ({
+  id: 1,
+  email: payload?.adminEmail || process.env.DEFAULT_ADMIN_EMAIL || "",
+  name: "Admin",
+});
+
+const shouldSendAdminMailForSource = (payload = {}) =>
+  String(payload.source || "").toLowerCase() !== "admin-backend";
+
+const shouldSendCustomerMailForSource = (payload = {}) =>
+  String(payload.source || "").toLowerCase() === "admin-backend";
+
 const createNotificationFromChange = async ({
   entity,
   action,
@@ -113,6 +135,22 @@ const createNotificationFromChange = async ({
       notificationId: notification.id,
       entityData: notification,
     });
+
+    const targetAdmin = resolveTargetAdmin({ payload });
+
+    if (shouldSendAdminMailForSource(payload)) {
+      await sendAdminNotificationMailSafely({
+        notification,
+        admin: targetAdmin,
+      });
+    }
+
+    if (shouldSendCustomerMailForSource(payload)) {
+      await sendCustomerNotificationMailSafely({
+        notification,
+        admin: targetAdmin,
+      });
+    }
   }
 
   return notification;

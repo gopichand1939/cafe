@@ -14,6 +14,7 @@ const restaurantSettingsModel = require("./restaurant/restaurantSettingsModel");
 const customerRoutes = require("./customer/customerRoutes");
 const orderRoutes = require("./orders/orderRoutes");
 const notificationRoutes = require("./notifications/notificationRoutes");
+const messageRoutes = require("./messages/messageRoutes");
 const { startOrderChangeSubscriber } = require("./realtime/orderChangeSubscriber");
 const { startCustomerChangeSubscriber } = require("./realtime/customerChangeSubscriber");
 const { startNotificationChangeSubscriber } = require("./realtime/notificationChangeSubscriber");
@@ -74,6 +75,7 @@ app.use("/restaurant", restaurantSettingsRoutes);
 app.use("/customer", customerRoutes);
 app.use("/orders", orderRoutes);
 app.use("/notifications", notificationRoutes);
+app.use("/messages", messageRoutes);
 
 const PORT = Number(process.env.PORT) || 5000;
 
