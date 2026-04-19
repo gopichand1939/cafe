@@ -17,6 +17,7 @@ import {
   markAllCustomerNotificationsAsRead,
   markCustomerNotificationAsRead,
 } from "../services/customerNotificationApi";
+import { stopCustomerNotificationAlert } from "../Utils/notificationSound";
 
 const animationStyles = `
   @keyframes customerOverlayFadeIn {
@@ -339,6 +340,7 @@ function SignedInView({
   notificationSummary,
   onNotificationSummaryChange,
 }) {
+  const LIVE_ITEM_HIGHLIGHT_MS = 30000;
   const [activeTab, setActiveTab] = useState(initialTab || "profile");
   const [profileForm, setProfileForm] = useState({
     name: customer?.name || "",
@@ -361,10 +363,46 @@ function SignedInView({
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
   const [markingAllRead, setMarkingAllRead] = useState(false);
+  const [highlightedOrderIds, setHighlightedOrderIds] = useState([]);
+  const [highlightedNotificationIds, setHighlightedNotificationIds] = useState([]);
+
+  const highlightOrder = (orderId) => {
+    if (!orderId) {
+      return;
+    }
+
+    setHighlightedOrderIds((prev) => [...new Set([...prev, Number(orderId)])]);
+
+    window.setTimeout(() => {
+      setHighlightedOrderIds((prev) => prev.filter((value) => value !== Number(orderId)));
+    }, LIVE_ITEM_HIGHLIGHT_MS);
+  };
+
+  const highlightNotification = (notificationId) => {
+    if (!notificationId) {
+      return;
+    }
+
+    setHighlightedNotificationIds((prev) => [
+      ...new Set([...prev, Number(notificationId)]),
+    ]);
+
+    window.setTimeout(() => {
+      setHighlightedNotificationIds((prev) =>
+        prev.filter((value) => value !== Number(notificationId))
+      );
+    }, LIVE_ITEM_HIGHLIGHT_MS);
+  };
 
   useEffect(() => {
     setActiveTab(initialTab || "profile");
   }, [initialTab]);
+
+  useEffect(() => {
+    if (activeTab === "notifications") {
+      stopCustomerNotificationAlert();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     setProfileForm({
@@ -394,6 +432,10 @@ function SignedInView({
 
         if (!cancelled) {
           setOrders(result.data || []);
+
+          if (ordersRefreshKey > 0 && result.data?.[0]?.id) {
+            highlightOrder(result.data[0].id);
+          }
         }
       } catch (error) {
         if (!cancelled) {
@@ -434,6 +476,10 @@ function SignedInView({
 
         if (!cancelled) {
           setNotifications(result.data || []);
+
+          if (notificationsRefreshKey > 0 && result.data?.[0]?.id) {
+            highlightNotification(result.data[0].id);
+          }
         }
       } catch (error) {
         if (!cancelled) {
@@ -564,6 +610,9 @@ function SignedInView({
                 }
               : entry
           )
+        );
+        setHighlightedNotificationIds((prev) =>
+          prev.filter((value) => value !== Number(notification.id))
         );
         await refreshNotificationSummary();
       }
@@ -846,10 +895,18 @@ function SignedInView({
                 style={{
                   padding: "14px",
                   borderRadius: "14px",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: highlightedOrderIds.includes(Number(order.id))
+                    ? "linear-gradient(135deg, rgba(245,158,11,0.2), rgba(239,68,68,0.12))"
+                    : "rgba(255,255,255,0.03)",
+                  border: highlightedOrderIds.includes(Number(order.id))
+                    ? "1px solid rgba(245,158,11,0.28)"
+                    : "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: highlightedOrderIds.includes(Number(order.id))
+                    ? "0 0 0 1px rgba(245,158,11,0.14) inset"
+                    : "none",
                   display: "grid",
                   gap: "10px",
+                  transition: "all 0.3s ease",
                 }}
               >
                 <div
@@ -1024,18 +1081,24 @@ function SignedInView({
                   textAlign: "left",
                   padding: "14px",
                   borderRadius: "14px",
-                  background:
-                    Number(notification.is_read) === 1
+                  background: highlightedNotificationIds.includes(Number(notification.id))
+                    ? "linear-gradient(135deg, rgba(245,158,11,0.24), rgba(239,68,68,0.16))"
+                    : Number(notification.is_read) === 1
                       ? "rgba(255,255,255,0.03)"
                       : "linear-gradient(135deg, rgba(245,158,11,0.16), rgba(239,68,68,0.12))",
-                  border:
-                    Number(notification.is_read) === 1
+                  border: highlightedNotificationIds.includes(Number(notification.id))
+                    ? "1px solid rgba(245,158,11,0.34)"
+                    : Number(notification.is_read) === 1
                       ? "1px solid rgba(255,255,255,0.08)"
                       : "1px solid rgba(245,158,11,0.24)",
                   color: "#fff",
                   cursor: "pointer",
                   display: "grid",
                   gap: "8px",
+                  transition: "all 0.3s ease",
+                  boxShadow: highlightedNotificationIds.includes(Number(notification.id))
+                    ? "0 0 0 1px rgba(245,158,11,0.16) inset"
+                    : "none",
                 }}
               >
                 <div

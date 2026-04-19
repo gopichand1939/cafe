@@ -30,6 +30,8 @@ function Table({
   totalItems = 0,
   onPageChange,
   pageSize: propPageSize,
+  getRowClassName,
+  getRowCellClassName,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(propPageSize || 10);
@@ -226,10 +228,17 @@ function Table({
               </tr>
             </thead>
             <tbody>
-              {pagedData.map((item) => (
-                <tr key={item.id}>
+              {pagedData.map((item) => {
+                const rowClassName = getRowClassName?.(item) || "";
+                const rowCellClassName = getRowCellClassName?.(item) || "";
+
+                return (
+                <tr key={item.id} className={rowClassName}>
                   {regularColumns.map((header) => (
-                    <td key={header.key} className="border-b border-[#e3edf6] bg-white px-3 py-2 text-center whitespace-nowrap text-[#506079]">
+                    <td
+                      key={header.key}
+                      className={`border-b border-[#e3edf6] bg-white px-3 py-2 text-center whitespace-nowrap text-[#506079] transition-colors duration-300 ${rowCellClassName}`}
+                    >
                       {header.content
                         ? header.content(item)
                         : header.key.includes("date") || header.key.endsWith("_at")
@@ -238,7 +247,11 @@ function Table({
                     </td>
                   ))}
                   {stickyColumns.map((header, idx) => (
-                    <td key={header.key} className="sticky z-[2] border-b border-[#e3edf6] bg-white px-3 py-2 text-center whitespace-nowrap text-[#506079]" style={{ right: `${stickyRightOffsets[idx]}px` }}>
+                    <td
+                      key={header.key}
+                      className={`sticky z-[2] border-b border-[#e3edf6] bg-white px-3 py-2 text-center whitespace-nowrap text-[#506079] transition-colors duration-300 ${rowCellClassName}`}
+                      style={{ right: `${stickyRightOffsets[idx]}px` }}
+                    >
                       {header.content
                         ? header.content(item)
                         : header.key.includes("date") || header.key.endsWith("_at")
@@ -247,7 +260,9 @@ function Table({
                     </td>
                   ))}
                   {rowActions.length > 0 ? (
-                    <td className="sticky right-0 z-[2] border-b border-[#e3edf6] bg-white px-3 py-2 text-center whitespace-nowrap text-[#506079]">
+                    <td
+                      className={`sticky right-0 z-[2] border-b border-[#e3edf6] bg-white px-3 py-2 text-center whitespace-nowrap text-[#506079] transition-colors duration-300 ${rowCellClassName}`}
+                    >
                       <div className="flex flex-wrap items-center justify-center gap-2.5">
                         {rowActions.map((action) => (
                           <button
@@ -263,7 +278,7 @@ function Table({
                     </td>
                   ) : null}
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         )}

@@ -1,6 +1,5 @@
 const { Client } = require("pg");
-const { ORDER_CHANGES_CHANNEL } = require("./orderEvents");
-const { createNotificationFromChange } = require("../notifications/notificationService");
+const { NOTIFICATION_CHANGES_CHANNEL } = require("./notificationEvents");
 
 const RECONNECT_DELAY_MS = 3000;
 
@@ -34,12 +33,12 @@ const parsePayload = (payload) => {
   try {
     return JSON.parse(payload);
   } catch (error) {
-    console.error("Failed to parse order change payload:", error);
+    console.error("Failed to parse notification change payload:", error);
     return null;
   }
 };
 
-const startOrderChangeSubscriber = ({ onOrderChange } = {}) => {
+const startNotificationChangeSubscriber = ({ onNotificationChange } = {}) => {
   let subscriber = null;
   let reconnectTimer = null;
   let isStopped = false;
@@ -63,26 +62,18 @@ const startOrderChangeSubscriber = ({ onOrderChange } = {}) => {
   };
 
   const handleNotification = async ({ payload }) => {
-    console.log("[order-events][admin] Raw DB notification:", payload);
+    console.log("[notification-events][admin] Raw DB notification:", payload);
     const change = parsePayload(payload);
 
     if (!change) {
-      console.warn("[order-events][admin] Skipping invalid DB notification payload");
+      console.warn("[notification-events][admin] Skipping invalid DB notification payload");
       return;
     }
 
-    console.log("[order-events][admin] Parsed order change:", change);
+    console.log("[notification-events][admin] Parsed notification change:", change);
 
-    await createNotificationFromChange({
-      entity: "order",
-      action: change.action,
-      entityId: change.entityId || change.orderId || null,
-      source: change.source || "unknown",
-      payload: change,
-    });
-
-    if (typeof onOrderChange === "function") {
-      await onOrderChange(change);
+    if (typeof onNotificationChange === "function") {
+      await onNotificationChange(change);
     }
   };
 
@@ -92,7 +83,7 @@ const startOrderChangeSubscriber = ({ onOrderChange } = {}) => {
     }
 
     clearReconnectTimer();
-    console.log("[order-events][admin] Connecting DB LISTEN subscriber...");
+    console.log("[notification-events][admin] Connecting DB LISTEN subscriber...");
 
     const nextSubscriber = new Client(getRealtimeDatabaseConfig());
 
@@ -100,7 +91,7 @@ const startOrderChangeSubscriber = ({ onOrderChange } = {}) => {
       void handleNotification(notification);
     });
     nextSubscriber.on("error", (error) => {
-      console.error("Order change subscriber error:", error);
+      console.error("Notification change subscriber error:", error);
       if (subscriber === nextSubscriber) {
         subscriber = null;
       }
@@ -112,22 +103,27 @@ const startOrderChangeSubscriber = ({ onOrderChange } = {}) => {
       }
 
       if (!isStopped) {
-        console.warn("Order change subscriber disconnected. Reconnecting...");
+        console.warn("Notification change subscriber disconnected. Reconnecting...");
         scheduleReconnect();
       }
     });
 
     try {
       await nextSubscriber.connect();
-      await nextSubscriber.query(`LISTEN ${ORDER_CHANGES_CHANNEL}`);
+      await nextSubscriber.query(`LISTEN ${NOTIFICATION_CHANGES_CHANNEL}`);
       subscriber = nextSubscriber;
-      console.log(`[order-events][admin] Listening for order changes on channel "${ORDER_CHANGES_CHANNEL}"`);
+      console.log(
+        `[notification-events][admin] Listening for notification changes on channel "${NOTIFICATION_CHANGES_CHANNEL}"`
+      );
     } catch (error) {
-      console.error("Failed to start order change subscriber:", error);
+      console.error("Failed to start notification change subscriber:", error);
       try {
         await nextSubscriber.end();
       } catch (closeError) {
-        console.error("Failed to close order change subscriber after startup error:", closeError);
+        console.error(
+          "Failed to close notification change subscriber after startup error:",
+          closeError
+        );
       }
       scheduleReconnect();
     }
@@ -144,7 +140,7 @@ const startOrderChangeSubscriber = ({ onOrderChange } = {}) => {
         try {
           await subscriber.end();
         } catch (error) {
-          console.error("Failed to stop order change subscriber:", error);
+          console.error("Failed to stop notification change subscriber:", error);
         } finally {
           subscriber = null;
         }
@@ -154,5 +150,5 @@ const startOrderChangeSubscriber = ({ onOrderChange } = {}) => {
 };
 
 module.exports = {
-  startOrderChangeSubscriber,
+  startNotificationChangeSubscriber,
 };

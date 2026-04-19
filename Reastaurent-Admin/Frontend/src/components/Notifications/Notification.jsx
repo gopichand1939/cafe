@@ -14,8 +14,10 @@ import {
   setNotificationData,
   setNotificationSelectedItem,
 } from "../../Redux/CardSlice";
+import { subscribeToAdminRealtimeEvent, ADMIN_REALTIME_EVENT_TYPES } from "../../realtime/adminRealtimeEvents";
 
 function Notification() {
+  const NEW_NOTIFICATION_HIGHLIGHT_MS = 30000;
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [data, setData] = useState([]);
@@ -26,6 +28,23 @@ function Notification() {
   const [pageSize, setPageSize] = useState(10);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [highlightedNotificationIds, setHighlightedNotificationIds] = useState([]);
+
+  const highlightNotification = (notificationId) => {
+    if (!notificationId) {
+      return;
+    }
+
+    setHighlightedNotificationIds((prev) => [
+      ...new Set([...prev, Number(notificationId)]),
+    ]);
+
+    window.setTimeout(() => {
+      setHighlightedNotificationIds((prev) =>
+        prev.filter((value) => value !== Number(notificationId))
+      );
+    }, NEW_NOTIFICATION_HIGHLIGHT_MS);
+  };
 
   const fetchData = async (page = 1, limit = 10) => {
     setLoading(true);
@@ -57,6 +76,28 @@ function Notification() {
 
   useEffect(() => {
     fetchData(currentPage, pageSize);
+  }, [currentPage, pageSize]);
+
+  useEffect(() => {
+    return subscribeToAdminRealtimeEvent(
+      ADMIN_REALTIME_EVENT_TYPES.NOTIFICATION_UPDATED,
+      (change) => {
+        const targetNotificationId = change?.notificationId || change?.entityId || null;
+
+        if (change?.action === "created" && targetNotificationId) {
+          highlightNotification(targetNotificationId);
+          setCurrentPage(1);
+          fetchData(1, pageSize);
+          return;
+        }
+
+        if (targetNotificationId) {
+          highlightNotification(targetNotificationId);
+        }
+
+        fetchData(currentPage, pageSize);
+      }
+    );
   }, [currentPage, pageSize]);
 
   const handleRowAction = (rowData, target) => {
@@ -175,6 +216,16 @@ function Notification() {
           currentPage={currentPage}
           onPageChange={handlePageChange}
           totalItems={totalCount}
+          getRowClassName={(item) =>
+            highlightedNotificationIds.includes(Number(item.id))
+              ? "shadow-[inset_0_0_0_2px_rgba(249,115,22,0.24)]"
+              : ""
+          }
+          getRowCellClassName={(item) =>
+            highlightedNotificationIds.includes(Number(item.id))
+              ? "bg-[linear-gradient(90deg,rgba(255,247,237,0.98)_0%,rgba(255,237,213,0.98)_100%)] animate-pulse"
+              : "hover:bg-[#f8fcfa]"
+          }
         />
       </section>
 

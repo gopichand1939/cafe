@@ -13,8 +13,10 @@ import {
   setOrderData,
   setOrderSelectedItem,
 } from "../../Redux/CardSlice";
+import { subscribeToAdminRealtimeEvent, ADMIN_REALTIME_EVENT_TYPES } from "../../realtime/adminRealtimeEvents";
 
 function Order() {
+  const NEW_ORDER_HIGHLIGHT_MS = 30000;
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [data, setData] = useState([]);
@@ -24,6 +26,19 @@ function Order() {
   const [pageSize, setPageSize] = useState(10);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [highlightedOrderIds, setHighlightedOrderIds] = useState([]);
+
+  const highlightOrder = (orderId) => {
+    if (!orderId) {
+      return;
+    }
+
+    setHighlightedOrderIds((prev) => [...new Set([...prev, Number(orderId)])]);
+
+    window.setTimeout(() => {
+      setHighlightedOrderIds((prev) => prev.filter((value) => value !== Number(orderId)));
+    }, NEW_ORDER_HIGHLIGHT_MS);
+  };
 
   const fetchData = async (page = 1, limit = 10) => {
     setLoading(true);
@@ -55,6 +70,28 @@ function Order() {
 
   useEffect(() => {
     fetchData(currentPage, pageSize);
+  }, [currentPage, pageSize]);
+
+  useEffect(() => {
+    return subscribeToAdminRealtimeEvent(
+      ADMIN_REALTIME_EVENT_TYPES.ORDER_UPDATED,
+      (change) => {
+        const targetOrderId = change?.orderId || change?.entityId || null;
+
+        if (change?.action === "created" && targetOrderId) {
+          highlightOrder(targetOrderId);
+          setCurrentPage(1);
+          fetchData(1, pageSize);
+          return;
+        }
+
+        if (targetOrderId) {
+          highlightOrder(targetOrderId);
+        }
+
+        fetchData(currentPage, pageSize);
+      }
+    );
   }, [currentPage, pageSize]);
 
   const handleRowAction = (rowData, target) => {
@@ -159,6 +196,16 @@ function Order() {
           currentPage={currentPage}
           onPageChange={handlePageChange}
           totalItems={totalCount}
+          getRowClassName={(item) =>
+            highlightedOrderIds.includes(Number(item.id))
+              ? "shadow-[inset_0_0_0_2px_rgba(249,115,22,0.24)]"
+              : ""
+          }
+          getRowCellClassName={(item) =>
+            highlightedOrderIds.includes(Number(item.id))
+              ? "bg-[linear-gradient(90deg,rgba(255,247,237,0.98)_0%,rgba(255,237,213,0.98)_100%)] animate-pulse"
+              : "hover:bg-[#f8fcfa]"
+          }
         />
       </section>
 

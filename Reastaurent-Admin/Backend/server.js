@@ -1,5 +1,6 @@
 require("dotenv").config();
 
+const http = require("http");
 const express = require("express");
 const path = require("path");
 const categoryRoutes = require("./category/categoryRoutes");
@@ -15,8 +16,11 @@ const orderRoutes = require("./orders/orderRoutes");
 const notificationRoutes = require("./notifications/notificationRoutes");
 const { startOrderChangeSubscriber } = require("./realtime/orderChangeSubscriber");
 const { startCustomerChangeSubscriber } = require("./realtime/customerChangeSubscriber");
+const { startNotificationChangeSubscriber } = require("./realtime/notificationChangeSubscriber");
+const { createAdminUpdatesGateway } = require("./realtime/adminUpdatesGateway");
 
 const app = express();
+const server = http.createServer(app);
 const imageCacheMaxAge = Number(process.env.IMAGE_CACHE_MAX_AGE || 604800);
 
 app.set("trust proxy", true);
@@ -78,10 +82,25 @@ const startServer = async () => {
     await adminModel.ensureAdminTable();
     await menuAccessModel.ensureAccessControlData();
     await restaurantSettingsModel.ensureRestaurantSettingsTable();
-    startOrderChangeSubscriber();
-    startCustomerChangeSubscriber();
+    const adminUpdatesGateway = createAdminUpdatesGateway(server);
 
-    app.listen(PORT, () => {
+    startOrderChangeSubscriber({
+      onOrderChange: (change) => {
+        adminUpdatesGateway.broadcastOrderUpdate(change);
+      },
+    });
+    startCustomerChangeSubscriber({
+      onCustomerChange: (change) => {
+        adminUpdatesGateway.broadcastCustomerUpdate(change);
+      },
+    });
+    startNotificationChangeSubscriber({
+      onNotificationChange: (change) => {
+        adminUpdatesGateway.broadcastNotificationUpdate(change);
+      },
+    });
+
+    server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {

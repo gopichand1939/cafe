@@ -1,6 +1,12 @@
 export const BACKEND_BASE_URL = (
   import.meta.env.VITE_BACKEND_BASE_URL)
 
+const trimTrailingSlash = (value = "") => String(value || "").replace(/\/+$/g, "");
+const getBrowserOrigin = () =>
+  typeof window === "undefined" ? "" : window.location.origin;
+const toWebSocketOrigin = (value = "") =>
+  String(value || "").replace(/^http/i, "ws");
+
 export const CATEGORY_CREATE = `${BACKEND_BASE_URL}/category/create_category`;
 export const CATEGORY_LIST = `${BACKEND_BASE_URL}/category/category_list`;
 export const CATEGORY_GET = `${BACKEND_BASE_URL}/category/get_category`;
@@ -56,5 +62,10 @@ export const NOTIFICATION_MARK_ALL_READ = `${BACKEND_BASE_URL}/notifications/mar
 export const NOTIFICATION_DELETE = `${BACKEND_BASE_URL}/notifications/delete_notification`;
 export const NOTIFICATION_UNREAD_SUMMARY = `${BACKEND_BASE_URL}/notifications/unread_notification_summary`;
 
+export const ADMIN_UPDATES_WS_URL =
+  trimTrailingSlash(import.meta.env.VITE_ADMIN_UPDATES_WS_URL) ||
+  (BACKEND_BASE_URL
+    ? trimTrailingSlash(BACKEND_BASE_URL).replace(/^http/i, "ws") + "/ws"
+    : `${toWebSocketOrigin(getBrowserOrigin())}/ws`);
 
 export const APP_TITLE = "Bagel Master Cafe";

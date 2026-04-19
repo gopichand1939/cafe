@@ -13,6 +13,11 @@ import {
   startAdminNotificationAlert,
   stopAdminNotificationAlert,
 } from "../../Utils/notificationSound";
+import {
+  requestBrowserNotificationPermission,
+  showBrowserNotification,
+} from "../../Utils/browserNotification";
+import { useAdminRealtimeUpdates } from "../../realtime/useAdminRealtimeUpdates";
 
 function MenuIcon(props) {
   return (
@@ -48,6 +53,7 @@ function NotificationBellIcon(props) {
 }
 
 function AppShell() {
+  const NEW_NOTIFICATION_HIGHLIGHT_MS = 30000;
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 960);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 960);
@@ -56,10 +62,27 @@ function AppShell() {
   const [isNotificationMenuOpen, setIsNotificationMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [recentNotifications, setRecentNotifications] = useState([]);
+  const [highlightedNotificationIds, setHighlightedNotificationIds] = useState([]);
   const profileMenuRef = useRef(null);
   const notificationMenuRef = useRef(null);
   const previousUnreadCountRef = useRef(0);
   const hasLoadedNotificationsRef = useRef(false);
+
+  const highlightNotification = (notificationId) => {
+    if (!notificationId) {
+      return;
+    }
+
+    setHighlightedNotificationIds((prev) => [
+      ...new Set([...prev, Number(notificationId)]),
+    ]);
+
+    window.setTimeout(() => {
+      setHighlightedNotificationIds((prev) =>
+        prev.filter((value) => value !== Number(notificationId))
+      );
+    }, NEW_NOTIFICATION_HIGHLIGHT_MS);
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -80,6 +103,18 @@ function AppShell() {
 
   useEffect(() => {
     setAdminProfile(getStoredAdminProfile());
+  }, []);
+
+  useEffect(() => {
+    const requestPermission = async () => {
+      await requestBrowserNotificationPermission();
+    };
+
+    window.addEventListener("click", requestPermission, { once: true });
+
+    return () => {
+      window.removeEventListener("click", requestPermission);
+    };
   }, []);
 
   useEffect(() => {
@@ -142,14 +177,76 @@ function AppShell() {
     };
 
     loadUnreadSummary();
-    const intervalId = window.setInterval(loadUnreadSummary, 10000);
 
     return () => {
       isCancelled = true;
-      window.clearInterval(intervalId);
       stopAdminNotificationAlert();
     };
   }, []);
+
+  useAdminRealtimeUpdates({
+    onNotificationUpdate: async (change) => {
+      try {
+        const response = await fetchWithRefreshToken(NOTIFICATION_UNREAD_SUMMARY, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            limit: 6,
+          }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok || data.success === false) {
+          return;
+        }
+
+        const nextUnreadCount = Number(data.data?.unreadCount || 0);
+        const previousUnreadCount = previousUnreadCountRef.current;
+
+        if (
+          hasLoadedNotificationsRef.current &&
+          nextUnreadCount > previousUnreadCount
+        ) {
+          startAdminNotificationAlert();
+        }
+
+        previousUnreadCountRef.current = nextUnreadCount;
+        hasLoadedNotificationsRef.current = true;
+        setUnreadCount(nextUnreadCount);
+        setRecentNotifications(data.data?.notifications || []);
+
+        if (change?.notificationId || change?.entityId) {
+          highlightNotification(change.notificationId || change.entityId);
+        }
+
+        if (change?.action === "created") {
+          const createdNotification = (data.data?.notifications || []).find(
+            (item) =>
+              Number(item.id) ===
+              Number(change?.notificationId || change?.entityId || 0)
+          );
+
+          if (createdNotification) {
+            showBrowserNotification({
+              title: createdNotification.title || "New notification",
+              body: createdNotification.message || "",
+              tag: `admin-notification-${createdNotification.id}`,
+              requireInteraction: true,
+              onClick: () => {
+                window.focus();
+                setIsNotificationMenuOpen(true);
+                navigate(createdNotification.redirect_path || "/notifications");
+              },
+            });
+          }
+        }
+      } catch (_error) {
+      }
+    },
+  });
 
   const handleToggleSidebar = () => {
     setIsSidebarOpen((prev) => !prev);
@@ -188,6 +285,9 @@ function AppShell() {
                 ? { ...item, is_read: 1, read_at: data?.data?.read_at || item.read_at }
                 : item
             )
+          );
+          setHighlightedNotificationIds((prev) =>
+            prev.filter((value) => value !== Number(notification.id))
           );
         }
       }
@@ -282,7 +382,11 @@ function AppShell() {
                         <button
                           key={notification.id}
                           type="button"
-                          className={`grid gap-1 rounded-[8px] px-3 py-3 text-left hover:bg-slate-50 ${
+                          className={`grid gap-1 rounded-[8px] px-3 py-3 text-left transition-all duration-300 ${
+                            highlightedNotificationIds.includes(Number(notification.id))
+                              ? "bg-[linear-gradient(90deg,rgba(255,247,237,0.98)_0%,rgba(255,237,213,0.98)_100%)] shadow-[inset_0_0_0_1px_rgba(249,115,22,0.28)] animate-pulse"
+                              : "hover:bg-slate-50"
+                          } ${
                             Number(notification.is_read) === 1 ? "opacity-70" : ""
                           }`}
                           onClick={() => handleNotificationClick(notification)}

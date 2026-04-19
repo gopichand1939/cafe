@@ -39,7 +39,7 @@ const parsePayload = (payload) => {
   }
 };
 
-const startCustomerChangeSubscriber = () => {
+const startCustomerChangeSubscriber = ({ onCustomerChange } = {}) => {
   let subscriber = null;
   let reconnectTimer = null;
   let isStopped = false;
@@ -80,6 +80,10 @@ const startCustomerChangeSubscriber = () => {
       source: change.source || "unknown",
       payload: change,
     });
+
+    if (typeof onCustomerChange === "function") {
+      await onCustomerChange(change);
+    }
   };
 
   const connect = async () => {

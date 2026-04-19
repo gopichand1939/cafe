@@ -11,6 +11,7 @@ import {
   setCustomerData,
   setCustomerSelectedItem,
 } from "../../Redux/CardSlice";
+import { subscribeToAdminRealtimeEvent, ADMIN_REALTIME_EVENT_TYPES } from "../../realtime/adminRealtimeEvents";
 
 function Customer() {
   const dispatch = useDispatch();
@@ -56,6 +57,15 @@ function Customer() {
 
   useEffect(() => {
     fetchData(currentPage, pageSize);
+  }, [currentPage, pageSize]);
+
+  useEffect(() => {
+    return subscribeToAdminRealtimeEvent(
+      ADMIN_REALTIME_EVENT_TYPES.CUSTOMER_UPDATED,
+      () => {
+        fetchData(currentPage, pageSize);
+      }
+    );
   }, [currentPage, pageSize]);
 
   const handleRowAction = (rowData, target) => {
