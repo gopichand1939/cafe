@@ -8,7 +8,7 @@ import appRouter from "./Router/Router";
 function ToastWithTheme() {
   return (
     <ToastContainer
-      theme="light"
+      theme="dark"
       position="top-right"
       autoClose={5000}
       hideProgressBar={false}
@@ -26,7 +26,7 @@ function App() {
   return (
     <Provider store={Store}>
       <ToastWithTheme />
-      <div className="h-screen overflow-hidden">
+      <div className="min-h-screen overflow-hidden text-text-base">
         <RouterProvider router={appRouter} />
       </div>
     </Provider>

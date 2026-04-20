@@ -43,6 +43,8 @@ export const CUSTOMER_UPDATE_PROFILE = `${API_BASE_URL}/customer/update-profile`
 export const CUSTOMER_PLACE_ORDER = `${API_BASE_URL}/orders/place-order`;
 export const CUSTOMER_MY_ORDERS = `${API_BASE_URL}/orders/my-orders`;
 export const CUSTOMER_ORDER_DETAILS = `${API_BASE_URL}/orders/order-details`;
+export const CUSTOMER_CREATE_PAYMENT_INTENT = `${API_BASE_URL}/payments/create-payment-intent`;
+export const CUSTOMER_CONFIRM_PAYMENT = `${API_BASE_URL}/payments/confirm-payment`;
 export const CUSTOMER_NOTIFICATION_LIST = `${API_BASE_URL}/notifications/list`;
 export const CUSTOMER_NOTIFICATION_BY_ID = `${API_BASE_URL}/notifications/by-id`;
 export const CUSTOMER_NOTIFICATION_MARK_READ = `${API_BASE_URL}/notifications/mark-as-read`;
@@ -53,3 +55,10 @@ export const MENU_UPDATES_WS_URL =
   trimTrailingSlash(import.meta.env.VITE_MENU_UPDATES_WS_URL) ||
   toWebSocketUrlFromApiBase(API_BASE_URL) ||
   `${toWebSocketOrigin(getBrowserOrigin())}/ws`;
+
+export const STRIPE_PUBLISHABLE_KEY =
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
+
+export const STRIPE_MIN_INR_AMOUNT = Number(
+  import.meta.env.VITE_STRIPE_MIN_INR_AMOUNT || 50
+);

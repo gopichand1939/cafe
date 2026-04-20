@@ -6,6 +6,21 @@ import { ORDER_BY_ID } from "../../Utils/Constant";
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { setOrderSelectedItem } from "../../Redux/CardSlice";
 import KeyValueDisplay from "../common/KeyValueDisplay";
+import { Card } from "../ui";
+
+const formatCurrency = (value, currencyCode = "INR") => {
+  const amount = Number(value || 0);
+
+  try {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: currencyCode || "INR",
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch (_error) {
+    return `${currencyCode || "INR"} ${amount.toFixed(2)}`;
+  }
+};
 
 function ViewOrder() {
   const { id } = useParams();
@@ -60,23 +75,18 @@ function ViewOrder() {
     order_status: order.order_status || "-",
     payment_status: order.payment_status || "-",
     payment_method: order.payment_method || "-",
+    currency_code: order.currency_code || "-",
     item_count: order.item_count || 0,
-    subtotal_amount: Number(order.subtotal_amount || 0).toFixed(2),
-    discount_amount: Number(order.discount_amount || 0).toFixed(2),
-    addon_amount: Number(order.addon_amount || 0).toFixed(2),
-    tax_amount: Number(order.tax_amount || 0).toFixed(2),
-    delivery_fee: Number(order.delivery_fee || 0).toFixed(2),
-    total_amount: Number(order.total_amount || 0).toFixed(2),
+    subtotal_amount: formatCurrency(order.subtotal_amount, order.currency_code),
+    discount_amount: formatCurrency(order.discount_amount, order.currency_code),
+    addon_amount: formatCurrency(order.addon_amount, order.currency_code),
+    tax_amount: formatCurrency(order.tax_amount, order.currency_code),
+    delivery_fee: formatCurrency(order.delivery_fee, order.currency_code),
+    total_amount: formatCurrency(order.total_amount, order.currency_code),
     order_notes: order.order_notes || "-",
     created_at: new Date(order.created_at).toLocaleString(),
     updated_at: new Date(order.updated_at).toLocaleString(),
     delivery_address: JSON.stringify(order.delivery_address || {}, null, 2),
-    items: (order.items || [])
-      .map(
-        (item) =>
-          `${item.item_name} x${item.quantity} - ${Number(item.line_total || 0).toFixed(2)}`
-      )
-      .join("\n") || "-",
   };
 
   const fields = [
@@ -88,6 +98,7 @@ function ViewOrder() {
     { key: "order_status", label: "Order Status" },
     { key: "payment_status", label: "Payment Status" },
     { key: "payment_method", label: "Payment Method" },
+    { key: "currency_code", label: "Currency" },
     { key: "item_count", label: "Item Count" },
     { key: "subtotal_amount", label: "Subtotal" },
     { key: "discount_amount", label: "Discount" },
@@ -105,11 +116,94 @@ function ViewOrder() {
       ),
     },
     {
-      key: "items",
+      key: "order_items",
       label: "Items",
       fullWidth: true,
-      render: (data) => (
-        <pre className="m-0 whitespace-pre-wrap text-sm">{data.items}</pre>
+      render: () => (
+        <div className="grid gap-3">
+          {(order.items || []).length === 0 ? (
+            <span className="text-sm text-slate-500">No items found</span>
+          ) : (
+            (order.items || []).map((item, index) => (
+              <Card
+                key={item.id || `${item.item_id}-${index}`}
+                tone="subtle"
+                padding="sm"
+                className="grid gap-2"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[1rem] font-bold text-text-strong">
+                      {item.item_name || "Item"}
+                    </div>
+                    <div className="text-sm text-text-muted">
+                      {item.item_description || "No description"}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-text-muted">
+                      Qty: {item.quantity || 0}
+                    </div>
+                    <div className="text-[1rem] font-bold text-text-strong">
+                      {formatCurrency(item.line_total, order.currency_code)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 md:grid-cols-4">
+                  <div className="text-sm text-text-base">
+                    <span className="font-semibold text-text-muted">Unit:</span>{" "}
+                    {formatCurrency(item.unit_price, order.currency_code)}
+                  </div>
+                  <div className="text-sm text-text-base">
+                    <span className="font-semibold text-text-muted">Discount:</span>{" "}
+                    {item.discount_price !== null && item.discount_price !== undefined
+                      ? formatCurrency(item.discount_price, order.currency_code)
+                      : "-"}
+                  </div>
+                  <div className="text-sm text-text-base">
+                    <span className="font-semibold text-text-muted">Final Unit:</span>{" "}
+                    {formatCurrency(item.final_unit_price, order.currency_code)}
+                  </div>
+                  <div className="text-sm text-text-base">
+                    <span className="font-semibold text-text-muted">Addon:</span>{" "}
+                    {formatCurrency(item.addon_amount, order.currency_code)}
+                  </div>
+                </div>
+
+                <div className="grid gap-1">
+                  <div className="text-sm font-semibold text-text-muted">
+                    Selected Addons
+                  </div>
+                  {(item.selected_addons || []).length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {item.selected_addons.map((addon, addonIndex) => (
+                        <span
+                          key={`${addon.id || addon.addon_name || "addon"}-${addonIndex}`}
+                          className="inline-flex rounded-full bg-brand-50 px-3 py-1 text-[0.8rem] font-semibold text-brand-700"
+                        >
+                          {addon.addon_name || "Addon"}{" "}
+                          {addon.addon_price
+                            ? `(${formatCurrency(addon.addon_price, order.currency_code)})`
+                            : ""}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-slate-500">No addons selected</span>
+                  )}
+                </div>
+
+                {item.item_notes ? (
+                  <div className="text-sm text-text-base">
+                    <span className="font-semibold text-text-muted">Item Notes:</span>{" "}
+                    {item.item_notes}
+                  </div>
+                ) : null}
+              </Card>
+            ))
+          )}
+        </div>
       ),
     },
   ];

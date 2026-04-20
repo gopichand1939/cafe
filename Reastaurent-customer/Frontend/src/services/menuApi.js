@@ -27,12 +27,14 @@ export const fetchCategories = async () => {
   return data.data || [];
 };
 
-export const fetchItemsByCategory = async (categoryId) => {
+export const fetchItemsByCategory = async (categoryId, page = 1, limit = 12) => {
   const data = await postJson(ITEMS_BY_CATEGORY, {
     category_id: categoryId,
+    page,
+    limit,
   });
 
-  return data.data || [];
+  return data;
 };
 
 export const fetchItemAddons = async (itemId) => {

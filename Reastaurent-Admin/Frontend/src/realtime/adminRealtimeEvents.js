@@ -2,6 +2,7 @@ const ADMIN_REALTIME_EVENT_PREFIX = "admin:realtime";
 
 export const ADMIN_REALTIME_EVENT_TYPES = {
   ORDER_UPDATED: "order.updated",
+  PAYMENT_UPDATED: "payment.updated",
   CUSTOMER_UPDATED: "customer.updated",
   NOTIFICATION_UPDATED: "notification.updated",
 };

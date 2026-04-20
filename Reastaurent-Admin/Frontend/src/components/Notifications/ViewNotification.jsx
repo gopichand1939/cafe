@@ -9,6 +9,7 @@ import {
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { setNotificationSelectedItem } from "../../Redux/CardSlice";
 import KeyValueDisplay from "../common/KeyValueDisplay";
+import { Button, Card, PageSection } from "../ui";
 
 function ViewNotification() {
   const { id } = useParams();
@@ -79,8 +80,10 @@ function ViewNotification() {
 
   if (!notification) {
     return (
-      <div className="rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">
-        Loading notification...
+      <div className="ui-page">
+        <Card className="flex min-h-[200px] items-center justify-center text-text-muted">
+          Loading notification...
+        </Card>
       </div>
     );
   }
@@ -129,31 +132,24 @@ function ViewNotification() {
   ];
 
   return (
-    <div>
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-        <div>
-          <p className="m-0 text-[0.78rem] font-bold uppercase tracking-normal text-orange-500">
-            Notifications
-          </p>
-          <h2 className="mt-2 mb-0 text-[clamp(1.7rem,2vw,2.4rem)] leading-[1.1]">
-            View Notification
-          </h2>
-        </div>
-        <button
-          className="self-start rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900 transition hover:-translate-y-px"
-          onClick={() => navigate("/notifications")}
-        >
-          Back
-        </button>
+    <div className="ui-page">
+      <div className="px-6 pt-3 pb-1">
+        <PageSection
+          eyebrow="Notifications"
+          title="View Notification"
+          actions={
+            <Button variant="secondary" onClick={() => navigate("/notifications")}>
+              Back
+            </Button>
+          }
+        />
       </div>
 
-      <div className="mt-[18px] rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">
-        <div className="mt-5 grid items-start gap-[22px]">
-          <div className="grid min-w-0 max-w-[860px] content-start gap-[18px]">
-            <KeyValueDisplay data={displayData} fields={fields} />
-          </div>
+      <Card>
+        <div className="grid min-w-0 max-w-[860px] content-start gap-[18px]">
+          <KeyValueDisplay data={displayData} fields={fields} />
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

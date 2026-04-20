@@ -92,7 +92,7 @@ const refreshAccessToken = async () => {
   return data?.data?.access_token || null;
 };
 
-const ensureFreshAccessToken = async () => {
+export const ensureFreshAccessToken = async () => {
   if (!refreshPromise) {
     refreshPromise = refreshAccessToken().finally(() => {
       refreshPromise = null;

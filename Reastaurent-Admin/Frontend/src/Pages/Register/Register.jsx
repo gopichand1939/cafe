@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import heroImage from "../../assets/cafeimageLoginpage.png";
 import { ADMIN_REGISTER } from "../../Utils/Constant";
+import { Button, Card, InputField } from "../../components/ui";
 
 function Register() {
   const navigate = useNavigate();
@@ -72,7 +73,7 @@ function Register() {
   };
 
   return (
-    <div className="grid min-h-screen bg-gradient-to-br from-emerald-50 to-orange-50 lg:grid-cols-2">
+    <div className="ui-auth-shell grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden overflow-hidden bg-emerald-950 lg:block">
         <img
           src={heroImage}
@@ -91,60 +92,27 @@ function Register() {
       </div>
 
       <div className="flex items-center justify-center p-6 lg:p-10">
-        <form
+        <Card
+          as="form"
           onSubmit={handleSubmit}
-          className="w-full max-w-md space-y-4 rounded-3xl border border-emerald-200 bg-white/90 p-8 shadow-2xl backdrop-blur-sm"
+          className="w-full max-w-md space-y-4"
+          padding="lg"
         >
           <div className="space-y-1 text-emerald-900">
             <p className="text-xs font-bold uppercase tracking-widest">Create Admin</p>
-            <h2 className="text-3xl font-bold text-gray-900">Register</h2>
-            <p className="text-sm">This works only for the first admin account.</p>
+            <h2 className="text-3xl font-bold text-text-strong">Register</h2>
+            <p className="text-sm text-text-muted">This works only for the first admin account.</p>
           </div>
 
-          <input
-            type="text"
-            name="name"
-            placeholder="Full name"
-            value={form.name}
-            onChange={handleChange}
-            className="h-14 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          />
+          <InputField type="text" name="name" placeholder="Full name" value={form.name} onChange={handleChange} />
 
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            className="h-14 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          />
+          <InputField type="email" name="email" placeholder="Email" value={form.email} onChange={handleChange} />
 
-          <input
-            type="text"
-            name="phone"
-            placeholder="Phone number"
-            value={form.phone}
-            onChange={handleChange}
-            className="h-14 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          />
+          <InputField type="text" name="phone" placeholder="Phone number" value={form.phone} onChange={handleChange} />
 
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            className="h-14 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          />
+          <InputField type="password" name="password" placeholder="Password" value={form.password} onChange={handleChange} />
 
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm password"
-            value={form.confirmPassword}
-            onChange={handleChange}
-            className="h-14 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          />
+          <InputField type="password" name="confirmPassword" placeholder="Confirm password" value={form.confirmPassword} onChange={handleChange} />
 
           {errorMessage ? (
             <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
@@ -152,25 +120,21 @@ function Register() {
             </p>
           ) : null}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="h-14 w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-700 font-bold text-white shadow-lg disabled:opacity-60"
-          >
+          <Button type="submit" disabled={isSubmitting} size="lg" fullWidth>
             {isSubmitting ? "Creating..." : "Create admin"}
-          </button>
+          </Button>
 
-          <p className="text-sm text-emerald-900">
+          <p className="text-sm text-text-base">
             Already have an account?{" "}
             <button
               type="button"
               onClick={() => navigate("/login")}
-              className="font-bold text-emerald-700"
+              className="font-bold text-brand-700"
             >
               Login
             </button>
           </p>
-        </form>
+        </Card>
       </div>
     </div>
   );

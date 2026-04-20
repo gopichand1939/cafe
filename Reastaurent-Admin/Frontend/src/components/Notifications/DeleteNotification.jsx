@@ -8,6 +8,7 @@ import {
 } from "../../Utils/Constant";
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { setNotificationSelectedItem } from "../../Redux/CardSlice";
+import { Button, Card, PageSection } from "../ui";
 
 function DeleteNotification() {
   const { id } = useParams();
@@ -80,60 +81,60 @@ function DeleteNotification() {
   };
 
   return (
-    <div className="grid gap-5">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-        <div>
-          <p className="m-0 text-[0.78rem] font-bold uppercase tracking-normal text-red-500">
-            Notifications
-          </p>
-          <h2 className="mt-2 mb-0 text-[clamp(1.7rem,2vw,2.4rem)] leading-[1.1]">
-            Delete Notification
-          </h2>
-        </div>
-        <button
-          className="self-start rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900 transition hover:-translate-y-px"
-          onClick={() => navigate("/notifications")}
-        >
-          Back
-        </button>
+    <div className="ui-page">
+      <div className="px-6 pt-3 pb-1">
+        <PageSection
+          eyebrow="Notifications"
+          title="Delete Notification"
+          actions={
+            <Button variant="secondary" onClick={() => navigate("/notifications")}>
+              Back
+            </Button>
+          }
+        />
       </div>
 
-      <div className="rounded-[8px] border border-[rgba(248,113,113,0.25)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">
-        <div className="grid gap-4">
-          <h3 className="m-0 text-[1.2rem] font-bold text-slate-900">
-            Delete this notification?
-          </h3>
-          <p className="m-0 text-slate-600">
-            {notification?.title || "Selected notification"} will be removed from
-            the notifications list.
-          </p>
-          <div className="rounded-[8px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-            <div>
-              <strong>Title:</strong> {notification?.title || "-"}
-            </div>
-            <div className="mt-2">
-              <strong>Message:</strong> {notification?.message || "-"}
+      <Card tone="danger">
+        <div className="grid gap-5">
+          <div className="grid gap-2">
+            <h3 className="m-0 text-[1.2rem] font-bold text-text-strong">
+              Delete this notification?
+            </h3>
+            <p className="m-0 text-text-muted">
+              {notification?.title || "Selected notification"} will be permanently removed from the system.
+            </p>
+          </div>
+
+          <div className="rounded-[12px] border border-border-subtle bg-surface-muted p-5">
+            <div className="grid gap-3">
+              <div className="grid gap-1">
+                <span className="ui-label">Title</span>
+                <div className="font-bold text-text-strong">{notification?.title || "-"}</div>
+              </div>
+              <div className="grid gap-1">
+                <span className="ui-label">Message</span>
+                <div className="text-text-base">{notification?.message || "-"}</div>
+              </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="rounded-[8px] border-0 bg-red-600 px-4 py-[11px] font-semibold text-white disabled:opacity-70"
+
+          <div className="flex flex-wrap gap-2.5">
+            <Button
+              variant="danger"
               onClick={handleDelete}
               disabled={submitting}
             >
-              {submitting ? "Deleting..." : "Delete"}
-            </button>
-            <button
-              type="button"
-              className="rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900"
+              {submitting ? "Deleting..." : "Confirm Delete"}
+            </Button>
+            <Button
+              variant="secondary"
               onClick={() => navigate("/notifications")}
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

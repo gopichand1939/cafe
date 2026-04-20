@@ -8,6 +8,7 @@ import { getImageUrl } from "../../Utils/imageUrl";
 import StatusPill from "../../components/common/StatusPill";
 import Table from "../Table";
 import ActionPopover from "../ActionPopover";
+import { Button, Card, PageSection } from "../ui";
 import { setItemData, setItemSelectedItem } from "../../Redux/CardSlice";
 
 function Item() {
@@ -74,12 +75,12 @@ function Item() {
   };
 
   const headers = [
-    { key: "id", label: "Id", width: "45px" },
-    { key: "category_name", label: "Category Name", width: "120px" },
+    { key: "id", label: "ID", width: "60px" },
+    { key: "category_name", label: "CATEGORY", width: "140px" },
     {
       key: "category_image",
-      label: "Category Image",
-      width: "90px",
+      label: "CAT IMAGE",
+      width: "110px",
       content: (item) => (
         <img
           className="h-11 w-16 rounded-[8px] object-cover"
@@ -88,18 +89,18 @@ function Item() {
           loading="lazy"
           decoding="async"
           onError={(event) => {
-            event.currentTarget.src = `https://placehold.co/120x90/e2f6ef/205c49?text=${encodeURIComponent(
+            event.currentTarget.src = `https://placehold.co/120x90/1a2333/cbd5e1?text=${encodeURIComponent(
               item.category_name || "Category"
             )}`;
           }}
         />
       ),
     },
-    { key: "item_name", label: "Item Name", width: "110px" },
+    { key: "item_name", label: "ITEM NAME", width: "150px" },
     {
       key: "item_image",
-      label: "Item Image",
-      width: "90px",
+      label: "ITEM IMAGE",
+      width: "110px",
       content: (item) => (
         <img
           className="h-11 w-16 rounded-[8px] object-cover"
@@ -108,7 +109,7 @@ function Item() {
           loading="lazy"
           decoding="async"
           onError={(event) => {
-            event.currentTarget.src = `https://placehold.co/120x90/e2f6ef/205c49?text=${encodeURIComponent(
+            event.currentTarget.src = `https://placehold.co/120x90/1a2333/cbd5e1?text=${encodeURIComponent(
               item.item_name
             )}`;
           }}
@@ -126,76 +127,76 @@ function Item() {
     },
     {
       key: "price",
-      label: "Price",
-      width: "90px",
+      label: "PRICE",
+      width: "100px",
       content: (item) => (
         <div className="flex flex-col items-center gap-0.5">
           {item.discount_price != null ? (
             <>
-              <span className="line-through text-slate-400 text-xs">£{Number(item.price || 0).toFixed(2)}</span>
-              <span className="font-semibold text-red-600">£{Number(item.discount_price).toFixed(2)}</span>
+              <span className="line-through text-text-muted text-xs">£{Number(item.price || 0).toFixed(2)}</span>
+              <span className="font-semibold text-red-400">£{Number(item.discount_price).toFixed(2)}</span>
             </>
           ) : (
-            <span className="font-semibold text-slate-800">£{Number(item.price || 0).toFixed(2)}</span>
+            <span className="font-semibold text-text-strong">£{Number(item.price || 0).toFixed(2)}</span>
           )}
         </div>
       ),
     },
     {
       key: "preparation_time",
-      label: "Prep Time",
-      width: "80px",
+      label: "PREP TIME",
+      width: "100px",
       content: (item) => (
-        <span className="text-slate-700">
+        <span className="text-text-base">
           {item.preparation_time != null ? `${item.preparation_time} min` : "-"}
         </span>
       ),
     },
     {
       key: "is_popular",
-      label: "Popular",
-      width: "75px",
+      label: "POPULAR",
+      width: "95px",
       content: (item) => (
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.7rem] font-extrabold uppercase tracking-wider ${
             Number(item.is_popular) === 1
-              ? "bg-amber-100 text-amber-800"
-              : "bg-slate-100 text-slate-500"
+              ? "bg-amber-500/10 text-amber-500"
+              : "bg-surface-panel text-text-muted"
           }`}
         >
-          {Number(item.is_popular) === 1 ? "Popular" : "No"}
+          {Number(item.is_popular) === 1 ? "Popular" : "Regular"}
         </span>
       ),
     },
     {
       key: "is_new",
-      label: "New",
-      width: "65px",
+      label: "NEW",
+      width: "85px",
       content: (item) => (
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.7rem] font-extrabold uppercase tracking-wider ${
             Number(item.is_new) === 1
-              ? "bg-blue-100 text-blue-800"
-              : "bg-slate-100 text-slate-500"
+              ? "bg-blue-500/20 text-blue-400"
+              : "bg-surface-panel text-text-muted"
           }`}
         >
-          {Number(item.is_new) === 1 ? "NEW" : "No"}
+          {Number(item.is_new) === 1 ? "NEW" : "Old"}
         </span>
       ),
     },
     {
       key: "is_veg",
-      label: "Veg",
-      width: "65px",
+      label: "VEG",
+      width: "90px",
       content: (item) => (
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.7rem] font-extrabold uppercase tracking-wider ${
             Number(item.is_veg) === 1
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
+              ? "bg-success-bg text-success-text"
+              : "bg-error-bg text-error-text"
           }`}
         >
-          {Number(item.is_veg) === 1 ? "🟢 Veg" : "🔴 Non"}
+          {Number(item.is_veg) === 1 ? "VEG 🟢" : "NON 🔴"}
         </span>
       ),
     },
@@ -214,7 +215,7 @@ function Item() {
       content: (rowData) => (
         <button
           type="button"
-          className="h-9 w-9 rounded-[8px] border-0 bg-transparent text-[1.3rem] font-extrabold text-blue-600"
+          className="grid h-9 w-9 place-items-center rounded-lg border-0 bg-transparent text-[1.4rem] font-black text-brand-500 hover:bg-surface-panel transition-colors"
           onClick={(event) => handleOpenActions(event, rowData)}
         >
           ...
@@ -224,31 +225,30 @@ function Item() {
   ];
 
   return (
-    <div className="grid min-h-0 content-start gap-[18px]">
-      <section className="min-h-0 overflow-hidden rounded-[8px] border border-[#d8ece3] bg-[#e7f7f0] p-[10px]">
-        <div className="flex min-h-[56px] flex-wrap items-center justify-between gap-3 px-[6px] pb-2 pt-1">
-          <button className="min-w-[92px] rounded-[8px] border-0 bg-[#57b98f] px-4 py-[11px] font-semibold text-white" onClick={() => navigate("/additem")}>
-            Add
-          </button>
-          <div className="flex items-center gap-[10px] font-semibold text-slate-500">
-            <span>Home</span>
-            <span>/</span>
-            <strong className="text-[#3f9773]">Items</strong>
-          </div>
-        </div>
-
-        <Table
-          data={data}
-          headers={headers}
-          loading={loading}
-          searchPlaceholder="Search..."
-          totalRowsLabel="Total Rows"
-          pageSize={pageSize}
-          currentPage={currentPage}
-          onPageChange={handlePageChange}
-          totalItems={totalCount}
+    <div className="ui-page">
+      <div className="px-6 pt-3 pb-1">
+        <PageSection
+          eyebrow="Management"
+          title="Items"
+          actions={
+            <Button onClick={() => navigate("/additem")}>
+              Add
+            </Button>
+          }
         />
-      </section>
+      </div>
+
+      <Table
+        data={data}
+        headers={headers}
+        loading={loading}
+        searchPlaceholder="Search..."
+        totalRowsLabel="Total Rows"
+        pageSize={pageSize}
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        totalItems={totalCount}
+      />
 
       <ActionPopover
         anchorEl={anchorEl}

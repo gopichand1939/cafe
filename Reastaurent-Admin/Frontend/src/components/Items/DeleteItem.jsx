@@ -7,6 +7,7 @@ import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { getImageUrl } from "../../Utils/imageUrl";
 import { setItemSelectedItem } from "../../Redux/CardSlice";
 import KeyValueDisplay from "../../components/common/KeyValueDisplay";
+import { Button, Card, PageSection } from "../ui";
 
 function DeleteItem() {
   const { id } = useParams();
@@ -85,7 +86,7 @@ function DeleteItem() {
   };
 
   if (!item) {
-    return <div className="rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">Loading item...</div>;
+    return <Card>Loading item...</Card>;
   }
 
   const displayData = {
@@ -101,26 +102,23 @@ function DeleteItem() {
   };
 
   return (
-    <div>
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-        <div>
-          <p className="m-0 text-[0.78rem] font-bold uppercase tracking-normal text-orange-500">Items</p>
-          <h2 className="mt-2 mb-0 text-[clamp(1.7rem,2vw,2.4rem)] leading-[1.1]">Delete Item</h2>
-        </div>
-        <button className="self-start rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900 transition hover:-translate-y-px" onClick={() => navigate("/items")}>
-          Back
-        </button>
-      </div>
+    <div className="ui-page">
+      <PageSection
+        eyebrow="Items"
+        title="Delete Item"
+        subtitle="Review the item and related preview images before permanently removing it."
+        actions={<Button variant="secondary" onClick={() => navigate("/items")}>Back</Button>}
+      />
 
-      <div className="mt-[18px] rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">
+      <Card tone="danger" className="mt-0">
         <div className="mt-5 grid items-start gap-[22px] lg:grid-cols-[minmax(0,1fr)_460px]">
           <div className="grid min-w-0 max-w-[760px] content-start gap-[18px]">
             <KeyValueDisplay data={displayData} />
           </div>
           <aside className="grid min-w-0 max-w-[460px] content-start gap-[18px]">
             <div className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Category Image Preview</span>
-              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[8px] border border-dashed border-slate-300 bg-[#fffaf5]">
+              <span className="ui-label">Category Image Preview</span>
+              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[20px] border border-dashed border-border-subtle bg-surface-muted">
                 <img
                   src={getImageUrl(item, "category_image")}
                   alt={item.category_name || "Category"}
@@ -134,8 +132,8 @@ function DeleteItem() {
               </div>
             </div>
             <div className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Item Image Preview</span>
-              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[8px] border border-dashed border-slate-300 bg-[#fffaf5]">
+              <span className="ui-label">Item Image Preview</span>
+              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[20px] border border-dashed border-border-subtle bg-surface-muted">
                 <img
                   src={getImageUrl(item, "item_image")}
                   alt={item.item_name}
@@ -150,15 +148,15 @@ function DeleteItem() {
             </div>
           </aside>
         </div>
-      </div>
+      </Card>
 
       <div className="mt-0.5 flex flex-wrap gap-2.5">
-        <button className="rounded-[8px] border-0 bg-red-600 px-4 py-[11px] font-semibold text-white transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0" onClick={handleDelete} disabled={isDeleting}>
+        <Button variant="danger" onClick={handleDelete} disabled={isDeleting}>
           {isDeleting ? "Deleting..." : "Confirm Delete"}
-        </button>
-        <button className="rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900 transition hover:-translate-y-px" onClick={() => navigate("/items")}>
+        </Button>
+        <Button variant="secondary" onClick={() => navigate("/items")}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import heroImage from "../../assets/cafeimageLoginpage.png";
 import { ADMIN_LOGIN } from "../../Utils/Constant";
 import { getFirstAccessibleRoute, setAuthSession } from "../../Utils/authStorage";
+import { Button, Card, InputField } from "../../components/ui";
 
 function Login() {
   const navigate = useNavigate();
@@ -60,7 +61,7 @@ function Login() {
   };
 
   return (
-    <div className="grid min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 lg:grid-cols-2">
+    <div className="ui-auth-shell grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden overflow-hidden bg-stone-950 lg:block">
         <img
           src={heroImage}
@@ -79,61 +80,62 @@ function Login() {
       </div>
 
       <div className="flex items-center justify-center p-6 lg:p-10">
-        <form
+        <Card
+          as="form"
           onSubmit={handleSubmit}
-          className="w-full max-w-md space-y-4 rounded-3xl border border-orange-200 bg-white/90 p-8 shadow-2xl backdrop-blur-sm"
+          className="w-full max-w-md space-y-4"
+          padding="lg"
         >
           <div className="space-y-1 text-orange-900">
             <p className="text-xs font-bold uppercase tracking-widest">Admin Access</p>
-            <h2 className="text-3xl font-bold text-gray-900">Login</h2>
-            <p className="text-sm">Use your admin email and password to continue.</p>
+            <h2 className="text-3xl font-bold text-text-strong">Login</h2>
+            <p className="text-sm text-text-muted">Use your admin email and password to continue.</p>
           </div>
 
-          <input
+          <InputField
             type="text"
             name="cafe_admin_email"
             placeholder="Email"
             autoComplete="off"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="h-14 w-full rounded-xl border border-orange-200 bg-orange-50 px-4 focus:outline-none focus:ring-2 focus:ring-orange-400"
           />
 
-          <input
+          <InputField
             type="password"
             name="cafe_admin_password"
             placeholder="Password"
             autoComplete="off"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="h-14 w-full rounded-xl border border-orange-200 bg-orange-50 px-4 focus:outline-none focus:ring-2 focus:ring-orange-400"
           />
 
           {errorMessage ? (
-            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+            <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
               {errorMessage}
             </p>
           ) : null}
 
-          <button
+          <Button
             type="submit"
             disabled={isSubmitting}
-            className="h-14 w-full rounded-xl bg-gradient-to-r from-orange-500 to-orange-700 font-bold text-white shadow-lg disabled:opacity-60"
+            size="lg"
+            className="w-full"
           >
             {isSubmitting ? "Logging in..." : "Login"}
-          </button>
+          </Button>
 
-          <p className="text-sm text-orange-900">
+          <p className="text-sm text-text-base">
             Need to create the first admin?{" "}
             <button
               type="button"
               onClick={() => navigate("/register")}
-              className="font-bold text-orange-700"
+              className="font-bold text-brand-700"
             >
               Register
             </button>
           </p>
-        </form>
+        </Card>
       </div>
     </div>
   );

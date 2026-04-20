@@ -60,6 +60,8 @@ const getItemsByCategory = async (req, res) => {
       });
     }
 
+    const isAll = category_id === "all" || category_id === 0;
+
     const pageNumber = Number(page) || 1;
     const limitNumber = Number(limit) || 5;
     const cacheKey = `${category_id}_${pageNumber}_${limitNumber}`;
@@ -88,24 +90,27 @@ const getItemsByCategory = async (req, res) => {
         is_veg,
         is_active
       FROM items
-      WHERE category_id = $1
+      WHERE ${isAll ? "1=1" : "category_id = $1"}
         AND is_deleted = 0
         AND is_active = 1
       ORDER BY id DESC
-      LIMIT $2 OFFSET $3
+      LIMIT ${isAll ? "$1 OFFSET $2" : "$2 OFFSET $3"}
     `;
 
     const countQuery = `
       SELECT COUNT(*) AS total
       FROM items
-      WHERE category_id = $1
+      WHERE ${isAll ? "1=1" : "category_id = $1"}
         AND is_deleted = 0
         AND is_active = 1
     `;
 
+    const itemsParams = isAll ? [limitNumber, offset] : [category_id, limitNumber, offset];
+    const countParams = isAll ? [] : [category_id];
+
     const [itemsResult, countResult] = await Promise.all([
-      db.query(itemsQuery, [category_id, limitNumber, offset]),
-      db.query(countQuery, [category_id]),
+      db.query(itemsQuery, itemsParams),
+      db.query(countQuery, countParams),
     ]);
 
     const totalItems = parseInt(countResult.rows[0].total, 10) || 0;

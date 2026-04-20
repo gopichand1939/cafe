@@ -13,6 +13,8 @@ const Card = createSlice({
     customerSelectedItem: null,
     orderData: [],
     orderSelectedItem: null,
+    paymentData: [],
+    paymentSelectedItem: null,
     notificationData: [],
     notificationSelectedItem: null,
   },
@@ -47,6 +49,12 @@ const Card = createSlice({
     setOrderSelectedItem: (state, action) => {
       state.orderSelectedItem = action.payload;
     },
+    setPaymentData: (state, action) => {
+      state.paymentData = action.payload;
+    },
+    setPaymentSelectedItem: (state, action) => {
+      state.paymentSelectedItem = action.payload;
+    },
     setNotificationData: (state, action) => {
       state.notificationData = action.payload;
     },
@@ -64,6 +72,8 @@ const Card = createSlice({
       state.customerSelectedItem = null;
       state.orderData = [];
       state.orderSelectedItem = null;
+      state.paymentData = [];
+      state.paymentSelectedItem = null;
       state.notificationData = [];
       state.notificationSelectedItem = null;
     },
@@ -81,6 +91,8 @@ export const {
   setCustomerSelectedItem,
   setOrderData,
   setOrderSelectedItem,
+  setPaymentData,
+  setPaymentSelectedItem,
   setNotificationData,
   setNotificationSelectedItem,
   clearCategoryData,

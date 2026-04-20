@@ -10,6 +10,7 @@ const customerAuthRoutes = require("./auth/customerAuthRoutes");
 const customerProfileRoutes = require("./customer/customerProfileRoutes");
 const customerOrderRoutes = require("./orders/orderRoutes");
 const customerNotificationRoutes = require("./notifications/notificationRoutes");
+const paymentRoutes = require("./payments/paymentRoutes");
 const {
   createMenuUpdatesGateway,
 } = require("./realtime/menuUpdatesGateway");
@@ -31,7 +32,15 @@ const server = http.createServer(app);
 const menuUpdatesGateway = createMenuUpdatesGateway(server);
 
 app.use(cors());
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, _res, buffer) => {
+      if (req.originalUrl === "/api/payments/webhook") {
+        req.rawBody = buffer;
+      }
+    },
+  })
+);
 app.use("/images", express.static("public"));
 
 app.use((req, res, next) => {
@@ -53,6 +62,7 @@ app.use("/api/auth", customerAuthRoutes);
 app.use("/api/customer", customerProfileRoutes);
 app.use("/api/orders", customerOrderRoutes);
 app.use("/api/notifications", customerNotificationRoutes);
+app.use("/api/payments", paymentRoutes);
 
 app.get("/health", async (_req, res) => {
   try {

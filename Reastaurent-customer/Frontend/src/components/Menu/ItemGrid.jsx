@@ -153,6 +153,8 @@ function ItemGrid({
   onOpenAddons,
   cart,
   onRemoveFromCart,
+  sentinelRef,
+  isFetchingMore,
 }) {
   if (loading) {
     return (
@@ -196,6 +198,15 @@ function ItemGrid({
           />
         );
       })}
+
+      {/* Sentinel for infinite scroll */}
+      <div ref={sentinelRef} className="col-span-full h-10" />
+
+      {isFetchingMore ? (
+        <div className="col-span-full flex justify-center py-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+        </div>
+      ) : null}
     </div>
   );
 }

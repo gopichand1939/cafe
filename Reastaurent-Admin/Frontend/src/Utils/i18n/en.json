@@ -17,6 +17,7 @@
       "addon": "Addon",
       "offers": "Offers",
       "orders": "Orders",
+      "payments": "Payments",
       "customers": "Customers",
       "reviews": "Reviews",
       "user_management": "User Management",

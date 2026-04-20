@@ -1,23 +1,64 @@
 import { lazy } from "react";
 import { Navigate } from "react-router-dom";
-import { AddCategory, Category, DeleteCategory, EditCategory, ViewCategory } from "../components/Category";
-import { AddItem, DeleteItem, EditItem, Item, ViewItem } from "../components/Items";
-import { AddAddon, Addon, DeleteAddon, EditAddon, ViewAddon } from "../components/Addons";
-import { AddCustomer, Customer, DeleteCustomer, EditCustomer, ViewCustomer } from "../components/customer";
-import { AddOrder, DeleteOrder, EditOrder, Order, ViewOrder } from "../components/Orders";
-import { DeleteNotification, Notification, ViewNotification } from "../components/Notifications";
-import { MessageSettings } from "../components/Messages";
-import { getFirstAccessibleRoute } from "../Utils/authStorage";
+import AppShell from "../components/common/AppShell";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicOnlyRoute from "./PublicOnlyRoute";
 import { withSuspense } from "./routeHelpers";
+import { getFirstAccessibleRoute } from "../Utils/authStorage";
 
+// Pages
 const Login = lazy(() => import("../Pages/Login/Login"));
 const Register = lazy(() => import("../Pages/Register/Register"));
 const Dashboard = lazy(() => import("../components/Dashboard/Dashboard"));
 const RestaurantTimings = lazy(() => import("../components/Restaurant/RestaurantTimings"));
 const ModulePlaceholder = lazy(() => import("../components/common/ModulePlaceholder"));
-const AppShell = lazy(() => import("../components/common/AppShell"));
+
+// Category Module
+const Category = lazy(() => import("../components/Category/Category"));
+const AddCategory = lazy(() => import("../components/Category/AddCategory"));
+const ViewCategory = lazy(() => import("../components/Category/ViewCategory"));
+const EditCategory = lazy(() => import("../components/Category/EditCategory"));
+const DeleteCategory = lazy(() => import("../components/Category/DeleteCategory"));
+
+// Items Module
+const Item = lazy(() => import("../components/Items/Item"));
+const AddItem = lazy(() => import("../components/Items/AddItem"));
+const ViewItem = lazy(() => import("../components/Items/ViewItem"));
+const EditItem = lazy(() => import("../components/Items/EditItem"));
+const DeleteItem = lazy(() => import("../components/Items/DeleteItem"));
+
+// Addons Module
+const Addon = lazy(() => import("../components/Addons/Addon"));
+const AddAddon = lazy(() => import("../components/Addons/AddAddon"));
+const ViewAddon = lazy(() => import("../components/Addons/ViewAddon"));
+const EditAddon = lazy(() => import("../components/Addons/EditAddon"));
+const DeleteAddon = lazy(() => import("../components/Addons/DeleteAddon"));
+
+// Customer Module
+const Customer = lazy(() => import("../components/customer/Customer"));
+const AddCustomer = lazy(() => import("../components/customer/AddCustomer"));
+const ViewCustomer = lazy(() => import("../components/customer/ViewCustomer"));
+const EditCustomer = lazy(() => import("../components/customer/EditCustomer"));
+const DeleteCustomer = lazy(() => import("../components/customer/DeleteCustomer"));
+
+// Orders Module
+const Order = lazy(() => import("../components/Orders/Order"));
+const AddOrder = lazy(() => import("../components/Orders/AddOrder"));
+const ViewOrder = lazy(() => import("../components/Orders/ViewOrder"));
+const EditOrder = lazy(() => import("../components/Orders/EditOrder"));
+const DeleteOrder = lazy(() => import("../components/Orders/DeleteOrder"));
+
+// Payments Module
+const Payment = lazy(() => import("../components/Payments/Payment"));
+const ViewPayment = lazy(() => import("../components/Payments/ViewPayment"));
+
+// Notifications Module
+const Notification = lazy(() => import("../components/Notifications/Notification"));
+const ViewNotification = lazy(() => import("../components/Notifications/ViewNotification"));
+const DeleteNotification = lazy(() => import("../components/Notifications/DeleteNotification"));
+
+// Messages Module
+const MessageSettings = lazy(() => import("../components/Messages/MessageSettings"));
 
 const NotFoundRedirect = () => <Navigate to="/login" replace />;
 
@@ -34,7 +75,7 @@ export const authRoutes = [
 
 export const appRoutes = [
   {
-    element: withSuspense(<AppShell />),
+    element: <AppShell />, // Eager load for layout stability
     children: [
       {
         path: "/",
@@ -61,6 +102,10 @@ export const appRoutes = [
         element: withSuspense(<Order />),
       },
       {
+        path: "payments",
+        element: withSuspense(<Payment />),
+      },
+      {
         path: "addorder",
         element: withSuspense(<AddOrder />),
       },
@@ -75,6 +120,10 @@ export const appRoutes = [
       {
         path: "deleteorder/:id",
         element: withSuspense(<DeleteOrder />),
+      },
+      {
+        path: "viewpayment/:id",
+        element: withSuspense(<ViewPayment />),
       },
       {
         path: "offers",
@@ -152,11 +201,6 @@ export const appRoutes = [
         path: "timings",
         element: withSuspense(<RestaurantTimings />),
       },
-     
-     
-     
-     
-     
       {
         path: "category",
         element: withSuspense(<Category />),
@@ -177,13 +221,6 @@ export const appRoutes = [
         path: "deletecategory/:id",
         element: withSuspense(<DeleteCategory />),
       },
-      
-      
-      
-      
-      
-      
-      
       {
         path: "items",
         element: withSuspense(<Item />),
@@ -207,10 +244,6 @@ export const appRoutes = [
     ],
   },
 ];
-
-
-
-
 
 export const allRoutes = [
   {

@@ -1,7 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { customerAuthStorage } from "../../auth/customerAuthStorage";
 import { getImageUrl } from "../../Utils/imageUrl";
 import { placeCustomerOrder } from "../../services/orderApi";
+import {
+  confirmCustomerPayment,
+  createCustomerPaymentIntent,
+} from "../../services/paymentApi";
+import {
+  STRIPE_MIN_INR_AMOUNT,
+  STRIPE_PUBLISHABLE_KEY,
+} from "../../Utils/Constant";
+import { getStripeClient } from "../../Utils/stripeClient";
 
 function CartDrawer({
   cart,
@@ -27,6 +36,14 @@ function CartDrawer({
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash_on_delivery");
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [stripeReady, setStripeReady] = useState(false);
+  const [stripeCardComplete, setStripeCardComplete] = useState(false);
+  const stripeMountRef = useRef(null);
+  const stripeRef = useRef(null);
+  const stripeElementsRef = useRef(null);
+  const stripeCardRef = useRef(null);
 
   useEffect(() => {
     setDeliveryForm((prev) => ({
@@ -46,6 +63,106 @@ function CartDrawer({
   }, 0);
 
   const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+  const isStripeAmountAllowed = total >= STRIPE_MIN_INR_AMOUNT;
+  const isStripeOptionDisabled =
+    !STRIPE_PUBLISHABLE_KEY || !isStripeAmountAllowed;
+
+  useEffect(() => {
+    if (paymentMethod === "stripe" && isStripeOptionDisabled) {
+      setPaymentMethod("cash_on_delivery");
+    }
+  }, [isStripeOptionDisabled, paymentMethod]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const destroyCardElement = () => {
+      if (stripeCardRef.current) {
+        stripeCardRef.current.destroy();
+        stripeCardRef.current = null;
+      }
+      stripeElementsRef.current = null;
+      setStripeReady(false);
+      setStripeCardComplete(false);
+    };
+
+    const setupStripeCard = async () => {
+      if (paymentMethod !== "stripe" || !cart.length) {
+        destroyCardElement();
+        return;
+      }
+
+      if (!STRIPE_PUBLISHABLE_KEY) {
+        setErrorMessage("Stripe publishable key is not configured.");
+        return;
+      }
+
+      if (!stripeMountRef.current || stripeCardRef.current) {
+        return;
+      }
+
+      setStripeLoading(true);
+
+      try {
+        const stripe = await getStripeClient();
+
+        if (isCancelled || !stripeMountRef.current) {
+          return;
+        }
+
+        const elements = stripe.elements({
+          appearance: {
+            theme: "night",
+            variables: {
+              colorPrimary: "#f59e0b",
+              colorBackground: "rgba(255,255,255,0.05)",
+              colorText: "#ffffff",
+              colorDanger: "#f87171",
+              borderRadius: "14px",
+            },
+          },
+        });
+        const card = elements.create("card", {
+          hidePostalCode: true,
+          style: {
+            base: {
+              color: "#ffffff",
+              fontSize: "15px",
+              "::placeholder": {
+                color: "rgba(255,255,255,0.35)",
+              },
+            },
+          },
+        });
+
+        card.mount(stripeMountRef.current);
+        card.on("change", (event) => {
+          setStripeCardComplete(Boolean(event.complete));
+          setErrorMessage(event.error?.message || "");
+        });
+
+        stripeRef.current = stripe;
+        stripeElementsRef.current = elements;
+        stripeCardRef.current = card;
+        setStripeReady(true);
+      } catch (error) {
+        if (!isCancelled) {
+          setErrorMessage(error.message || "Failed to load Stripe.");
+        }
+      } finally {
+        if (!isCancelled) {
+          setStripeLoading(false);
+        }
+      }
+    };
+
+    void setupStripeCard();
+
+    return () => {
+      isCancelled = true;
+      destroyCardElement();
+    };
+  }, [paymentMethod, cart.length]);
 
   const handleFieldChange = (field, value) => {
     setDeliveryForm((prev) => ({
@@ -79,6 +196,30 @@ function CartDrawer({
       return;
     }
 
+    if (paymentMethod === "stripe" && !isStripeAmountAllowed) {
+      setErrorMessage(
+        `Online payment minimum is Rs ${STRIPE_MIN_INR_AMOUNT.toFixed(
+          2
+        )}. Please add more items or choose cash on delivery.`
+      );
+      setSuccessMessage("");
+      return;
+    }
+
+    if (paymentMethod === "stripe") {
+      if (!stripeReady || stripeLoading || !stripeRef.current || !stripeCardRef.current) {
+        setErrorMessage("Secure card form is still loading. Please wait a moment.");
+        setSuccessMessage("");
+        return;
+      }
+
+      if (!stripeCardComplete) {
+        setErrorMessage("Please enter complete card details before placing your order.");
+        setSuccessMessage("");
+        return;
+      }
+    }
+
     setSubmitting(true);
     resetMessages();
 
@@ -89,7 +230,7 @@ function CartDrawer({
         throw new Error("Please sign in again before placing your order.");
       }
 
-      const order = await placeCustomerOrder(
+      let order = await placeCustomerOrder(
         {
           items: cart.map((item) => ({
             item_id: item.id,
@@ -108,17 +249,69 @@ function CartDrawer({
             pincode: deliveryForm.pincode.trim(),
           },
           order_notes: orderNotes.trim(),
-          payment_method: "cash_on_delivery",
+          payment_method: paymentMethod,
         },
         accessToken
       );
 
+      if (paymentMethod === "stripe") {
+        if (!stripeRef.current || !stripeCardRef.current || !stripeReady) {
+          throw new Error("Stripe card form is not ready yet.");
+        }
+
+        const paymentIntent = await createCustomerPaymentIntent(
+          {
+            amount: order.total_amount || total,
+            orderId: order.id,
+          },
+          accessToken
+        );
+
+        const paymentResult = await stripeRef.current.confirmCardPayment(
+          paymentIntent.clientSecret,
+          {
+            payment_method: {
+              card: stripeCardRef.current,
+              billing_details: {
+                name: deliveryForm.recipient_name.trim() || customer?.name || "",
+                email: customer?.email || "",
+                phone: deliveryForm.phone.trim() || customer?.phone || "",
+                address: {
+                  line1: deliveryForm.line1.trim(),
+                  line2: deliveryForm.line2.trim(),
+                  city: deliveryForm.city.trim(),
+                  state: deliveryForm.state.trim(),
+                  postal_code: deliveryForm.pincode.trim(),
+                  country: "IN",
+                },
+              },
+            },
+          }
+        );
+
+        if (paymentResult.error) {
+          throw new Error(paymentResult.error.message || "Payment failed");
+        }
+
+        const confirmedPayment = await confirmCustomerPayment(
+          paymentIntent.paymentIntentId,
+          accessToken
+        );
+
+        if (confirmedPayment?.order) {
+          order = confirmedPayment.order;
+        }
+      }
+
       setSuccessMessage(
-        `Order placed successfully. Order number: ${order.order_number}`
+        paymentMethod === "stripe"
+          ? `Payment successful. Order number: ${order.order_number}`
+          : `Order placed successfully. Order number: ${order.order_number}`
       );
       onClearCart?.();
       onOrderPlaced?.(order);
       setOrderNotes("");
+      setPaymentMethod("cash_on_delivery");
       setDeliveryForm({
         recipient_name: customer?.name || "",
         phone: customer?.phone || "",
@@ -317,6 +510,60 @@ function CartDrawer({
                   className="customer-textarea"
                 />
               </div>
+
+              <div className="grid gap-2.5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <h3 className="m-0 text-base text-white">Payment Method</h3>
+                <label className="flex cursor-pointer items-center gap-3 rounded-[14px] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white">
+                  <input
+                    type="radio"
+                    name="payment_method"
+                    value="cash_on_delivery"
+                    checked={paymentMethod === "cash_on_delivery"}
+                    onChange={() => setPaymentMethod("cash_on_delivery")}
+                  />
+                  <span>Cash on delivery</span>
+                </label>
+                <label
+                  className={`flex cursor-pointer items-center gap-3 rounded-[14px] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white ${
+                    isStripeOptionDisabled ? "cursor-not-allowed opacity-55" : ""
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment_method"
+                    value="stripe"
+                    checked={paymentMethod === "stripe"}
+                    disabled={isStripeOptionDisabled}
+                    onChange={() => setPaymentMethod("stripe")}
+                  />
+                  <span>Pay online with card</span>
+                </label>
+                {!isStripeAmountAllowed ? (
+                  <div className="rounded-[12px] border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs leading-5 text-amber-100">
+                    Online card payment is available from Rs{" "}
+                    {STRIPE_MIN_INR_AMOUNT.toFixed(2)}. Use cash on delivery
+                    for this order or add more items.
+                  </div>
+                ) : null}
+
+                {paymentMethod === "stripe" ? (
+                  <div className="grid gap-2 rounded-[14px] border border-amber-400/25 bg-white/[0.04] p-4">
+                    <div className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-200">
+                      Card Details
+                    </div>
+                    <div
+                      ref={stripeMountRef}
+                      className="min-h-[44px] rounded-[14px] border border-white/10 bg-white/[0.05] px-[14px] py-3"
+                    />
+                    <div className="text-xs leading-5 text-white/45">
+                      Test card: 4242 4242 4242 4242, any future expiry, any CVC.
+                    </div>
+                    {stripeLoading ? (
+                      <div className="text-xs text-amber-200">Loading secure card form...</div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </>
           )}
         </div>
@@ -346,8 +593,12 @@ function CartDrawer({
             >
               {customer
                 ? submitting
-                  ? "Placing Order..."
-                  : "Place Order"
+                  ? paymentMethod === "stripe"
+                    ? "Processing Payment..."
+                    : "Placing Order..."
+                  : paymentMethod === "stripe"
+                    ? "Pay & Place Order"
+                    : "Place Order"
                 : "Sign In To Order"}
             </button>
           </div>

@@ -5,9 +5,7 @@ import {
   ITEM_LIST,
 } from "../../Utils/Constant";
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
-
-const cardClassName =
-  "rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]";
+import { Button, Card, InputField, PageSection } from "../ui";
 
 const defaultAddress = {
   full_name: "",
@@ -260,56 +258,49 @@ function OrderForm({
   };
 
   return (
-    <div className="grid gap-[18px]">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-        <div>
-          <p className="m-0 text-[0.78rem] font-bold uppercase tracking-normal text-orange-500">
-            Orders
-          </p>
-          <h2 className="mt-2 mb-0 text-[clamp(1.7rem,2vw,2.4rem)] leading-[1.1]">
-            {isEditMode ? "Update Order Status" : "Create Order"}
-          </h2>
-        </div>
-      </div>
+    <div className="ui-page">
+      <PageSection
+        eyebrow="Orders"
+        title={isEditMode ? "Update Order Status" : "Create Order"}
+      />
 
       <form className="grid gap-[18px]" onSubmit={handleSubmit}>
-        <section className={cardClassName}>
+        <Card>
           <div className="grid gap-4 md:grid-cols-2">
             {!isEditMode ? (
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">Customer</span>
-                <select
-                  className="rounded-[8px] border border-slate-300 px-3 py-3"
+              <InputField
+                label="Customer"
+                as="select"
+                inputClassName="px-3 py-3"
                   value={formState.customer_id}
                   onChange={(event) => handleRootChange("customer_id", event.target.value)}
                   disabled={loadingDependencies}
                   required
-                >
+              >
                   <option value="">Select customer</option>
                   {customerOptions.map((customer) => (
                     <option key={customer.id} value={customer.id}>
                       {customer.name} ({customer.email})
                     </option>
                   ))}
-                </select>
-              </label>
+              </InputField>
             ) : (
               <div className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">Order Number</span>
-                <div className="rounded-[8px] border border-slate-200 bg-slate-50 px-3 py-3">
+                <span className="ui-label">Order Number</span>
+                <div className="rounded-2xl border border-border-subtle bg-surface-muted px-3 py-3">
                   {initialValues?.order_number || "-"}
                 </div>
               </div>
             )}
 
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-slate-700">Order Status</span>
-              <select
-                className="rounded-[8px] border border-slate-300 px-3 py-3"
+            <InputField
+              label="Order Status"
+              as="select"
+              inputClassName="px-3 py-3"
                 value={formState.order_status}
                 onChange={(event) => handleRootChange("order_status", event.target.value)}
                 required
-              >
+            >
                 {[
                   "placed",
                   "accepted",
@@ -323,56 +314,50 @@ function OrderForm({
                     {status.replace(/_/g, " ")}
                   </option>
                 ))}
-              </select>
-            </label>
+            </InputField>
 
-            <label className="grid gap-2">
-              <span className="text-sm font-semibold text-slate-700">Payment Status</span>
-              <select
-                className="rounded-[8px] border border-slate-300 px-3 py-3"
+            <InputField
+              label="Payment Status"
+              as="select"
+              inputClassName="px-3 py-3"
                 value={formState.payment_status}
                 onChange={(event) => handleRootChange("payment_status", event.target.value)}
                 required
-              >
+            >
                 {["pending", "paid", "failed", "refunded"].map((status) => (
                   <option key={status} value={status}>
                     {status}
                   </option>
                 ))}
-              </select>
-            </label>
+            </InputField>
 
             {!isEditMode ? (
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">Payment Method</span>
-                <input
-                  className="rounded-[8px] border border-slate-300 px-3 py-3"
+              <InputField
+                label="Payment Method"
+                inputClassName="px-3 py-3"
                   value={formState.payment_method}
                   onChange={(event) => handleRootChange("payment_method", event.target.value)}
                   placeholder="cash_on_delivery"
                   required
-                />
-              </label>
+              />
             ) : null}
 
             {!isEditMode ? (
-              <label className="grid gap-2">
-                <span className="text-sm font-semibold text-slate-700">Currency Code</span>
-                <input
-                  className="rounded-[8px] border border-slate-300 px-3 py-3"
+              <InputField
+                label="Currency Code"
+                inputClassName="px-3 py-3"
                   value={formState.currency_code}
                   onChange={(event) => handleRootChange("currency_code", event.target.value)}
                   placeholder="INR"
                   required
-                />
-              </label>
+              />
             ) : null}
           </div>
-        </section>
+        </Card>
 
         {!isEditMode ? (
           <>
-            <section className={cardClassName}>
+            <Card>
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <h3 className="m-0 text-lg font-semibold text-slate-900">Order Items</h3>
@@ -380,13 +365,9 @@ function OrderForm({
                     Select the items the customer ordered.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  className="rounded-[8px] border-0 bg-[#57b98f] px-4 py-[11px] font-semibold text-white"
-                  onClick={addLineItem}
-                >
+                <Button type="button" onClick={addLineItem}>
                   Add Item
-                </button>
+                </Button>
               </div>
 
               <div className="grid gap-4">
@@ -439,13 +420,14 @@ function OrderForm({
                           />
                         </label>
 
-                        <button
+                        <Button
                           type="button"
-                          className="self-end rounded-[8px] border-0 bg-red-600 px-4 py-[11px] font-semibold text-white"
+                          variant="danger"
+                          className="self-end"
                           onClick={() => removeLineItem(index)}
                         >
                           Remove
-                        </button>
+                        </Button>
                       </div>
 
                       {selectedItem ? (
@@ -474,9 +456,9 @@ function OrderForm({
                   );
                 })}
               </div>
-            </section>
+            </Card>
 
-            <section className={cardClassName}>
+            <Card>
               <h3 className="m-0 text-lg font-semibold text-slate-900">Delivery Address</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 {[
@@ -500,9 +482,9 @@ function OrderForm({
                   </label>
                 ))}
               </div>
-            </section>
+            </Card>
 
-            <section className={cardClassName}>
+            <Card>
               <h3 className="m-0 text-lg font-semibold text-slate-900">Charges</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <label className="grid gap-2">
@@ -554,10 +536,10 @@ function OrderForm({
                   Final Total: <strong>{finalTotal.toFixed(2)}</strong>
                 </span>
               </div>
-            </section>
+            </Card>
           </>
         ) : (
-          <section className={cardClassName}>
+          <Card>
             <h3 className="m-0 text-lg font-semibold text-slate-900">Order Summary</h3>
             <div className="mt-4 grid gap-3 rounded-[8px] border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-700 md:grid-cols-2">
               <span>
@@ -573,15 +555,11 @@ function OrderForm({
                 Item Count: <strong>{initialValues?.item_count || 0}</strong>
               </span>
             </div>
-          </section>
+          </Card>
         )}
 
         <div className="flex flex-wrap gap-2.5">
-          <button
-            type="submit"
-            className="rounded-[8px] border-0 bg-[#57b98f] px-4 py-[11px] font-semibold text-white transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
-            disabled={isSubmitting || loadingDependencies}
-          >
+          <Button type="submit" disabled={isSubmitting || loadingDependencies}>
             {isSubmitting
               ? isEditMode
                 ? "Updating..."
@@ -589,7 +567,7 @@ function OrderForm({
               : isEditMode
                 ? "Update Order"
                 : "Create Order"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

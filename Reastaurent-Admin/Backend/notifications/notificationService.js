@@ -84,6 +84,53 @@ const buildCustomerNotificationContent = (change) => {
   }
 };
 
+const buildPaymentNotificationContent = (change) => {
+  const orderNumber =
+    change?.entityData?.order_number ||
+    change?.payload?.entityData?.order_number ||
+    `#${change?.orderId || change?.entityId || ""}`;
+  const customerName =
+    change?.entityData?.customer_name ||
+    change?.payload?.entityData?.customer_name ||
+    "Customer";
+  const gateway = humanize(change?.entityData?.gateway || "stripe");
+  const paymentStatus = String(
+    change?.entityData?.status || change?.payload?.entityData?.status || change?.action || "updated"
+  );
+  const paymentStatusLabel = humanize(paymentStatus);
+
+  switch (change?.action) {
+    case "created":
+      return {
+        notificationType: "payment_alert",
+        title: `Payment initiated for ${orderNumber}`,
+        message: `${customerName} started a ${gateway} payment. Current status: ${paymentStatusLabel}.`,
+        redirectPath: "/payments",
+      };
+    case "succeeded":
+      return {
+        notificationType: "payment_alert",
+        title: `Payment successful for ${orderNumber}`,
+        message: `${customerName}'s ${gateway} payment was completed successfully.`,
+        redirectPath: "/payments",
+      };
+    case "failed":
+      return {
+        notificationType: "payment_alert",
+        title: `Payment failed for ${orderNumber}`,
+        message: `${customerName}'s ${gateway} payment failed. Status: ${paymentStatusLabel}.`,
+        redirectPath: "/payments",
+      };
+    default:
+      return {
+        notificationType: "payment_alert",
+        title: `Payment update for ${orderNumber}`,
+        message: `${customerName}'s ${gateway} payment changed to ${paymentStatusLabel}.`,
+        redirectPath: "/payments",
+      };
+  }
+};
+
 const resolveTargetAdmin = ({ payload }) => ({
   id: 1,
   email: payload?.adminEmail || process.env.DEFAULT_ADMIN_EMAIL || "",
@@ -109,6 +156,8 @@ const createNotificationFromChange = async ({
     content = buildOrderNotificationContent(payload);
   } else if (entity === "customer") {
     content = buildCustomerNotificationContent(payload);
+  } else if (entity === "payment") {
+    content = buildPaymentNotificationContent(payload);
   }
 
   if (!content) {

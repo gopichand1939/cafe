@@ -1,6 +1,8 @@
 const orderModel = require("./orderModel");
 const { publishOrderChangeSafely } = require("../realtime/orderEvents");
 
+const STRIPE_MIN_INR_AMOUNT = Number(process.env.STRIPE_MIN_INR_AMOUNT || 50);
+
 const normalizePageNumber = (value, fallback) => {
   const parsed = parseInt(value, 10);
   return Number.isNaN(parsed) || parsed < 1 ? fallback : parsed;
@@ -166,13 +168,27 @@ const placeOrder = async (req, res) => {
         normalizedDeliveryFee
       ).toFixed(2)
     );
+    const normalizedPaymentMethod =
+      String(payment_method || "cash_on_delivery").trim() || "cash_on_delivery";
+
+    if (
+      normalizedPaymentMethod === "stripe" &&
+      totalAmount < STRIPE_MIN_INR_AMOUNT
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: `Online payment minimum is Rs ${STRIPE_MIN_INR_AMOUNT.toFixed(
+          2
+        )}. Please add more items or choose cash on delivery.`,
+      });
+    }
 
     const order = await orderModel.createOrderForCustomer({
       customer,
       deliveryAddress:
         delivery_address && typeof delivery_address === "object" ? delivery_address : {},
       orderNotes: String(order_notes || "").trim(),
-      paymentMethod: String(payment_method || "cash_on_delivery").trim() || "cash_on_delivery",
+      paymentMethod: normalizedPaymentMethod,
       currencyCode: String(currency_code || "INR").trim() || "INR",
       items: normalizedItems,
       subtotalAmount,

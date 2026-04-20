@@ -81,6 +81,12 @@ const getOrderList = async ({
       OR o.customer_name ILIKE $${values.length}
       OR o.customer_email ILIKE $${values.length}
       OR o.customer_phone ILIKE $${values.length}
+      OR EXISTS (
+        SELECT 1
+        FROM order_items oi_search
+        WHERE oi_search.order_id = o.id
+          AND oi_search.item_name ILIKE $${values.length}
+      )
     )`);
   }
 
@@ -90,32 +96,91 @@ const getOrderList = async ({
   const offsetPosition = values.length;
 
   const query = `
+    WITH filtered_orders AS (
+      SELECT
+        o.id,
+        o.order_number,
+        o.customer_id,
+        o.customer_name,
+        o.customer_email,
+        o.customer_phone,
+        o.order_status,
+        o.payment_status,
+        o.payment_method,
+        o.currency_code,
+        o.item_count,
+        o.subtotal_amount,
+        o.discount_amount,
+        o.addon_amount,
+        o.tax_amount,
+        o.delivery_fee,
+        o.total_amount,
+        o.order_notes,
+        o.created_at,
+        o.updated_at
+      FROM orders o
+      WHERE ${filters.join(" AND ")}
+      ORDER BY o.id DESC
+      LIMIT $${limitPosition} OFFSET $${offsetPosition}
+    )
     SELECT
-      o.id,
-      o.order_number,
-      o.customer_id,
-      o.customer_name,
-      o.customer_email,
-      o.customer_phone,
-      o.order_status,
-      o.payment_status,
-      o.payment_method,
-      o.currency_code,
-      o.item_count,
-      o.subtotal_amount,
-      o.discount_amount,
-      o.addon_amount,
-      o.tax_amount,
-      o.delivery_fee,
-      o.total_amount,
-      o.order_notes,
-      o.created_at,
-      o.updated_at,
-      COUNT(*) OVER()::INT AS total_records
-    FROM orders o
-    WHERE ${filters.join(" AND ")}
-    ORDER BY o.id DESC
-    LIMIT $${limitPosition} OFFSET $${offsetPosition};
+      fo.id,
+      fo.order_number,
+      fo.customer_id,
+      fo.customer_name,
+      fo.customer_email,
+      fo.customer_phone,
+      fo.order_status,
+      fo.payment_status,
+      fo.payment_method,
+      fo.currency_code,
+      fo.item_count,
+      fo.subtotal_amount,
+      fo.discount_amount,
+      fo.addon_amount,
+      fo.tax_amount,
+      fo.delivery_fee,
+      fo.total_amount,
+      fo.order_notes,
+      fo.created_at,
+      fo.updated_at,
+      COALESCE(
+        string_agg(
+          CONCAT(oi.item_name, ' x', oi.quantity::text),
+          ', '
+          ORDER BY oi.id
+        ) FILTER (WHERE oi.id IS NOT NULL),
+        ''
+      ) AS ordered_items,
+      (
+        SELECT COUNT(*)::INT
+        FROM orders o
+        WHERE ${filters.join(" AND ")}
+      ) AS total_records
+    FROM filtered_orders fo
+    LEFT JOIN order_items oi ON oi.order_id = fo.id
+    GROUP BY
+      fo.id,
+      fo.order_number,
+      fo.customer_id,
+      fo.customer_name,
+      fo.customer_email,
+      fo.customer_phone,
+      fo.order_status,
+      fo.payment_status,
+      fo.payment_method,
+      fo.currency_code,
+      fo.item_count,
+      fo.subtotal_amount,
+      fo.discount_amount,
+      fo.addon_amount,
+      fo.tax_amount,
+      fo.delivery_fee,
+      fo.total_amount,
+      fo.order_notes,
+      fo.created_at,
+      fo.updated_at
+    ORDER BY fo.id DESC;
   `;
 
   const result = await db.query(query, values);

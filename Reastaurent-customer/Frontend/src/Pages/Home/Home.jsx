@@ -1,9 +1,10 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState, lazy, Suspense } from "react";
 import { Header } from "../../components/common";
 import { CategoryBar, ItemGrid } from "../../components/Menu";
-import { CartDrawer } from "../../components/Cart";
-import { AddonModal } from "../../components/Addons";
-import { CustomerDrawer } from "../../components/customer";
+
+const CartDrawer = lazy(() => import("../../components/Cart/CartDrawer"));
+const AddonModal = lazy(() => import("../../components/Addons/AddonModal"));
+const CustomerDrawer = lazy(() => import("../../components/customer/CustomerDrawer"));
 import {
   fetchCategories,
   fetchItemAddons,
@@ -47,6 +48,12 @@ function Home() {
     notifications: [],
   });
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const sentinelRef = useRef(null);
+
   const selectedCategoryRef = useRef(selectedCategory);
   const selectedItemRef = useRef(selectedItem);
   const itemsRef = useRef(items);
@@ -80,15 +87,22 @@ function Home() {
     setLoadingCategories(true);
 
     try {
-      const nextCategories = await fetchCategories();
+      const rawCategories = await fetchCategories();
+      const nextCategories = [
+        { id: "all", category_name: "All", category_image: null },
+        ...rawCategories,
+      ];
+
       const requestedCategoryId =
         preferredCategoryId ?? selectedCategoryRef.current;
+
       const hasRequestedCategory = nextCategories.some(
-        (category) => category.id === requestedCategoryId
+        (category) => String(category.id) === String(requestedCategoryId)
       );
+
       const nextSelectedCategory = hasRequestedCategory
         ? requestedCategoryId
-        : nextCategories[0]?.id ?? null;
+        : "all";
 
       setCategories(nextCategories);
       setSelectedCategory(nextSelectedCategory);
@@ -104,26 +118,77 @@ function Home() {
     }
   });
 
-  const loadItems = useEffectEvent(async (categoryId) => {
+  const loadItems = useEffectEvent(async (categoryId, reset = true) => {
     if (!categoryId) {
       setItems([]);
-      return [];
+      setCurrentPage(1);
+      setTotalPages(1);
+      return;
     }
 
-    setLoadingItems(true);
+    const pageToFetch = reset ? 1 : currentPage + 1;
+    const fetchLimit = 12; // 3 rows of 4 items or 4 rows of 3 items
+
+    if (reset) {
+      setLoadingItems(true);
+      setCurrentPage(1);
+    } else {
+      setIsFetchingMore(true);
+    }
 
     try {
-      const nextItems = await fetchItemsByCategory(categoryId);
-      setItems(nextItems);
-      return nextItems;
+      const response = await fetchItemsByCategory(categoryId, pageToFetch, fetchLimit);
+      const nextItems = response.data || [];
+      const pagination = response.pagination || {};
+
+      if (reset) {
+        setItems(nextItems);
+      } else {
+        setItems((prev) => [...prev, ...nextItems]);
+      }
+
+      setCurrentPage(pageToFetch);
+      setTotalPages(pagination.totalPages || 1);
     } catch (error) {
       console.error("Failed to fetch items:", error);
-      setItems([]);
-      return [];
+      if (reset) {
+        setItems([]);
+      }
     } finally {
-      setLoadingItems(false);
+      if (reset) {
+        setLoadingItems(false);
+      } else {
+        setIsFetchingMore(false);
+      }
     }
   });
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (loadingItems || isFetchingMore || currentPage >= totalPages || !selectedCategory) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          void loadItems(selectedCategory, false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentSentinel = sentinelRef.current;
+    if (currentSentinel) {
+      observer.observe(currentSentinel);
+    }
+
+    return () => {
+      if (currentSentinel) {
+        observer.unobserve(currentSentinel);
+      }
+    };
+  }, [loadingItems, isFetchingMore, currentPage, totalPages, selectedCategory]);
 
   const loadAddonsForItem = useEffectEvent(async (item, options = {}) => {
     const { useCache = true, openModal = true } = options;
@@ -482,48 +547,56 @@ function Home() {
         onOpenAddons={openAddonsForItem}
         cart={cart}
         onRemoveFromCart={removeFromCart}
+        sentinelRef={sentinelRef}
+        isFetchingMore={isFetchingMore}
       />
-      {cartOpen ? (
-        <CartDrawer
-          cart={cart}
+      <Suspense fallback={null}>
+        {cartOpen ? (
+          <CartDrawer
+            cart={cart}
+            customer={customer}
+            onClose={() => setCartOpen(false)}
+            onAdd={addToCart}
+            onRemove={removeFromCart}
+            onClearCart={() => setCart([])}
+            onRequireSignIn={() => {
+              setCartOpen(false);
+              setCustomerDrawerTab("profile");
+              setCustomerDrawerOpen(true);
+            }}
+            onOrderPlaced={() => {
+              setOrdersRefreshKey((prev) => prev + 1);
+              setCartOpen(false);
+              setCustomerDrawerTab("orders");
+              setCustomerDrawerOpen(true);
+            }}
+          />
+        ) : null}
+      </Suspense>
+      <Suspense fallback={null}>
+        <CustomerDrawer
+          open={customerDrawerOpen}
+          onClose={() => setCustomerDrawerOpen(false)}
           customer={customer}
-          onClose={() => setCartOpen(false)}
-          onAdd={addToCart}
-          onRemove={removeFromCart}
-          onClearCart={() => setCart([])}
-          onRequireSignIn={() => {
-            setCartOpen(false);
-            setCustomerDrawerTab("profile");
-            setCustomerDrawerOpen(true);
-          }}
-          onOrderPlaced={() => {
-            setOrdersRefreshKey((prev) => prev + 1);
-            setCartOpen(false);
-            setCustomerDrawerTab("orders");
-            setCustomerDrawerOpen(true);
-          }}
+          onCustomerChange={setCustomer}
+          initialTab={customerDrawerTab}
+          ordersRefreshKey={ordersRefreshKey}
+          notificationsRefreshKey={notificationsRefreshKey}
+          notificationSummary={notificationSummary}
+          onNotificationSummaryChange={setNotificationSummary}
         />
-      ) : null}
-      <CustomerDrawer
-        open={customerDrawerOpen}
-        onClose={() => setCustomerDrawerOpen(false)}
-        customer={customer}
-        onCustomerChange={setCustomer}
-        initialTab={customerDrawerTab}
-        ordersRefreshKey={ordersRefreshKey}
-        notificationsRefreshKey={notificationsRefreshKey}
-        notificationSummary={notificationSummary}
-        onNotificationSummaryChange={setNotificationSummary}
-      />
-      {addonModalOpen && selectedItem ? (
-        <AddonModal
-          item={selectedItem}
-          addons={selectedItemAddons}
-          loading={loadingAddons}
-          onClose={closeAddonModal}
-          onConfirm={handleAddonConfirm}
-        />
-      ) : null}
+      </Suspense>
+      <Suspense fallback={null}>
+        {addonModalOpen && selectedItem ? (
+          <AddonModal
+            item={selectedItem}
+            addons={selectedItemAddons}
+            loading={loadingAddons}
+            onClose={closeAddonModal}
+            onConfirm={handleAddonConfirm}
+          />
+        ) : null}
+      </Suspense>
     </div>
   );
 }

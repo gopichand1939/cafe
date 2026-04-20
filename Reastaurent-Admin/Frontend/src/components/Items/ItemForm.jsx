@@ -4,6 +4,7 @@ import { CATEGORY_GET } from "../../Utils/Constant";
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import ImageDropZone from "../common/ImageDropZone";
 import { getImageUrl } from "../../Utils/imageUrl";
+import { Button, Card, InputField, PageSection } from "../ui";
 
 const getInitialFormState = (selectedItem) => ({
   category_id: selectedItem?.category_id ? String(selectedItem.category_id) : "",
@@ -172,108 +173,92 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
   };
 
   return (
-    <div className="grid gap-6">
-      <div className="rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-          <div>
-            <p className="m-0 text-[0.78rem] font-bold uppercase tracking-normal text-orange-500">Items</p>
-            <h2 className="mt-2 mb-0 text-[clamp(1.7rem,2vw,2.4rem)] leading-[1.1]">{selectedItem ? "Edit Item" : "Create Item"}</h2>
-          </div>
-          <button
-            className="min-w-[92px] self-start rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900"
-            type="button"
-            onClick={() => navigate("/items")}
-          >
-            Back
-          </button>
-        </div>
+    <div className="ui-page">
+      <Card>
+        <PageSection
+          eyebrow="Items"
+          title={selectedItem ? "Edit Item" : "Create Item"}
+          actions={
+            <Button variant="secondary" onClick={() => navigate("/items")}>
+              Back
+            </Button>
+          }
+        />
 
         <form onSubmit={handleSubmit} className="mt-5 grid items-start gap-[22px] lg:grid-cols-[minmax(0,1fr)_460px]">
           <div className="grid min-w-0 max-w-[760px] content-start gap-[18px]">
-            <label className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Category</span>
-              <select
-                value={formData.category_id}
-                onChange={(event) => setFieldValue("category_id", event.target.value)}
-                className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
-              >
-                <option value="">Select category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.category_name}
-                  </option>
-                ))}
-              </select>
-              {errors.category_id ? <small className="text-red-600">{errors.category_id}</small> : null}
-            </label>
+            <InputField
+              label="Category"
+              as="select"
+              value={formData.category_id}
+              onChange={(event) => setFieldValue("category_id", event.target.value)}
+              error={errors.category_id}
+            >
+              <option value="">Select category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.category_name}
+                </option>
+              ))}
+            </InputField>
 
-            <label className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Item Name</span>
-              <input
-                type="text"
-                value={formData.item_name}
-                onChange={(event) => setFieldValue("item_name", event.target.value)}
-                placeholder="Enter item name"
-                className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
-              />
-              {errors.item_name ? <small className="text-red-600">{errors.item_name}</small> : null}
-            </label>
+            <InputField
+              label="Item Name"
+              type="text"
+              value={formData.item_name}
+              onChange={(event) => setFieldValue("item_name", event.target.value)}
+              placeholder="Enter item name"
+              error={errors.item_name}
+            />
 
-            <label className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Description</span>
-              <textarea
-                rows="5"
-                value={formData.item_description}
-                onChange={(event) =>
-                  setFieldValue("item_description", event.target.value)
-                }
-                placeholder="Enter item description"
-                className="min-h-[150px] w-full resize-y rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
-              />
-              {errors.item_description ? <small className="text-red-600">{errors.item_description}</small> : null}
-            </label>
+            <InputField
+              label="Description"
+              as="textarea"
+              rows="5"
+              value={formData.item_description}
+              onChange={(event) =>
+                setFieldValue("item_description", event.target.value)
+              }
+              placeholder="Enter item description"
+              inputClassName="min-h-[150px] resize-y"
+              error={errors.item_description}
+            />
 
-            <label className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Price (£)</span>
-              <input
+            <div className="grid gap-6 sm:grid-cols-2">
+              <InputField
+                label="Price (£)"
                 type="number"
                 step="0.01"
                 min="0"
                 value={formData.price}
                 onChange={(event) => setFieldValue("price", event.target.value)}
                 placeholder="e.g. 5.95"
-                className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
+                error={errors.price}
               />
-              {errors.price ? <small className="text-red-600">{errors.price}</small> : null}
-            </label>
 
-            <label className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Discount Price (£)</span>
-              <input
+              <InputField
+                label="Discount Price (£)"
                 type="number"
                 step="0.01"
                 min="0"
                 value={formData.discount_price}
                 onChange={(event) => setFieldValue("discount_price", event.target.value)}
-                placeholder="e.g. 4.50 (leave empty for no discount)"
-                className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
+                placeholder="e.g. 4.50"
+                hint="Leave empty for no discount"
+                error={errors.discount_price}
               />
-              {errors.discount_price ? <small className="text-red-600">{errors.discount_price}</small> : null}
-            </label>
+            </div>
 
-            <label className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Preparation Time (minutes)</span>
-              <input
-                type="number"
-                step="1"
-                min="0"
-                value={formData.preparation_time}
-                onChange={(event) => setFieldValue("preparation_time", event.target.value)}
-                placeholder="e.g. 25"
-                className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none"
-              />
-              {errors.preparation_time ? <small className="text-red-600">{errors.preparation_time}</small> : null}
-            </label>
+            <InputField
+              label="Preparation Time (minutes)"
+              type="number"
+              step="1"
+              min="0"
+              value={formData.preparation_time}
+              onChange={(event) => setFieldValue("preparation_time", event.target.value)}
+              placeholder="e.g. 25"
+              error={errors.preparation_time}
+            />
 
             <ImageDropZone
               label="Upload Item Image"
@@ -283,68 +268,74 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
               onError={(message) => setErrors((prev) => ({ ...prev, item_image: message }))}
             />
 
-            <label className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Stored Image Path</span>
-              <input className="w-full rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none" type="text" value={formData.item_image} readOnly />
-            </label>
+            <InputField
+              label="Stored Image Path"
+              type="text"
+              value={formData.item_image}
+              readOnly
+            />
 
-            <div className="flex flex-wrap gap-4">
-              <label className="grid gap-2">
-                <span className="text-[0.92rem] font-semibold text-slate-600">Popular</span>
+            <div className="flex flex-wrap gap-6 pt-2">
+              <div className="ui-field-shell">
+                <span className="ui-label">Popular</span>
                 <button
                   type="button"
-                  className={`inline-flex w-fit items-center gap-2.5 rounded-full border border-slate-300 px-[14px] py-2 pl-2 ${formData.is_popular ? "bg-amber-50 text-amber-800" : "bg-white text-slate-700"}`}
+                  className={`ui-status-toggle ${formData.is_popular ? "bg-amber-500/10 text-amber-500" : ""}`}
                   onClick={() => setFieldValue("is_popular", !formData.is_popular)}
                 >
-                  <span className={`h-6 w-6 rounded-full ${formData.is_popular ? "bg-amber-500" : "bg-slate-400"}`} />
-                  {formData.is_popular ? "Popular" : "Not Popular"}
+                  <span className={`ui-status-toggle-dot ${formData.is_popular ? "bg-amber-500" : "bg-text-muted/40"}`} />
+                  <span className="text-[0.92rem] font-bold">
+                    {formData.is_popular ? "Popular" : "Standard"}
+                  </span>
                 </button>
-              </label>
+              </div>
 
-              <label className="grid gap-2">
-                <span className="text-[0.92rem] font-semibold text-slate-600">New Item</span>
+              <div className="ui-field-shell">
+                <span className="ui-label">New Item</span>
                 <button
                   type="button"
-                  className={`inline-flex w-fit items-center gap-2.5 rounded-full border border-slate-300 px-[14px] py-2 pl-2 ${formData.is_new ? "bg-blue-50 text-blue-800" : "bg-white text-slate-700"}`}
+                  className={`ui-status-toggle ${formData.is_new ? "bg-blue-500/20 text-blue-400" : ""}`}
                   onClick={() => setFieldValue("is_new", !formData.is_new)}
                 >
-                  <span className={`h-6 w-6 rounded-full ${formData.is_new ? "bg-blue-500" : "bg-slate-400"}`} />
-                  {formData.is_new ? "NEW" : "Not New"}
+                  <span className={`ui-status-toggle-dot ${formData.is_new ? "bg-blue-500" : "bg-text-muted/40"}`} />
+                  <span className="text-[0.92rem] font-bold">{formData.is_new ? "NEW" : "Normal"}</span>
                 </button>
-              </label>
+              </div>
 
-              <label className="grid gap-2">
-                <span className="text-[0.92rem] font-semibold text-slate-600">Veg / Non-Veg</span>
+              <div className="ui-field-shell">
+                <span className="ui-label">Veg / Non-Veg</span>
                 <button
                   type="button"
-                  className={`inline-flex w-fit items-center gap-2.5 rounded-full border border-slate-300 px-[14px] py-2 pl-2 ${formData.is_veg ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"}`}
+                  className={`ui-status-toggle ${formData.is_veg ? "bg-success-bg text-success-text" : "bg-red-500/10 text-red-400"}`}
                   onClick={() => setFieldValue("is_veg", !formData.is_veg)}
                 >
-                  <span className={`h-6 w-6 rounded-full ${formData.is_veg ? "bg-green-500" : "bg-red-500"}`} />
-                  {formData.is_veg ? "Veg 🟢" : "Non-Veg 🔴"}
+                  <span className={`ui-status-toggle-dot ${formData.is_veg ? "bg-success-text" : "bg-red-500"}`} />
+                  <span className="text-[0.92rem] font-bold">
+                    {formData.is_veg ? "Veg 🟢" : "Non-Veg 🔴"}
+                  </span>
                 </button>
-              </label>
+              </div>
             </div>
 
-            {selectedItem ? (
-              <label className="grid gap-2">
-                <span className="text-[0.92rem] font-semibold text-slate-600">Active Status</span>
+              <div className="ui-field-shell mt-2">
+                <span className="ui-label">Active Status</span>
                 <button
                   type="button"
-                  className={`inline-flex w-fit items-center gap-2.5 rounded-full border border-slate-300 px-[14px] py-2 pl-2 ${formData.is_active ? "bg-emerald-50 text-green-800" : "bg-white text-slate-700"}`}
+                  className={`ui-status-toggle ${formData.is_active ? "bg-success-bg text-success-text" : ""}`}
                   onClick={() => setFieldValue("is_active", !formData.is_active)}
                 >
-                  <span className={`h-6 w-6 rounded-full ${formData.is_active ? "bg-green-500" : "bg-slate-400"}`} />
-                  {formData.is_active ? "Active" : "Inactive"}
+                  <span className={`ui-status-toggle-dot ${formData.is_active ? "bg-success-text" : "bg-text-muted/40"}`} />
+                  <span className="text-[0.92rem] font-bold">
+                    {formData.is_active ? "Active" : "Inactive"}
+                  </span>
                 </button>
-              </label>
-            ) : null}
+              </div>
           </div>
 
           <aside className="grid min-w-0 max-w-[460px] content-start gap-[18px]">
             <div className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Category Preview</span>
-              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[8px] border border-dashed border-slate-300 bg-[#fffaf5]">
+              <span className="ui-label">Category Preview</span>
+              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[20px] border border-dashed border-border-subtle bg-surface-muted">
                 {selectedCategoryData?.category_image ? (
                   <img
                     src={getImageUrl(selectedCategoryData, "category_image")}
@@ -352,23 +343,23 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="p-6 text-center text-slate-600">
+                  <div className="p-6 text-center text-text-muted">
                     <p>Select category to preview it here.</p>
                   </div>
                 )}
               </div>
 
-              <div className="grid gap-[6px] rounded-[8px] border border-slate-200 bg-white p-[14px]">
-                <span className="text-[0.86rem] font-semibold text-slate-500">Selected category</span>
-                <strong className="break-words text-[0.95rem] text-slate-800">
+              <Card tone="subtle" padding="sm" className="grid gap-[6px]">
+                <span className="text-[0.86rem] font-semibold text-text-muted">Selected category</span>
+                <strong className="break-words text-[0.95rem] text-text-strong">
                   {selectedCategoryData?.category_name || "No category selected"}
                 </strong>
-              </div>
+              </Card>
             </div>
 
             <div className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Item Image Preview</span>
-              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[8px] border border-dashed border-slate-300 bg-[#fffaf5]">
+              <span className="ui-label">Item Image Preview</span>
+              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[20px] border border-dashed border-border-subtle bg-surface-muted">
                 {previewUrl ? (
                   <img src={previewUrl} alt="Item preview" className="h-full w-full object-cover" />
                 ) : formData.item_image ? (
@@ -378,26 +369,26 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="p-6 text-center text-slate-600">
+                  <div className="p-6 text-center text-text-muted">
                     <p>Choose an image to preview it here.</p>
                   </div>
                 )}
               </div>
 
-              <div className="grid gap-[6px] rounded-[8px] border border-slate-200 bg-white p-[14px]">
-                <span className="text-[0.86rem] font-semibold text-slate-500">Selected file</span>
-                <strong className="break-words text-[0.95rem] text-slate-800">{imageLabel}</strong>
-              </div>
+              <Card tone="subtle" padding="sm" className="grid gap-[2px]">
+                <span className="ui-label">Selected file</span>
+                <strong className="break-words text-[0.95rem] font-bold text-text-strong">{imageLabel}</strong>
+              </Card>
             </div>
           </aside>
 
           <div className="flex flex-wrap gap-2.5 lg:col-span-2">
-            <button className="rounded-[8px] border-0 bg-orange-500 px-4 py-[11px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-55" type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Submitting..." : "Submit"}
-            </button>
+            </Button>
           </div>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

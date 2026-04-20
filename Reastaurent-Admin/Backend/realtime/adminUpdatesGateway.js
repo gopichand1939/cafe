@@ -6,6 +6,7 @@ const ADMIN_SOCKET_PATH = "/ws";
 const ADMIN_SOCKET_MESSAGE_TYPES = {
   CONNECTED: "admin.connected",
   ORDER_UPDATED: "order.updated",
+  PAYMENT_UPDATED: "payment.updated",
   CUSTOMER_UPDATED: "customer.updated",
   NOTIFICATION_UPDATED: "notification.updated",
 };
@@ -99,6 +100,12 @@ const createAdminUpdatesGateway = (server) => {
   return {
     broadcastOrderUpdate: (change) =>
       broadcast(ADMIN_SOCKET_MESSAGE_TYPES.ORDER_UPDATED, change, "[order-events][admin]"),
+    broadcastPaymentUpdate: (change) =>
+      broadcast(
+        ADMIN_SOCKET_MESSAGE_TYPES.PAYMENT_UPDATED,
+        change,
+        "[payment-events][admin]"
+      ),
     broadcastCustomerUpdate: (change) =>
       broadcast(
         ADMIN_SOCKET_MESSAGE_TYPES.CUSTOMER_UPDATED,

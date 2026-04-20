@@ -1,3 +1,5 @@
+import { Card } from "../ui";
+
 function KeyValueDisplay({ data, fields = [] }) {
   const resolvedFields =
     Array.isArray(fields) && fields.length > 0
@@ -18,15 +20,17 @@ function KeyValueDisplay({ data, fields = [] }) {
             : (data?.[field.key] ?? "-");
 
         return (
-          <div
+          <Card
             key={field.key}
-            className={`rounded-[8px] border border-slate-200 bg-white px-[18px] py-4 ${
+            tone="subtle"
+            padding="sm"
+            className={`${
               field.fullWidth ? "md:col-span-2" : ""
-            }`}
+            } grid gap-1`}
           >
-            <span className="text-[0.92rem] font-semibold text-slate-600">{field.label}</span>
-            <div className="mt-1.5 break-words text-base">{content}</div>
-          </div>
+            <span className="text-[0.74rem] font-extrabold uppercase tracking-wider text-text-muted">{field.label}</span>
+            <div className="break-words text-[1.05rem] font-bold text-text-strong">{content}</div>
+          </Card>
         );
       })}
     </div>

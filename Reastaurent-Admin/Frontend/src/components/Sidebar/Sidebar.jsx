@@ -77,6 +77,16 @@ function OrdersIcon(props) {
   );
 }
 
+function PaymentsIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <rect x="3.5" y="6" width="17" height="12" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3.5 10h17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M7 15h3.5M14.5 15H17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function CustomersIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
@@ -254,6 +264,7 @@ const iconMap = {
   "menu-management": MenuManagementIcon,
   menu_management: MenuManagementIcon,
   orders: OrdersIcon,
+  payments: PaymentsIcon,
   customers: CustomersIcon,
   reviews: ReviewsIcon,
   "user-management": UserManagementIcon,
@@ -336,20 +347,20 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
   };
 
   return (
-    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f6fffb_48%,#edf8f2_100%)] px-4 py-[18px]">
+    <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-[var(--color-sidebar-bg)] px-4 py-[18px] transition-colors duration-300">
       <div className={`${collapsed ? "grid justify-items-center pb-3 pt-1" : "pb-4"}`}>
-        <div className={`border border-[#d8ece3] bg-[linear-gradient(135deg,#ffffff_0%,#ecfdf5_56%,#dcf7e8_100%)] shadow-[0_12px_26px_rgba(45,111,84,0.08)] ${
+        <div className={`border border-border-subtle bg-[var(--color-sidebar-card)] shadow-[var(--sidebar-shadow)] transition-all duration-300 ${
           collapsed ? "grid h-14 w-14 place-items-center rounded-2xl" : "rounded-[22px] px-4 py-[18px]"
         }`}>
           {collapsed ? (
-            <span className="text-base font-black tracking-tight text-[#2f7d5b]">{en.sidebar.brand.collapsedName}</span>
+            <span className="text-base font-black tracking-tight text-brand-500">{en.sidebar.brand.collapsedName}</span>
           ) : (
             <div className="grid gap-1">
-              <p className="m-0 text-[0.72rem] font-black uppercase tracking-[0.18em] text-[#57b98f]">{en.sidebar.brand.eyebrow}</p>
-              <h1 className="m-0 text-[1.45rem] font-semibold leading-[1.1] tracking-[0.01em] text-[#0f2742]">
+              <p className="m-0 text-[0.72rem] font-black uppercase tracking-[0.18em] text-brand-500">{en.sidebar.brand.eyebrow}</p>
+              <h1 className="m-0 text-[1.45rem] font-semibold leading-[1.1] tracking-[0.01em] text-text-strong">
                 {en.sidebar.brand.name}
               </h1>
-              <span className="text-[0.78rem] font-semibold text-[#4f6f61]">{en.sidebar.brand.subtitle}</span>
+              <span className="text-[0.78rem] font-semibold text-text-muted">{en.sidebar.brand.subtitle}</span>
             </div>
           )}
         </div>
@@ -368,12 +379,12 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
               : "min-h-[54px] w-full justify-start rounded-2xl px-[14px]"
           } ${
             menu.isActive
-              ? "translate-x-[2px] bg-[linear-gradient(135deg,#56ba90_0%,#4aa57f_100%)] text-white shadow-[0_10px_20px_rgba(86,186,144,0.18)]"
-              : "bg-transparent text-[#24324a]"
+              ? "translate-x-[2px] bg-brand-500 text-white shadow-[0_10px_20px_rgba(52,211,153,0.18)]"
+              : "bg-transparent text-text-muted hover:text-text-strong"
           }`;
 
           const iconWrapClassName = `grid h-8 w-8 shrink-0 place-items-center rounded-[10px] ${
-            menu.isActive ? "bg-white/20" : "bg-[#eef4f1]"
+            menu.isActive ? "bg-white/20" : "bg-white/5"
           }`;
 
           if (!hasChildren && menu.resolvedPath) {
@@ -425,13 +436,13 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
                         to={child.resolvedPath || "#"}
                         className={`flex min-h-11 items-center gap-[10px] rounded-xl px-3 no-underline font-semibold transition-all duration-200 ${
                           child.isActive
-                            ? "translate-x-[2px] bg-[#eef7f2] text-[#2f7d5b]"
-                            : "bg-transparent text-[#51607a]"
+                            ? "translate-x-[2px] bg-brand-500/10 text-brand-500"
+                            : "bg-transparent text-text-muted hover:text-text-strong"
                         }`}
                         onClick={child.resolvedPath ? onNavigate : undefined}
                       >
                         <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-[8px] ${
-                          child.isActive ? "bg-[#dff3e8]" : "bg-[#f2f6f4]"
+                          child.isActive ? "bg-[#34d399]/20" : "bg-white/5"
                         }`}>
                           <ChildIcon className="h-4 w-4 shrink-0" />
                         </span>
@@ -446,16 +457,16 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
         })}
       </nav>
 
-      <div className={`border-t border-[#d8ece3] pt-4 ${collapsed ? "grid justify-items-center" : "grid gap-3"}`}>
+      <div className={`border-t border-white/5 pt-4 ${collapsed ? "grid justify-items-center" : "grid gap-3"}`}>
         <button
           type="button"
-          className={`flex items-center gap-3 rounded-2xl border border-red-100 bg-red-50 font-bold text-red-700 transition-all duration-200 hover:-translate-y-px hover:bg-red-100 ${
+          className={`flex items-center gap-3 rounded-2xl border border-red-500/10 bg-red-500/5 font-bold text-red-400 transition-all duration-200 hover:-translate-y-px hover:bg-red-500/10 ${
             collapsed ? "h-14 w-14 justify-center px-0" : "min-h-[52px] w-full justify-start px-[14px]"
           }`}
           onClick={onLogout}
           title={collapsed ? en.sidebar.actions.logout : undefined}
         >
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-white text-red-600">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-white/5 text-red-500">
             <LogoutIcon className="h-[18px] w-[18px] shrink-0" />
           </span>
           {!collapsed ? <span>{en.sidebar.actions.logout}</span> : null}

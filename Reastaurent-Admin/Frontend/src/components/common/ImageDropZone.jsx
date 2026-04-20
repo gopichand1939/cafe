@@ -97,13 +97,13 @@ function ImageDropZone({ label, imageLabel, onFileSelect, onError, error }) {
   };
 
   return (
-    <div className="grid gap-2">
-      <span className="text-[0.92rem] font-semibold text-slate-600">{label}</span>
+    <div className="ui-field-shell">
+      <span className="ui-label">{label}</span>
       <div
-        className={`grid min-h-[172px] place-items-center rounded-[14px] border-2 border-dashed px-5 py-6 text-center transition ${
+        className={`grid min-h-[190px] place-items-center rounded-[22px] border-2 border-dashed px-5 py-6 text-center transition-all duration-200 ${
           isDragging
-            ? "border-orange-500 bg-orange-50 shadow-[0_16px_34px_rgba(249,115,22,0.16)]"
-            : "border-slate-300 bg-[#fffaf5]"
+            ? "border-accent-500 bg-[rgba(249,115,22,0.08)] shadow-[0_18px_30px_rgba(249,115,22,0.14)]"
+            : "border-border-subtle bg-[linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(247,250,248,0.95)_100%)]"
         }`}
         onDragEnter={(event) => {
           event.preventDefault();
@@ -117,14 +117,14 @@ function ImageDropZone({ label, imageLabel, onFileSelect, onError, error }) {
         onDrop={handleDrop}
       >
         <div className="grid justify-items-center gap-3">
-          <div className="grid h-14 w-14 place-items-center rounded-full bg-white text-2xl shadow-[0_10px_22px_rgba(15,23,42,0.12)]">
+          <div className="grid h-14 w-14 place-items-center rounded-full bg-white text-2xl text-brand-600 shadow-[0_10px_22px_rgba(15,23,42,0.12)]">
             <span aria-hidden="true">+</span>
           </div>
           <div>
-            <p className="m-0 text-[1rem] font-bold text-slate-900">
+            <p className="m-0 text-[1rem] font-bold text-text-strong">
               {isLoadingExternalImage ? "Importing image..." : "Drag and drop image here"}
             </p>
-            <p className="mt-1 mb-0 text-[0.88rem] text-slate-500">
+            <p className="mt-1 mb-0 text-[0.88rem] leading-6 text-text-muted">
               Drop from your computer, or try dragging a direct image from another source.
             </p>
           </div>
@@ -136,15 +136,15 @@ function ImageDropZone({ label, imageLabel, onFileSelect, onError, error }) {
             onChange={handleFilePick}
           />
           <label
-            className="cursor-pointer rounded-full bg-slate-900 px-4 py-2 text-[0.9rem] font-bold text-white"
+            className="ui-button ui-button-secondary ui-button-sm cursor-pointer rounded-full"
             htmlFor={inputId}
           >
             Browse files
           </label>
         </div>
       </div>
-      <small className="text-slate-500">{imageLabel}</small>
-      {error ? <small className="text-red-600">{error}</small> : null}
+      <small className="ui-help-text">{imageLabel}</small>
+      {error ? <small className="ui-error-text">{error}</small> : null}
     </div>
   );
 }

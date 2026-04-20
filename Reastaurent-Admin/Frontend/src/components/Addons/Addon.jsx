@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { ADDON_LIST } from "../../Utils/Constant";
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
+import { Button, PageSection } from "../ui";
 import StatusPill from "../../components/common/StatusPill";
 import Table from "../Table";
 import ActionPopover from "../ActionPopover";
@@ -81,7 +82,7 @@ function Addon() {
       key: "addon_price",
       label: "Price",
       width: "90px",
-      content: (item) => <span className="font-semibold text-slate-800">£{Number(item.addon_price || 0).toFixed(2)}</span>,
+      content: (item) => <span className="font-bold text-text-strong">£{Number(item.addon_price || 0).toFixed(2)}</span>,
     },
     { key: "sort_order", label: "Sort", width: "70px" },
     {
@@ -99,7 +100,7 @@ function Addon() {
       content: (rowData) => (
         <button
           type="button"
-          className="h-9 w-9 rounded-[8px] border-0 bg-transparent text-[1.3rem] font-extrabold text-blue-600"
+          className="grid h-9 w-9 place-items-center rounded-lg border-0 bg-transparent text-[1.4rem] font-black text-brand-500 hover:bg-surface-panel transition-colors"
           onClick={(event) => handleOpenActions(event, rowData)}
         >
           ...
@@ -109,31 +110,30 @@ function Addon() {
   ];
 
   return (
-    <div className="grid min-h-0 content-start gap-[18px]">
-      <section className="min-h-0 overflow-hidden rounded-[8px] border border-[#d8ece3] bg-[#e7f7f0] p-[10px]">
-        <div className="flex min-h-[56px] flex-wrap items-center justify-between gap-3 px-[6px] pb-2 pt-1">
-          <button className="min-w-[92px] rounded-[8px] border-0 bg-[#57b98f] px-4 py-[11px] font-semibold text-white" onClick={() => navigate("/addaddon")}>
-            Add
-          </button>
-          <div className="flex items-center gap-[10px] font-semibold text-slate-500">
-            <span>Home</span>
-            <span>/</span>
-            <strong className="text-[#3f9773]">Addon</strong>
-          </div>
-        </div>
-
-        <Table
-          data={data}
-          headers={headers}
-          loading={loading}
-          searchPlaceholder="Search..."
-          totalRowsLabel="Total Rows"
-          pageSize={pageSize}
-          currentPage={currentPage}
-          onPageChange={handlePageChange}
-          totalItems={totalCount}
+    <div className="ui-page">
+      <div className="px-6 pt-3 pb-1">
+        <PageSection
+          eyebrow="Management"
+          title="Addon"
+          actions={
+            <Button onClick={() => navigate("/addaddon")}>
+              Add Addon
+            </Button>
+          }
         />
-      </section>
+      </div>
+
+      <Table
+        data={data}
+        headers={headers}
+        loading={loading}
+        searchPlaceholder="Search..."
+        totalRowsLabel="Total Rows"
+        pageSize={pageSize}
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        totalItems={totalCount}
+      />
 
       <ActionPopover
         anchorEl={anchorEl}

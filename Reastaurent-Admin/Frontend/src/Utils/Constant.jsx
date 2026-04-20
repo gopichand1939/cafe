@@ -39,6 +39,10 @@ export const ADMIN_CHANGE_PASSWORD = `${BACKEND_BASE_URL}/admin/change-password`
 export const ADMIN_PROFILE = `${BACKEND_BASE_URL}/admin/profile`;
 export const RESTAURANT_SETTINGS = `${BACKEND_BASE_URL}/restaurant/settings`;
 export const RESTAURANT_TOGGLE_STATUS = `${BACKEND_BASE_URL}/restaurant/toggle-status`;
+export const DASHBOARD_SUMMARY = `${BACKEND_BASE_URL}/dashboard/summary`;
+export const DASHBOARD_CATEGORY_STATS = `${BACKEND_BASE_URL}/dashboard/category-stats`;
+export const DASHBOARD_VEG_STATS = `${BACKEND_BASE_URL}/dashboard/veg-stats`;
+export const DASHBOARD_ORDER_STATS = `${BACKEND_BASE_URL}/dashboard/order-stats`;
 
 
 
@@ -54,6 +58,10 @@ export const ORDER_LIST = `${BACKEND_BASE_URL}/orders/order_list`;
 export const ORDER_BY_ID = `${BACKEND_BASE_URL}/orders/get_order_byId`;
 export const ORDER_UPDATE_STATUS = `${BACKEND_BASE_URL}/orders/update_order_status`;
 export const ORDER_DELETE = `${BACKEND_BASE_URL}/orders/delete_order`;
+
+export const PAYMENT_LIST = `${BACKEND_BASE_URL}/payments/payment_list`;
+export const PAYMENT_BY_ID = `${BACKEND_BASE_URL}/payments/get_payment_byId`;
+export const PAYMENT_SUMMARY = `${BACKEND_BASE_URL}/payments/payment_summary`;
 
 export const NOTIFICATION_LIST = `${BACKEND_BASE_URL}/notifications/notification_list`;
 export const NOTIFICATION_BY_ID = `${BACKEND_BASE_URL}/notifications/get_notification_byId`;

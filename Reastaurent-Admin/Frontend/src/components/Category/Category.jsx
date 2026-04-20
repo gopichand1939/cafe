@@ -8,6 +8,7 @@ import { getImageUrl } from "../../Utils/imageUrl";
 import StatusPill from "../../components/common/StatusPill";
 import Table from "../Table";
 import ActionPopover from "../ActionPopover";
+import { Button, Card, PageSection } from "../ui";
 import {
   setCategoryData,
   setCategorySelectedItem,
@@ -80,10 +81,11 @@ function Category() {
   };
 
   const headers = [
-    { key: "id", label: "Id" },
+    { key: "id", label: "ID", width: "60px" },
     {
       key: "category_image",
-      label: "Image",
+      label: "IMAGE",
+      width: "110px",
       content: (item) => (
         <img
           className="h-11 w-16 rounded-[8px] object-cover"
@@ -99,10 +101,11 @@ function Category() {
         />
       ),
     },
-    { key: "category_name", label: "Category Name" },
+    { key: "category_name", label: "CATEGORY NAME", width: "160px" },
     {
       key: "category_description",
-      label: "Description",
+      label: "DESCRIPTION",
+      width: "250px",
       content: (item) => (
         <span className="inline-block max-w-[220px] overflow-hidden text-ellipsis align-middle" title={item.category_description || "-"}>
           {item.category_description || "-"}
@@ -111,17 +114,19 @@ function Category() {
     },
     {
       key: "is_active",
-      label: "Status",
+      label: "STATUS",
+      width: "100px",
       content: (item) => <StatusPill active={Number(item.is_active) === 1} />,
     },
     {
       key: "actions",
-      label: "Actions",
+      label: "ACTIONS",
+      width: "80px",
       sticky: true,
       content: (rowData) => (
         <button
           type="button"
-          className="h-9 w-9 rounded-[8px] border-0 bg-transparent text-[1.3rem] font-extrabold text-blue-600"
+          className="grid h-9 w-9 place-items-center rounded-lg border-0 bg-transparent text-[1.4rem] font-black text-brand-500 hover:bg-surface-panel transition-colors"
           onClick={(event) => handleOpenActions(event, rowData)}
         >
           ...
@@ -131,31 +136,30 @@ function Category() {
   ];
 
   return (
-    <div className="grid min-h-0 content-start gap-[18px]">
-      <section className="min-h-0 overflow-hidden rounded-[8px] border border-[#d8ece3] bg-[#e7f7f0] p-[10px]">
-        <div className="flex min-h-[56px] flex-wrap items-center justify-between gap-3 px-[6px] pb-2 pt-1">
-          <button className="min-w-[92px] rounded-[8px] border-0 bg-[#57b98f] px-4 py-[11px] font-semibold text-white" onClick={() => navigate("/addcategory")}>
-            Add
-          </button>
-          <div className="flex items-center gap-[10px] font-semibold text-slate-500">
-            <span>Home</span>
-            <span>/</span>
-            <strong className="text-[#3f9773]">Category</strong>
-          </div>
-        </div>
-
-        <Table
-          data={data}
-          headers={headers}
-          loading={loading}
-          searchPlaceholder="Search..."
-          totalRowsLabel="Total Rows"
-          pageSize={pageSize}
-          currentPage={currentPage}
-          onPageChange={handlePageChange}
-          totalItems={totalCount}
+    <div className="ui-page">
+      <div className="px-6 pt-3 pb-1">
+        <PageSection
+          eyebrow="Management"
+          title="Category"
+          actions={
+            <Button onClick={() => navigate("/addcategory")}>
+              Add
+            </Button>
+          }
         />
-      </section>
+      </div>
+
+      <Table
+        data={data}
+        headers={headers}
+        loading={loading}
+        searchPlaceholder="Search..."
+        totalRowsLabel="Total Rows"
+        pageSize={pageSize}
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        totalItems={totalCount}
+      />
 
       <ActionPopover
         anchorEl={anchorEl}

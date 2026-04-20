@@ -10,6 +10,7 @@ import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import StatusPill from "../common/StatusPill";
 import Table from "../Table";
 import ActionPopover from "../ActionPopover";
+import { Button, PageSection } from "../ui";
 import {
   setNotificationData,
   setNotificationSelectedItem,
@@ -44,6 +45,58 @@ function Notification() {
         prev.filter((value) => value !== Number(notificationId))
       );
     }, NEW_NOTIFICATION_HIGHLIGHT_MS);
+  };
+
+  const applyRealtimeNotificationChange = (change) => {
+    const action = String(change?.action || "").toLowerCase();
+    const realtimeNotification = change?.entityData || null;
+    const targetNotificationId = Number(
+      change?.notificationId || change?.entityId || realtimeNotification?.id || 0
+    );
+
+    if (!targetNotificationId) {
+      return;
+    }
+
+    if (action === "created" && realtimeNotification) {
+      setTotalCount((prev) => prev + 1);
+      setData((prev) => {
+        const nextData = [
+          realtimeNotification,
+          ...prev.filter((item) => Number(item.id) !== targetNotificationId),
+        ].slice(0, pageSize);
+
+        dispatch(setNotificationData(nextData));
+        return nextData;
+      });
+      return;
+    }
+
+    if (action === "updated" && realtimeNotification) {
+      setData((prev) => {
+        const nextData = prev.map((item) =>
+          Number(item.id) === targetNotificationId
+            ? { ...item, ...realtimeNotification }
+            : item
+        );
+
+        dispatch(setNotificationData(nextData));
+        return nextData;
+      });
+      return;
+    }
+
+    if (action === "deleted") {
+      setTotalCount((prev) => Math.max(prev - 1, 0));
+      setData((prev) => {
+        const nextData = prev.filter(
+          (item) => Number(item.id) !== targetNotificationId
+        );
+
+        dispatch(setNotificationData(nextData));
+        return nextData;
+      });
+    }
   };
 
   const fetchData = async (page = 1, limit = 10) => {
@@ -86,6 +139,7 @@ function Notification() {
 
         if (change?.action === "created" && targetNotificationId) {
           highlightNotification(targetNotificationId);
+          applyRealtimeNotificationChange(change);
           setCurrentPage(1);
           fetchData(1, pageSize);
           return;
@@ -95,6 +149,7 @@ function Notification() {
           highlightNotification(targetNotificationId);
         }
 
+        applyRealtimeNotificationChange(change);
         fetchData(currentPage, pageSize);
       }
     );
@@ -179,7 +234,7 @@ function Notification() {
       content: (rowData) => (
         <button
           type="button"
-          className="h-9 w-9 rounded-[8px] border-0 bg-transparent text-[1.3rem] font-extrabold text-blue-600"
+          className="grid h-9 w-9 place-items-center rounded-lg border-0 bg-transparent text-[1.4rem] font-black text-brand-500 hover:bg-surface-panel transition-colors"
           onClick={(event) => handleOpenActions(event, rowData)}
         >
           ...
@@ -189,45 +244,44 @@ function Notification() {
   ];
 
   return (
-    <div className="grid min-h-0 content-start gap-[18px]">
-      <section className="min-h-0 overflow-hidden rounded-[8px] border border-[#d8ece3] bg-[#e7f7f0] p-[10px]">
-        <div className="flex min-h-[56px] flex-wrap items-center justify-between gap-3 px-[6px] pb-2 pt-1">
-          <button
-            className="min-w-[150px] rounded-[8px] border-0 bg-[#57b98f] px-4 py-[11px] font-semibold text-white disabled:opacity-70"
-            disabled={markingAllRead}
-            onClick={handleMarkAllRead}
-          >
-            {markingAllRead ? "Marking..." : "Mark All Read"}
-          </button>
-          <div className="flex items-center gap-[10px] font-semibold text-slate-500">
-            <span>Home</span>
-            <span>/</span>
-            <strong className="text-[#3f9773]">Notifications</strong>
-          </div>
-        </div>
-
-        <Table
-          data={data}
-          headers={headers}
-          loading={loading}
-          searchPlaceholder="Search..."
-          totalRowsLabel="Total Rows"
-          pageSize={pageSize}
-          currentPage={currentPage}
-          onPageChange={handlePageChange}
-          totalItems={totalCount}
-          getRowClassName={(item) =>
-            highlightedNotificationIds.includes(Number(item.id))
-              ? "shadow-[inset_0_0_0_2px_rgba(249,115,22,0.24)]"
-              : ""
-          }
-          getRowCellClassName={(item) =>
-            highlightedNotificationIds.includes(Number(item.id))
-              ? "bg-[linear-gradient(90deg,rgba(255,247,237,0.98)_0%,rgba(255,237,213,0.98)_100%)] animate-pulse"
-              : "hover:bg-[#f8fcfa]"
+    <div className="ui-page">
+      <div className="px-6 pt-3 pb-1">
+        <PageSection
+          eyebrow="Management"
+          title="Notifications"
+          actions={
+            <Button
+              variant="secondary"
+              disabled={markingAllRead}
+              onClick={handleMarkAllRead}
+            >
+              {markingAllRead ? "Marking..." : "Mark All Read"}
+            </Button>
           }
         />
-      </section>
+      </div>
+
+      <Table
+        data={data}
+        headers={headers}
+        loading={loading}
+        searchPlaceholder="Search..."
+        totalRowsLabel="Total Rows"
+        pageSize={pageSize}
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
+        totalItems={totalCount}
+        getRowClassName={(item) =>
+          highlightedNotificationIds.includes(Number(item.id))
+            ? "shadow-[inset_0_0_0_2px_rgba(249,115,22,0.4)]"
+            : ""
+        }
+        getRowCellClassName={(item) =>
+          highlightedNotificationIds.includes(Number(item.id))
+            ? "bg-accent-500/10 animate-pulse"
+            : ""
+        }
+      />
 
       <ActionPopover
         anchorEl={anchorEl}

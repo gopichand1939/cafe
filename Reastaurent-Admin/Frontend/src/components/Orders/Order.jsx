@@ -15,6 +15,75 @@ import {
 } from "../../Redux/CardSlice";
 import { subscribeToAdminRealtimeEvent, ADMIN_REALTIME_EVENT_TYPES } from "../../realtime/adminRealtimeEvents";
 
+const formatCurrency = (value, currencyCode = "INR") => {
+  const amount = Number(value || 0);
+
+  try {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: currencyCode || "INR",
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch (_error) {
+    return `${currencyCode || "INR"} ${amount.toFixed(2)}`;
+  }
+};
+
+const truncateValue = (value, maxLength = 18) => {
+  const normalized = String(value || "-");
+
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength - 1)}...`;
+};
+
+const renderCompactText = (value, maxLength = 18, className = "") => (
+  <span
+    className={`block max-w-full overflow-hidden text-ellipsis whitespace-nowrap ${className}`}
+    title={String(value || "-")}
+  >
+    {truncateValue(value, maxLength)}
+  </span>
+);
+
+const parseOrderedItems = (value) =>
+  String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const renderMethodPill = (method = "") => {
+  const normalizedMethod = String(method || "unknown").toLowerCase();
+  const toneClassName =
+    normalizedMethod === "stripe"
+      ? "bg-sky-100 text-sky-700"
+      : "bg-slate-100 text-slate-700";
+
+  return (
+    <span
+      className={`inline-flex min-w-[108px] items-center justify-center rounded-full px-3 py-1.5 text-[0.8rem] font-bold ${toneClassName}`}
+    >
+      {normalizedMethod.replace(/_/g, " ")}
+    </span>
+  );
+};
+
+const renderPaymentFlowPill = (paymentStatus = "") => {
+  const isPaid = String(paymentStatus || "").toLowerCase() === "paid";
+
+  return (
+    <span
+      className={`inline-flex min-w-[132px] items-center justify-center rounded-full px-3 py-1.5 text-[0.8rem] font-bold ${
+        isPaid ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+      }`}
+    >
+      {isPaid ? "Payment Success" : "Order Pending"}
+    </span>
+  );
+};
+
 function Order() {
   const NEW_ORDER_HIGHLIGHT_MS = 30000;
   const dispatch = useDispatch();
@@ -38,6 +107,52 @@ function Order() {
     window.setTimeout(() => {
       setHighlightedOrderIds((prev) => prev.filter((value) => value !== Number(orderId)));
     }, NEW_ORDER_HIGHLIGHT_MS);
+  };
+
+  const applyRealtimeOrderChange = (change) => {
+    const action = String(change?.action || "").toLowerCase();
+    const realtimeOrder = change?.entityData || null;
+    const targetOrderId = Number(change?.orderId || change?.entityId || realtimeOrder?.id || 0);
+
+    if (!targetOrderId) {
+      return;
+    }
+
+    if (action === "created" && realtimeOrder) {
+      setTotalCount((prev) => prev + 1);
+      setData((prev) => {
+        const nextData = [
+          realtimeOrder,
+          ...prev.filter((item) => Number(item.id) !== targetOrderId),
+        ].slice(0, pageSize);
+
+        dispatch(setOrderData(nextData));
+        return nextData;
+      });
+      return;
+    }
+
+    if (action === "updated" && realtimeOrder) {
+      setData((prev) => {
+        const nextData = prev.map((item) =>
+          Number(item.id) === targetOrderId ? { ...item, ...realtimeOrder } : item
+        );
+
+        dispatch(setOrderData(nextData));
+        return nextData;
+      });
+      return;
+    }
+
+    if (action === "deleted") {
+      setTotalCount((prev) => Math.max(prev - 1, 0));
+      setData((prev) => {
+        const nextData = prev.filter((item) => Number(item.id) !== targetOrderId);
+
+        dispatch(setOrderData(nextData));
+        return nextData;
+      });
+    }
   };
 
   const fetchData = async (page = 1, limit = 10) => {
@@ -80,6 +195,7 @@ function Order() {
 
         if (change?.action === "created" && targetOrderId) {
           highlightOrder(targetOrderId);
+          applyRealtimeOrderChange(change);
           setCurrentPage(1);
           fetchData(1, pageSize);
           return;
@@ -89,6 +205,7 @@ function Order() {
           highlightOrder(targetOrderId);
         }
 
+        applyRealtimeOrderChange(change);
         fetchData(currentPage, pageSize);
       }
     );
@@ -116,21 +233,119 @@ function Order() {
 
   const headers = [
     { key: "id", label: "Id", width: "45px" },
-    { key: "order_number", label: "Order Number", width: "140px" },
-    { key: "customer_name", label: "Customer Name", width: "140px" },
-    { key: "customer_phone", label: "Phone", width: "110px" },
+    {
+      key: "order_number",
+      label: "Order Number",
+      width: "145px",
+      content: (item) => renderCompactText(item.order_number, 18, "font-semibold"),
+    },
+    {
+      key: "payment_flow",
+      label: "Payment Flow",
+      width: "145px",
+      content: (item) => renderPaymentFlowPill(item.payment_status),
+    },
+    {
+      key: "customer_name",
+      label: "Customer Name",
+      width: "170px",
+      content: (item) => renderCompactText(item.customer_name, 22),
+    },
+    { key: "customer_phone", label: "Phone", width: "120px" },
     {
       key: "item_count",
       label: "Items",
       width: "70px",
     },
     {
-      key: "total_amount",
-      label: "Total",
+      key: "ordered_items",
+      label: "Ordered Items",
+      width: "280px",
+      content: (item) => {
+        const orderedItems = parseOrderedItems(item.ordered_items);
+
+        if (orderedItems.length === 0) {
+          return <span className="text-sm text-slate-500">-</span>;
+        }
+
+        return (
+          <div className="grid justify-items-start gap-1 text-left">
+            {orderedItems.map((orderedItem, index) => (
+              <span
+                key={`${item.id}-ordered-item-${index}`}
+                className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap rounded-full bg-brand-50 px-2.5 py-1 text-[0.75rem] font-semibold text-brand-700"
+                title={orderedItem}
+              >
+                {orderedItem}
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      key: "payment_method",
+      label: "Payment Method",
+      width: "120px",
+      content: (item) => renderMethodPill(item.payment_method),
+    },
+    {
+      key: "subtotal_amount",
+      label: "Subtotal",
+      width: "110px",
+      content: (item) => (
+        <span className="font-semibold text-slate-800">
+          {formatCurrency(item.subtotal_amount, item.currency_code)}
+        </span>
+      ),
+    },
+    {
+      key: "discount_amount",
+      label: "Discount",
+      width: "110px",
+      content: (item) => (
+        <span className="font-semibold text-emerald-700">
+          {formatCurrency(item.discount_amount, item.currency_code)}
+        </span>
+      ),
+    },
+    {
+      key: "addon_amount",
+      label: "Addons",
+      width: "100px",
+      content: (item) => (
+        <span className="font-semibold text-slate-800">
+          {formatCurrency(item.addon_amount, item.currency_code)}
+        </span>
+      ),
+    },
+    {
+      key: "tax_amount",
+      label: "Tax",
       width: "90px",
       content: (item) => (
         <span className="font-semibold text-slate-800">
-          {Number(item.total_amount || 0).toFixed(2)}
+          {formatCurrency(item.tax_amount, item.currency_code)}
+        </span>
+      ),
+    },
+    {
+      key: "delivery_fee",
+      label: "Delivery",
+      width: "100px",
+      content: (item) => (
+        <span className="font-semibold text-slate-800">
+          {formatCurrency(item.delivery_fee, item.currency_code)}
+        </span>
+      ),
+    },
+    {
+      key: "total_amount",
+      label: "Total",
+      width: "110px",
+      content: (item) => (
+        <span className="font-semibold text-slate-800">
+          {formatCurrency(item.total_amount, item.currency_code)}
         </span>
       ),
     },
@@ -147,10 +362,22 @@ function Order() {
       content: (item) => <StatusPill active={item.payment_status === "paid"} label={item.payment_status} />,
     },
     {
+      key: "order_notes",
+      label: "Order Notes",
+      width: "180px",
+      content: (item) => renderCompactText(item.order_notes || "-", 24),
+    },
+    {
       key: "created_at",
       label: "Created At",
       width: "150px",
       content: (item) => new Date(item.created_at).toLocaleString(),
+    },
+    {
+      key: "updated_at",
+      label: "Updated At",
+      width: "150px",
+      content: (item) => new Date(item.updated_at).toLocaleString(),
     },
     {
       key: "actions",

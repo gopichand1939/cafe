@@ -1,6 +1,7 @@
-import { useEffect, useEffectEvent } from "react";
+import { useEffect, useRef } from "react";
 import { ADMIN_UPDATES_WS_URL } from "../Utils/Constant";
 import { getAccessToken } from "../Utils/authStorage";
+import { ensureFreshAccessToken } from "../Utils/fetchWithRefreshToken";
 import {
   ADMIN_REALTIME_EVENT_TYPES,
   emitAdminRealtimeEvent,
@@ -34,20 +35,33 @@ const buildAuthenticatedWebSocketUrl = (baseUrl, accessToken) => {
 
 export const useAdminRealtimeUpdates = ({
   onOrderUpdate,
+  onPaymentUpdate,
   onCustomerUpdate,
   onNotificationUpdate,
 }) => {
-  const handleOrderUpdate = useEffectEvent(onOrderUpdate || (() => {}));
-  const handleCustomerUpdate = useEffectEvent(onCustomerUpdate || (() => {}));
-  const handleNotificationUpdate = useEffectEvent(
-    onNotificationUpdate || (() => {})
-  );
+  const orderUpdateRef = useRef(onOrderUpdate || (() => {}));
+  const paymentUpdateRef = useRef(onPaymentUpdate || (() => {}));
+  const customerUpdateRef = useRef(onCustomerUpdate || (() => {}));
+  const notificationUpdateRef = useRef(onNotificationUpdate || (() => {}));
 
   useEffect(() => {
-    const accessToken = getAccessToken();
-    const socketUrl = buildAuthenticatedWebSocketUrl(ADMIN_UPDATES_WS_URL, accessToken);
+    orderUpdateRef.current = onOrderUpdate || (() => {});
+  }, [onOrderUpdate]);
 
-    if (!accessToken || !socketUrl) {
+  useEffect(() => {
+    paymentUpdateRef.current = onPaymentUpdate || (() => {});
+  }, [onPaymentUpdate]);
+
+  useEffect(() => {
+    customerUpdateRef.current = onCustomerUpdate || (() => {});
+  }, [onCustomerUpdate]);
+
+  useEffect(() => {
+    notificationUpdateRef.current = onNotificationUpdate || (() => {});
+  }, [onNotificationUpdate]);
+
+  useEffect(() => {
+    if (!ADMIN_UPDATES_WS_URL) {
       return undefined;
     }
 
@@ -67,6 +81,17 @@ export const useAdminRealtimeUpdates = ({
     };
 
     const connect = () => {
+      const accessToken = getAccessToken();
+      const socketUrl = buildAuthenticatedWebSocketUrl(
+        ADMIN_UPDATES_WS_URL,
+        accessToken
+      );
+
+      if (!accessToken || !socketUrl) {
+        scheduleReconnect();
+        return;
+      }
+
       socket = new WebSocket(socketUrl);
 
       socket.addEventListener("message", (event) => {
@@ -75,7 +100,15 @@ export const useAdminRealtimeUpdates = ({
 
           if (message.type === ADMIN_REALTIME_EVENT_TYPES.ORDER_UPDATED) {
             emitAdminRealtimeEvent(ADMIN_REALTIME_EVENT_TYPES.ORDER_UPDATED, message.payload);
-            handleOrderUpdate(message.payload);
+            orderUpdateRef.current(message.payload);
+          }
+
+          if (message.type === ADMIN_REALTIME_EVENT_TYPES.PAYMENT_UPDATED) {
+            emitAdminRealtimeEvent(
+              ADMIN_REALTIME_EVENT_TYPES.PAYMENT_UPDATED,
+              message.payload
+            );
+            paymentUpdateRef.current(message.payload);
           }
 
           if (message.type === ADMIN_REALTIME_EVENT_TYPES.CUSTOMER_UPDATED) {
@@ -83,7 +116,7 @@ export const useAdminRealtimeUpdates = ({
               ADMIN_REALTIME_EVENT_TYPES.CUSTOMER_UPDATED,
               message.payload
             );
-            handleCustomerUpdate(message.payload);
+            customerUpdateRef.current(message.payload);
           }
 
           if (message.type === ADMIN_REALTIME_EVENT_TYPES.NOTIFICATION_UPDATED) {
@@ -91,7 +124,7 @@ export const useAdminRealtimeUpdates = ({
               ADMIN_REALTIME_EVENT_TYPES.NOTIFICATION_UPDATED,
               message.payload
             );
-            handleNotificationUpdate(message.payload);
+            notificationUpdateRef.current(message.payload);
           }
         } catch (error) {
           console.error("Failed to parse admin realtime message:", error);
@@ -102,10 +135,19 @@ export const useAdminRealtimeUpdates = ({
         socket?.close();
       });
 
-      socket.addEventListener("close", () => {
-        if (!isDisposed) {
-          scheduleReconnect();
+      socket.addEventListener("close", (event) => {
+        if (isDisposed) {
+          return;
         }
+
+        if (event.code === 1008) {
+          void ensureFreshAccessToken().finally(() => {
+            scheduleReconnect();
+          });
+          return;
+        }
+
+        scheduleReconnect();
       });
     };
 

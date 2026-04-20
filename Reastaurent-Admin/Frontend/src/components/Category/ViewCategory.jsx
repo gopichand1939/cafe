@@ -7,6 +7,7 @@ import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { getImageUrl } from "../../Utils/imageUrl";
 import { setCategorySelectedItem } from "../../Redux/CardSlice";
 import KeyValueDisplay from "../../components/common/KeyValueDisplay";
+import { Button, Card, PageSection } from "../ui";
 
 function ViewCategory() {
   const { id } = useParams();
@@ -52,7 +53,7 @@ function ViewCategory() {
   }, [dispatch, id, navigate, selectedCategory]);
 
   if (!category) {
-    return <div className="rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">Loading category...</div>;
+    return <Card>Loading category...</Card>;
   }
 
   const displayData = {
@@ -66,26 +67,26 @@ function ViewCategory() {
   };
 
   return (
-    <div>
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-        <div>
-          <p className="m-0 text-[0.78rem] font-bold uppercase tracking-normal text-orange-500">Category</p>
-          <h2 className="mt-2 mb-0 text-[clamp(1.7rem,2vw,2.4rem)] leading-[1.1]">View Category</h2>
-        </div>
-        <button className="self-start rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900 transition hover:-translate-y-px" onClick={() => navigate("/category")}>
-          Back
-        </button>
-      </div>
+    <div className="ui-page">
+      <PageSection
+        eyebrow="Category"
+        title="View Category"
+        actions={
+          <Button variant="secondary" onClick={() => navigate("/category")}>
+            Back
+          </Button>
+        }
+      />
 
-      <div className="mt-[18px] rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">
+      <Card className="mt-0">
         <div className="mt-5 grid items-start gap-[22px] lg:grid-cols-[minmax(0,1fr)_460px]">
           <div className="grid min-w-0 max-w-[760px] content-start gap-[18px]">
             <KeyValueDisplay data={displayData} />
           </div>
           <aside className="grid min-w-0 max-w-[460px] content-start gap-[18px]">
             <div className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Image Preview</span>
-              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[8px] border border-dashed border-slate-300 bg-[#fffaf5]">
+              <span className="ui-label">Image Preview</span>
+              <div className="grid min-h-[240px] max-h-[280px] place-items-center overflow-hidden rounded-[20px] border border-dashed border-border-subtle bg-surface-muted">
                 <img
                   src={getImageUrl(category, "category_image")}
                   alt={category.category_name}
@@ -100,7 +101,7 @@ function ViewCategory() {
             </div>
           </aside>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

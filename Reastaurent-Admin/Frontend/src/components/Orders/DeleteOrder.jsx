@@ -9,6 +9,7 @@ import {
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { setOrderSelectedItem } from "../../Redux/CardSlice";
 import KeyValueDisplay from "../common/KeyValueDisplay";
+import { Button, Card, PageSection } from "../ui";
 
 function DeleteOrder() {
   const { id } = useParams();
@@ -83,7 +84,7 @@ function DeleteOrder() {
   };
 
   if (!order) {
-    return <div className="rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">Loading order...</div>;
+    return <Card>Loading order...</Card>;
   }
 
   const displayData = {
@@ -99,32 +100,29 @@ function DeleteOrder() {
   };
 
   return (
-    <div>
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-        <div>
-          <p className="m-0 text-[0.78rem] font-bold uppercase tracking-normal text-orange-500">Orders</p>
-          <h2 className="mt-2 mb-0 text-[clamp(1.7rem,2vw,2.4rem)] leading-[1.1]">Delete Order</h2>
-        </div>
-        <button className="self-start rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900 transition hover:-translate-y-px" onClick={() => navigate("/orders")}>
-          Back
-        </button>
-      </div>
+    <div className="ui-page">
+      <PageSection
+        eyebrow="Orders"
+        title="Delete Order"
+        subtitle="Use the centralized danger action below if you want to remove this order record."
+        actions={<Button variant="secondary" onClick={() => navigate("/orders")}>Back</Button>}
+      />
 
-      <div className="mt-[18px] rounded-[8px] border border-[rgba(148,163,184,0.22)] bg-white/82 p-[22px] shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-[12px]">
+      <Card tone="danger" className="mt-0">
         <div className="mt-5 grid items-start gap-[22px]">
           <div className="grid min-w-0 max-w-[760px] content-start gap-[18px]">
             <KeyValueDisplay data={displayData} />
           </div>
         </div>
-      </div>
+      </Card>
 
       <div className="mt-0.5 flex flex-wrap gap-2.5">
-        <button className="rounded-[8px] border-0 bg-red-600 px-4 py-[11px] font-semibold text-white transition hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0" onClick={handleDelete} disabled={isDeleting}>
+        <Button variant="danger" onClick={handleDelete} disabled={isDeleting}>
           {isDeleting ? "Deleting..." : "Confirm Delete"}
-        </button>
-        <button className="rounded-[8px] border-0 bg-slate-200 px-4 py-[11px] font-semibold text-slate-900 transition hover:-translate-y-px" onClick={() => navigate("/orders")}>
+        </Button>
+        <Button variant="secondary" onClick={() => navigate("/orders")}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
