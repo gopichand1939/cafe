@@ -2,7 +2,7 @@ import {
   CATEGORY_LIST,
   ITEM_ADDONS,
   ITEMS_BY_CATEGORY,
-} from "../config/api";
+} from "../Utils/Constant";
 
 const postJson = async (url, body = {}) => {
   const response = await fetch(url, {

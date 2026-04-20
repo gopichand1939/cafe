@@ -1,66 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { customerAuthStorage } from "../auth/customerAuthStorage";
+import { customerAuthStorage } from "../../auth/customerAuthStorage";
 import {
   changeCustomerPassword,
   loginCustomer,
   logoutCustomer,
   registerCustomer,
-} from "../services/customerAuthApi";
+} from "../../services/customerAuthApi";
 import {
   fetchCustomerProfile,
   updateCustomerProfile,
-} from "../services/customerProfileApi";
-import { fetchMyOrders } from "../services/orderApi";
+} from "../../services/customerProfileApi";
+import { fetchMyOrders } from "../../services/orderApi";
 import {
   fetchCustomerNotifications,
   fetchCustomerUnreadNotificationSummary,
   markAllCustomerNotificationsAsRead,
   markCustomerNotificationAsRead,
-} from "../services/customerNotificationApi";
-import { stopCustomerNotificationAlert } from "../Utils/notificationSound";
-
-const animationStyles = `
-  @keyframes customerOverlayFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes customerDrawerSlideIn {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
-  }
-`;
-
-const cardStyle = {
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: "18px",
-  padding: "18px",
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: "14px",
-  border: "1px solid rgba(255,255,255,0.1)",
-  background: "rgba(255,255,255,0.05)",
-  color: "#fff",
-  fontSize: "14px",
-  boxSizing: "border-box",
-  outline: "none",
-};
-
-const primaryButtonStyle = {
-  width: "100%",
-  padding: "13px 16px",
-  background: "linear-gradient(135deg, #f59e0b, #ef4444)",
-  border: "none",
-  borderRadius: "14px",
-  color: "#fff",
-  fontSize: "14px",
-  fontWeight: 700,
-  cursor: "pointer",
-};
+} from "../../services/customerNotificationApi";
+import { stopCustomerNotificationAlert } from "../../Utils/notificationSound";
 
 const formatDateTime = (value) => {
   if (!value) {
@@ -86,18 +43,11 @@ function Notice({ tone = "success", message }) {
 
   return (
     <div
-      style={{
-        padding: "12px 14px",
-        borderRadius: "12px",
-        background: isSuccess
-          ? "rgba(34,197,94,0.14)"
-          : "rgba(239,68,68,0.12)",
-        border: isSuccess
-          ? "1px solid rgba(34,197,94,0.24)"
-          : "1px solid rgba(239,68,68,0.24)",
-        color: isSuccess ? "#bbf7d0" : "#fecaca",
-        fontSize: "13px",
-      }}
+      className={`rounded-xl px-[14px] py-3 text-[13px] ${
+        isSuccess
+          ? "border border-green-500/25 bg-green-500/15 text-green-200"
+          : "border border-red-500/25 bg-red-500/10 text-red-200"
+      }`}
     >
       {message}
     </div>
@@ -160,9 +110,9 @@ function GuestView({ onAuthenticated }) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <div style={cardStyle}>
-        <div style={{ display: "flex", gap: "8px", marginBottom: "18px" }}>
+    <div className="flex flex-col gap-4">
+      <div className="customer-card">
+        <div className="mb-[18px] flex gap-2">
           {["login", "register"].map((tab) => {
             const active = tab === mode;
 
@@ -173,21 +123,11 @@ function GuestView({ onAuthenticated }) {
                   setMode(tab);
                   setErrorMessage("");
                 }}
-                style={{
-                  flex: 1,
-                  padding: "10px 12px",
-                  borderRadius: "12px",
-                  border: active
-                    ? "1px solid rgba(245,158,11,0.4)"
-                    : "1px solid rgba(255,255,255,0.08)",
-                  background: active
-                    ? "linear-gradient(135deg, rgba(245,158,11,0.22), rgba(239,68,68,0.16))"
-                    : "rgba(255,255,255,0.03)",
-                  color: "#fff",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  textTransform: "capitalize",
-                }}
+                className={`flex-1 rounded-xl px-3 py-2.5 font-bold capitalize text-white transition ${
+                  active
+                    ? "border border-amber-400/40 bg-gradient-to-br from-amber-500/20 to-red-500/20"
+                    : "border border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                }`}
               >
                 {tab}
               </button>
@@ -195,33 +135,21 @@ function GuestView({ onAuthenticated }) {
           })}
         </div>
 
-        <h3 style={{ margin: 0, color: "#fff", fontSize: "22px" }}>
+        <h3 className="m-0 text-[22px] font-bold text-white">
           {isLogin ? "Sign in to continue" : "Create your customer account"}
         </h3>
-        <p
-          style={{
-            margin: "8px 0 0",
-            color: "rgba(255,255,255,0.58)",
-            fontSize: "13px",
-            lineHeight: 1.6,
-          }}
-        >
+        <p className="mt-2 text-[13px] leading-6 text-white/60">
           Once signed in, this right-side panel will show your profile, orders,
           notifications, account, and address details.
         </p>
 
-        <div style={{ marginTop: "16px" }}>
+        <div className="mt-4">
           <Notice tone="error" message={errorMessage} />
         </div>
 
         <form
           onSubmit={isLogin ? handleLogin : handleRegister}
-          style={{
-            marginTop: "16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "12px",
-          }}
+          className="mt-4 flex flex-col gap-3"
         >
           {isLogin ? (
             <>
@@ -232,7 +160,7 @@ function GuestView({ onAuthenticated }) {
                   setLoginForm((prev) => ({ ...prev, email: event.target.value }))
                 }
                 placeholder="Email address"
-                style={inputStyle}
+                className="customer-input"
                 required
               />
               <input
@@ -245,7 +173,7 @@ function GuestView({ onAuthenticated }) {
                   }))
                 }
                 placeholder="Password"
-                style={inputStyle}
+                className="customer-input"
                 required
               />
             </>
@@ -258,7 +186,7 @@ function GuestView({ onAuthenticated }) {
                   setRegisterForm((prev) => ({ ...prev, name: event.target.value }))
                 }
                 placeholder="Full name"
-                style={inputStyle}
+                className="customer-input"
                 required
               />
               <input
@@ -271,7 +199,7 @@ function GuestView({ onAuthenticated }) {
                   }))
                 }
                 placeholder="Email address"
-                style={inputStyle}
+                className="customer-input"
                 required
               />
               <input
@@ -284,7 +212,7 @@ function GuestView({ onAuthenticated }) {
                   }))
                 }
                 placeholder="Mobile number"
-                style={inputStyle}
+                className="customer-input"
                 required
               />
               <input
@@ -297,7 +225,7 @@ function GuestView({ onAuthenticated }) {
                   }))
                 }
                 placeholder="Password"
-                style={inputStyle}
+                className="customer-input"
                 required
               />
               <input
@@ -310,13 +238,13 @@ function GuestView({ onAuthenticated }) {
                   }))
                 }
                 placeholder="Confirm password"
-                style={inputStyle}
+                className="customer-input"
                 required
               />
             </>
           )}
 
-          <button type="submit" disabled={submitting} style={primaryButtonStyle}>
+          <button type="submit" disabled={submitting} className="customer-primary-button">
             {submitting
               ? isLogin
                 ? "Signing in..."
@@ -580,7 +508,6 @@ function SignedInView({
         await logoutCustomer(accessToken);
       }
     } catch (_error) {
-      // Keep local logout smooth even if the request fails.
     } finally {
       customerAuthStorage.clearSession();
       onNotificationSummaryChange({
@@ -649,55 +576,17 @@ function SignedInView({
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      <div style={cardStyle}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "14px",
-            marginBottom: "18px",
-          }}
-        >
-          <div
-            style={{
-              width: "56px",
-              height: "56px",
-              borderRadius: "16px",
-              background: "linear-gradient(135deg, #f59e0b, #ef4444)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              fontWeight: 800,
-              fontSize: "20px",
-            }}
-          >
+    <div className="flex flex-col gap-4">
+      <div className="customer-card">
+        <div className="mb-[18px] flex items-center gap-[14px]">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-amber-500 to-red-500 text-xl font-extrabold text-white">
             {(customer?.name || "C").slice(0, 1).toUpperCase()}
           </div>
-          <div style={{ minWidth: 0 }}>
-            <h3
-              style={{
-                margin: 0,
-                color: "#fff",
-                fontSize: "20px",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
+          <div className="min-w-0">
+            <h3 className="m-0 truncate text-xl font-bold text-white">
               {customer?.name || "Customer"}
             </h3>
-            <p
-              style={{
-                margin: "6px 0 0",
-                color: "rgba(255,255,255,0.55)",
-                fontSize: "13px",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
+            <p className="mt-1.5 truncate text-[13px] text-white/55">
               {customer?.email}
             </p>
           </div>
@@ -705,29 +594,12 @@ function SignedInView({
 
         <button
           onClick={signOut}
-          style={{
-            width: "100%",
-            marginBottom: "14px",
-            padding: "11px 14px",
-            borderRadius: "14px",
-            border: "1px solid rgba(255,255,255,0.1)",
-            background: "rgba(255,255,255,0.06)",
-            color: "#fff",
-            fontSize: "13px",
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
+          className="mb-[14px] w-full rounded-[14px] border border-white/10 bg-white/[0.06] px-[14px] py-[11px] text-[13px] font-bold text-white transition hover:bg-white/[0.1]"
         >
           Logout
         </button>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: "10px",
-          }}
-        >
+        <div className="grid grid-cols-2 gap-2.5">
           {tabs.map((tab) => {
             const active = activeTab === tab.key;
 
@@ -739,20 +611,11 @@ function SignedInView({
                   setMessage("");
                   setErrorMessage("");
                 }}
-                style={{
-                  padding: "11px 12px",
-                  borderRadius: "14px",
-                  border: active
-                    ? "1px solid rgba(245,158,11,0.4)"
-                    : "1px solid rgba(255,255,255,0.08)",
-                  background: active
-                    ? "linear-gradient(135deg, rgba(245,158,11,0.2), rgba(239,68,68,0.16))"
-                    : "rgba(255,255,255,0.03)",
-                  color: "#fff",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                }}
+                className={`rounded-[14px] px-3 py-[11px] text-[13px] font-bold text-white transition ${
+                  active
+                    ? "border border-amber-400/40 bg-gradient-to-br from-amber-500/20 to-red-500/20"
+                    : "border border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+                }`}
               >
                 {tab.label}
               </button>
@@ -765,27 +628,13 @@ function SignedInView({
       <Notice tone="error" message={errorMessage} />
 
       {activeTab === "profile" ? (
-        <form onSubmit={saveProfile} style={cardStyle}>
-          <h4 style={{ margin: 0, color: "#fff", fontSize: "18px" }}>
-            My Profile
-          </h4>
-          <p
-            style={{
-              margin: "8px 0 0",
-              color: "rgba(255,255,255,0.55)",
-              fontSize: "13px",
-            }}
-          >
+        <form onSubmit={saveProfile} className="customer-card">
+          <h4 className="m-0 text-lg font-semibold text-white">My Profile</h4>
+          <p className="mt-2 text-[13px] text-white/55">
             These are your personal details from the customer account.
           </p>
-          <div
-            style={{
-              marginTop: "16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-            }}
-          >
+
+          <div className="mt-4 flex flex-col gap-3">
             <input
               type="text"
               value={profileForm.name}
@@ -793,7 +642,7 @@ function SignedInView({
                 setProfileForm((prev) => ({ ...prev, name: event.target.value }))
               }
               placeholder="Full name"
-              style={inputStyle}
+              className="customer-input"
               required
             />
             <input
@@ -803,7 +652,7 @@ function SignedInView({
                 setProfileForm((prev) => ({ ...prev, email: event.target.value }))
               }
               placeholder="Email address"
-              style={inputStyle}
+              className="customer-input"
               required
             />
             <input
@@ -813,13 +662,13 @@ function SignedInView({
                 setProfileForm((prev) => ({ ...prev, phone: event.target.value }))
               }
               placeholder="Mobile number"
-              style={inputStyle}
+              className="customer-input"
               required
             />
             <button
               type="submit"
               disabled={savingProfile}
-              style={primaryButtonStyle}
+              className="customer-primary-button"
             >
               {savingProfile ? "Saving..." : "Save Profile"}
             </button>
@@ -828,348 +677,166 @@ function SignedInView({
       ) : null}
 
       {activeTab === "orders" ? (
-        <div style={cardStyle}>
-          <h4 style={{ margin: 0, color: "#fff", fontSize: "18px" }}>
-            My Orders
-          </h4>
-          <p
-            style={{
-              margin: "8px 0 0",
-              color: "rgba(255,255,255,0.55)",
-              fontSize: "13px",
-            }}
-          >
+        <div className="customer-card">
+          <h4 className="m-0 text-lg font-semibold text-white">My Orders</h4>
+          <p className="mt-2 text-[13px] text-white/55">
             These are the orders placed from this signed-in customer account.
           </p>
 
           {ordersError ? (
-            <div
-              style={{
-                marginTop: "16px",
-                padding: "12px 14px",
-                borderRadius: "12px",
-                background: "rgba(239,68,68,0.12)",
-                border: "1px solid rgba(239,68,68,0.24)",
-                color: "#fecaca",
-                fontSize: "13px",
-              }}
-            >
+            <div className="mt-4 rounded-xl border border-red-500/25 bg-red-500/10 px-[14px] py-3 text-[13px] text-red-200">
               {ordersError}
             </div>
           ) : null}
 
-          <div style={{ marginTop: "16px", display: "grid", gap: "10px" }}>
+          <div className="mt-4 grid gap-2.5">
             {ordersLoading ? (
-              <div
-                style={{
-                  padding: "14px",
-                  borderRadius: "14px",
-                  background: "rgba(255,255,255,0.03)",
-                  color: "rgba(255,255,255,0.72)",
-                  fontSize: "13px",
-                }}
-              >
+              <div className="rounded-[14px] bg-white/[0.03] px-[14px] py-[14px] text-[13px] text-white/70">
                 Loading your orders...
               </div>
             ) : null}
 
             {!ordersLoading && orders.length === 0 ? (
-              <div
-                style={{
-                  padding: "14px",
-                  borderRadius: "14px",
-                  background: "rgba(255,255,255,0.03)",
-                  color: "rgba(255,255,255,0.72)",
-                  fontSize: "13px",
-                  lineHeight: 1.6,
-                }}
-              >
+              <div className="rounded-[14px] bg-white/[0.03] px-[14px] py-[14px] text-[13px] leading-6 text-white/70">
                 No orders yet. Once you place an order from the cart, it will
                 appear here for this customer account.
               </div>
             ) : null}
 
-            {orders.map((order) => (
-              <div
-                key={order.id}
-                style={{
-                  padding: "14px",
-                  borderRadius: "14px",
-                  background: highlightedOrderIds.includes(Number(order.id))
-                    ? "linear-gradient(135deg, rgba(245,158,11,0.2), rgba(239,68,68,0.12))"
-                    : "rgba(255,255,255,0.03)",
-                  border: highlightedOrderIds.includes(Number(order.id))
-                    ? "1px solid rgba(245,158,11,0.28)"
-                    : "1px solid rgba(255,255,255,0.08)",
-                  boxShadow: highlightedOrderIds.includes(Number(order.id))
-                    ? "0 0 0 1px rgba(245,158,11,0.14) inset"
-                    : "none",
-                  display: "grid",
-                  gap: "10px",
-                  transition: "all 0.3s ease",
-                }}
-              >
+            {orders.map((order) => {
+              const highlighted = highlightedOrderIds.includes(Number(order.id));
+
+              return (
                 <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "12px",
-                    flexWrap: "wrap",
-                  }}
+                  key={order.id}
+                  className={`grid gap-2.5 rounded-[14px] px-[14px] py-[14px] transition-all duration-300 ${
+                    highlighted
+                      ? "border border-amber-400/30 bg-gradient-to-br from-amber-500/20 to-red-500/15 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.14)]"
+                      : "border border-white/10 bg-white/[0.03]"
+                  }`}
                 >
-                  <div>
-                    <div style={{ color: "#fff", fontWeight: 700, fontSize: "14px" }}>
-                      {order.order_number}
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-bold text-white">
+                        {order.order_number}
+                      </div>
+                      <div className="mt-1 text-xs text-white/60">
+                        {formatDateTime(order.created_at)}
+                      </div>
                     </div>
-                    <div
-                      style={{
-                        marginTop: "4px",
-                        color: "rgba(255,255,255,0.58)",
-                        fontSize: "12px",
-                      }}
-                    >
-                      {formatDateTime(order.created_at)}
+                    <div className="rounded-full border border-amber-400/30 bg-amber-500/20 px-2.5 py-1 text-xs font-bold capitalize text-amber-200">
+                      {String(order.order_status || "placed").replace(/_/g, " ")}
                     </div>
                   </div>
-                  <div
-                    style={{
-                      padding: "6px 10px",
-                      borderRadius: "999px",
-                      background: "rgba(245,158,11,0.18)",
-                      border: "1px solid rgba(245,158,11,0.28)",
-                      color: "#fde68a",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {String(order.order_status || "placed").replace(/_/g, " ")}
-                  </div>
-                </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                    gap: "10px",
-                    color: "rgba(255,255,255,0.72)",
-                    fontSize: "13px",
-                  }}
-                >
-                  <div>Items: {order.item_count}</div>
-                  <div>Total: Rs {Number(order.total_amount || 0).toFixed(2)}</div>
-                  <div style={{ textTransform: "capitalize" }}>
-                    Payment: {String(order.payment_status || "pending").replace(/_/g, " ")}
+                  <div className="grid grid-cols-2 gap-2.5 text-[13px] text-white/70">
+                    <div>Items: {order.item_count}</div>
+                    <div>Total: Rs {Number(order.total_amount || 0).toFixed(2)}</div>
+                    <div className="capitalize">
+                      Payment: {String(order.payment_status || "pending").replace(/_/g, " ")}
+                    </div>
+                    <div className="capitalize">
+                      Method: {String(order.payment_method || "-").replace(/_/g, " ")}
+                    </div>
                   </div>
-                  <div style={{ textTransform: "capitalize" }}>
-                    Method: {String(order.payment_method || "-").replace(/_/g, " ")}
-                  </div>
-                </div>
 
-                {order.order_notes ? (
-                  <div
-                    style={{
-                      color: "rgba(255,255,255,0.68)",
-                      fontSize: "12px",
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    Note: {order.order_notes}
-                  </div>
-                ) : null}
-              </div>
-            ))}
+                  {order.order_notes ? (
+                    <div className="text-xs leading-6 text-white/65">
+                      Note: {order.order_notes}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : null}
 
       {activeTab === "notifications" ? (
-        <div style={cardStyle}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "12px",
-              flexWrap: "wrap",
-            }}
-          >
+        <div className="customer-card">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h4 style={{ margin: 0, color: "#fff", fontSize: "18px" }}>
-                Notifications
-              </h4>
-              <p
-                style={{
-                  margin: "8px 0 0",
-                  color: "rgba(255,255,255,0.55)",
-                  fontSize: "13px",
-                }}
-              >
+              <h4 className="m-0 text-lg font-semibold text-white">Notifications</h4>
+              <p className="mt-2 text-[13px] text-white/55">
                 Customer actions and order updates for this signed-in account.
               </p>
             </div>
             <button
               onClick={markAllRead}
               disabled={markingAllRead}
-              style={{
-                padding: "10px 14px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.1)",
-                background: "rgba(255,255,255,0.05)",
-                color: "#fff",
-                cursor: "pointer",
-                fontWeight: 700,
-              }}
+              className="rounded-xl border border-white/10 bg-white/[0.05] px-[14px] py-2.5 font-bold text-white transition hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {markingAllRead ? "Please wait..." : "Mark all read"}
             </button>
           </div>
 
           {notificationsError ? (
-            <div
-              style={{
-                marginTop: "16px",
-                padding: "12px 14px",
-                borderRadius: "12px",
-                background: "rgba(239,68,68,0.12)",
-                border: "1px solid rgba(239,68,68,0.24)",
-                color: "#fecaca",
-                fontSize: "13px",
-              }}
-            >
+            <div className="mt-4 rounded-xl border border-red-500/25 bg-red-500/10 px-[14px] py-3 text-[13px] text-red-200">
               {notificationsError}
             </div>
           ) : null}
 
-          <div style={{ marginTop: "16px", display: "grid", gap: "10px" }}>
+          <div className="mt-4 grid gap-2.5">
             {notificationsLoading ? (
-              <div
-                style={{
-                  padding: "14px",
-                  borderRadius: "14px",
-                  background: "rgba(255,255,255,0.03)",
-                  color: "rgba(255,255,255,0.72)",
-                  fontSize: "13px",
-                }}
-              >
+              <div className="rounded-[14px] bg-white/[0.03] px-[14px] py-[14px] text-[13px] text-white/70">
                 Loading notifications...
               </div>
             ) : null}
 
             {!notificationsLoading && notifications.length === 0 ? (
-              <div
-                style={{
-                  padding: "14px",
-                  borderRadius: "14px",
-                  background: "rgba(255,255,255,0.03)",
-                  color: "rgba(255,255,255,0.72)",
-                  fontSize: "13px",
-                  lineHeight: 1.6,
-                }}
-              >
+              <div className="rounded-[14px] bg-white/[0.03] px-[14px] py-[14px] text-[13px] leading-6 text-white/70">
                 No notifications yet. New customer actions like register, login,
                 profile updates, and order updates will appear here.
               </div>
             ) : null}
 
-            {notifications.map((notification) => (
-              <button
-                key={notification.id}
-                onClick={() => void openNotification(notification)}
-                style={{
-                  textAlign: "left",
-                  padding: "14px",
-                  borderRadius: "14px",
-                  background: highlightedNotificationIds.includes(Number(notification.id))
-                    ? "linear-gradient(135deg, rgba(245,158,11,0.24), rgba(239,68,68,0.16))"
-                    : Number(notification.is_read) === 1
-                      ? "rgba(255,255,255,0.03)"
-                      : "linear-gradient(135deg, rgba(245,158,11,0.16), rgba(239,68,68,0.12))",
-                  border: highlightedNotificationIds.includes(Number(notification.id))
-                    ? "1px solid rgba(245,158,11,0.34)"
-                    : Number(notification.is_read) === 1
-                      ? "1px solid rgba(255,255,255,0.08)"
-                      : "1px solid rgba(245,158,11,0.24)",
-                  color: "#fff",
-                  cursor: "pointer",
-                  display: "grid",
-                  gap: "8px",
-                  transition: "all 0.3s ease",
-                  boxShadow: highlightedNotificationIds.includes(Number(notification.id))
-                    ? "0 0 0 1px rgba(245,158,11,0.16) inset"
-                    : "none",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "12px",
-                    flexWrap: "wrap",
-                  }}
+            {notifications.map((notification) => {
+              const highlighted = highlightedNotificationIds.includes(Number(notification.id));
+              const isRead = Number(notification.is_read) === 1;
+
+              return (
+                <button
+                  key={notification.id}
+                  onClick={() => void openNotification(notification)}
+                  className={`grid gap-2 rounded-[14px] px-[14px] py-[14px] text-left text-white transition-all duration-300 ${
+                    highlighted
+                      ? "border border-amber-400/35 bg-gradient-to-br from-amber-500/25 to-red-500/15 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.16)]"
+                      : isRead
+                        ? "border border-white/10 bg-white/[0.03]"
+                        : "border border-amber-400/25 bg-gradient-to-br from-amber-500/15 to-red-500/10"
+                  }`}
                 >
-                  <div style={{ fontWeight: 700 }}>{notification.title}</div>
-                  <div
-                    style={{
-                      color:
-                        Number(notification.is_read) === 1
-                          ? "rgba(255,255,255,0.45)"
-                          : "#fde68a",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {Number(notification.is_read) === 1 ? "Read" : "New"}
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="font-bold">{notification.title}</div>
+                    <div
+                      className={`text-xs font-bold ${
+                        isRead ? "text-white/45" : "text-amber-200"
+                      }`}
+                    >
+                      {isRead ? "Read" : "New"}
+                    </div>
                   </div>
-                </div>
-                <div
-                  style={{
-                    color: "rgba(255,255,255,0.72)",
-                    fontSize: "13px",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {notification.message}
-                </div>
-                <div
-                  style={{
-                    color: "rgba(255,255,255,0.45)",
-                    fontSize: "12px",
-                  }}
-                >
-                  {formatDateTime(notification.created_at)}
-                </div>
-              </button>
-            ))}
+                  <div className="text-[13px] leading-6 text-white/70">
+                    {notification.message}
+                  </div>
+                  <div className="text-xs text-white/45">
+                    {formatDateTime(notification.created_at)}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       ) : null}
 
       {activeTab === "account" ? (
         <>
-          <form onSubmit={submitPasswordChange} style={cardStyle}>
-            <h4 style={{ margin: 0, color: "#fff", fontSize: "18px" }}>
-              My Account
-            </h4>
-            <p
-              style={{
-                margin: "8px 0 0",
-                color: "rgba(255,255,255,0.55)",
-                fontSize: "13px",
-              }}
-            >
+          <form onSubmit={submitPasswordChange} className="customer-card">
+            <h4 className="m-0 text-lg font-semibold text-white">My Account</h4>
+            <p className="mt-2 text-[13px] text-white/55">
               Update your password here. After password change, sign in again.
             </p>
-            <div
-              style={{
-                marginTop: "16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-              }}
-            >
+            <div className="mt-4 flex flex-col gap-3">
               <input
                 type="password"
                 value={passwordForm.current_password}
@@ -1180,7 +847,7 @@ function SignedInView({
                   }))
                 }
                 placeholder="Current password"
-                style={inputStyle}
+                className="customer-input"
                 required
               />
               <input
@@ -1193,7 +860,7 @@ function SignedInView({
                   }))
                 }
                 placeholder="New password"
-                style={inputStyle}
+                className="customer-input"
                 required
               />
               <input
@@ -1206,21 +873,21 @@ function SignedInView({
                   }))
                 }
                 placeholder="Confirm new password"
-                style={inputStyle}
+                className="customer-input"
                 required
               />
               <button
                 type="submit"
                 disabled={savingPassword}
-                style={primaryButtonStyle}
+                className="customer-primary-button"
               >
                 {savingPassword ? "Updating..." : "Change Password"}
               </button>
             </div>
           </form>
 
-          <div style={cardStyle}>
-            <button onClick={signOut} style={primaryButtonStyle}>
+          <div className="customer-card">
+            <button onClick={signOut} className="customer-primary-button">
               Logout
             </button>
           </div>
@@ -1228,30 +895,12 @@ function SignedInView({
       ) : null}
 
       {activeTab === "address" ? (
-        <div style={cardStyle}>
-          <h4 style={{ margin: 0, color: "#fff", fontSize: "18px" }}>
-            Address
-          </h4>
-          <p
-            style={{
-              margin: "8px 0 0",
-              color: "rgba(255,255,255,0.55)",
-              fontSize: "13px",
-            }}
-          >
+        <div className="customer-card">
+          <h4 className="m-0 text-lg font-semibold text-white">Address</h4>
+          <p className="mt-2 text-[13px] text-white/55">
             This section is kept ready for delivery address management.
           </p>
-          <div
-            style={{
-              marginTop: "16px",
-              padding: "14px",
-              borderRadius: "14px",
-              background: "rgba(255,255,255,0.03)",
-              color: "rgba(255,255,255,0.72)",
-              fontSize: "13px",
-              lineHeight: 1.6,
-            }}
-          >
+          <div className="mt-4 rounded-[14px] bg-white/[0.03] px-[14px] py-[14px] text-[13px] leading-6 text-white/70">
             We can add house number, street, city, pincode, landmark, and
             default address actions here next without changing this drawer
             structure.
@@ -1296,52 +945,14 @@ function CustomerDrawer({
 
   return (
     <>
-      <div
-        onClick={onClose}
-        style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.6)",
-          backdropFilter: "blur(4px)",
-          zIndex: 220,
-          animation: "customerOverlayFadeIn 0.2s ease",
-        }}
-      />
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: "min(430px, 92vw)",
-          background: "linear-gradient(180deg, #19162d 0%, #0f0c29 100%)",
-          borderLeft: "1px solid rgba(255,255,255,0.08)",
-          zIndex: 221,
-          display: "flex",
-          flexDirection: "column",
-          animation: "customerDrawerSlideIn 0.3s ease",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "20px 24px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
+      <div onClick={onClose} className="customer-drawer-overlay" />
+      <div className="fixed inset-y-0 right-0 z-[221] flex w-[min(430px,92vw)] flex-col border-l border-white/10 bg-[linear-gradient(180deg,#19162d_0%,#0f0c29_100%)] animate-customer-drawer-in">
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
           <div>
-            <h2 style={{ margin: 0, color: "#fff", fontSize: "22px" }}>
+            <h2 className="m-0 text-[22px] font-bold text-white">
               {customer ? "Customer Panel" : "Customer Sign In"}
             </h2>
-            <p
-              style={{
-                margin: "8px 0 0",
-                color: "rgba(255,255,255,0.55)",
-                fontSize: "13px",
-              }}
-            >
+            <p className="mt-2 text-[13px] text-white/55">
               {customer
                 ? "Your personal area for profile, notifications, account, orders, and address."
                 : "Sign in once and this right-side panel becomes your personal profile area."}
@@ -1349,28 +960,13 @@ function CustomerDrawer({
           </div>
           <button
             onClick={onClose}
-            style={{
-              width: "36px",
-              height: "36px",
-              borderRadius: "12px",
-              border: "none",
-              background: "rgba(255,255,255,0.08)",
-              color: "#fff",
-              cursor: "pointer",
-              fontSize: "18px",
-            }}
+            className="flex h-9 w-9 items-center justify-center rounded-xl border-0 bg-white/10 text-lg text-white transition hover:bg-white/15"
           >
             x
           </button>
         </div>
 
-        <div
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: "18px 20px 24px",
-          }}
-        >
+        <div className="flex-1 overflow-y-auto px-5 pb-6 pt-[18px] sm:px-6">
           {customer ? (
             <SignedInView
               customer={customer}
@@ -1386,7 +982,6 @@ function CustomerDrawer({
           )}
         </div>
       </div>
-      <style>{animationStyles}</style>
     </>
   );
 }

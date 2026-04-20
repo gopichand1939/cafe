@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent } from "react";
-import { MENU_UPDATES_WS_URL } from "../config/api";
+import { MENU_UPDATES_WS_URL } from "../Utils/Constant";
 
 const RECONNECT_DELAY_MS = 2000;
 const REFRESH_DEBOUNCE_MS = 250;
