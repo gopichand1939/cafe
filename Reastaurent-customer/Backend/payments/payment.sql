@@ -27,3 +27,17 @@ CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id);
 CREATE INDEX IF NOT EXISTS idx_payments_customer_id ON payments(customer_id);
 CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
 CREATE INDEX IF NOT EXISTS idx_payments_created_at ON payments(created_at);
+
+CREATE TABLE IF NOT EXISTS pending_payment_checkouts (
+  id SERIAL PRIMARY KEY,
+  session_id VARCHAR(255) NOT NULL UNIQUE,
+  customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE,
+  checkout_payload JSONB NOT NULL,
+  status VARCHAR(40) NOT NULL DEFAULT 'created',
+  order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_pending_payment_checkouts_customer_id
+  ON pending_payment_checkouts(customer_id);

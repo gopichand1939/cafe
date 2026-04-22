@@ -164,20 +164,21 @@ function Table({
 
   return (
     <Card
+      padding="none"
       className={[
-        "flex h-[calc(100vh-180px)] min-h-[430px] flex-col overflow-hidden p-3",
+        "flex h-[calc(100vh-180px)] min-h-[430px] flex-col overflow-hidden p-2",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="shrink-0 pb-2">
-        <div className="flex flex-wrap items-start gap-3 xl:flex-nowrap">
+      <div className="shrink-0 pb-1">
+        <div className="flex flex-wrap items-start gap-2 xl:flex-nowrap">
           <div
             className={`w-full xl:shrink-0 ${
               compactToolbar
-                ? "min-[480px]:w-[150px] xl:w-[160px]"
-                : "min-[480px]:w-[230px] xl:w-[240px]"
+                ? "min-[480px]:w-[140px] xl:w-[150px]"
+                : "min-[480px]:w-[190px] xl:w-[200px]"
             }`}
           >
             <SearchBar
@@ -237,7 +238,7 @@ function Table({
                   <th
                     key={header.key}
                     onClick={() => handleSort(header.key)}
-                    className="sticky top-0 z-[20] border-b border-border-strong bg-surface-elevated px-4 py-3 text-center text-[0.7rem] font-bold uppercase tracking-[0.1em] text-text-muted"
+                    className="sticky top-0 z-[20] border-b border-border-strong bg-surface-elevated px-4 py-2.5 text-center text-[0.68rem] font-bold uppercase tracking-[0.1em] text-text-muted"
                     style={header.width ? { minWidth: header.width } : undefined}
                   >
                     <div className="inline-flex items-center gap-1">{header.label}</div>
@@ -247,14 +248,14 @@ function Table({
                   <th
                     key={header.key}
                     onClick={() => handleSort(header.key)}
-                    className="sticky top-0 z-[30] border-b border-border-strong bg-surface-elevated px-4 py-3 text-center text-[0.7rem] font-bold uppercase tracking-[0.1em] text-text-muted"
+                    className="sticky top-0 z-[30] border-b border-border-strong bg-surface-elevated px-4 py-2.5 text-center text-[0.68rem] font-bold uppercase tracking-[0.1em] text-text-muted"
                     style={{ right: `${stickyRightOffsets[idx]}px`, minWidth: header.width || undefined }}
                   >
                     <div className="inline-flex items-center gap-1">{header.label}</div>
                   </th>
                 ))}
                 {rowActions.length > 0 ? (
-                  <th className="sticky top-0 right-0 z-[30] border-b border-border-strong bg-surface-elevated px-4 py-3 text-center text-[0.7rem] font-bold uppercase tracking-[0.1em] text-text-muted">
+                  <th className="sticky top-0 right-0 z-[30] border-b border-border-strong bg-surface-elevated px-4 py-2.5 text-center text-[0.68rem] font-bold uppercase tracking-[0.1em] text-text-muted">
                     ACTIONS
                   </th>
                 ) : null}
@@ -270,7 +271,7 @@ function Table({
                   {regularColumns.map((header) => (
                     <td
                       key={header.key}
-                      className={`border-b border-border-subtle bg-surface-elevated px-4 py-3.5 text-center whitespace-nowrap text-[0.92rem] text-text-base transition-colors duration-200 ${rowCellClassName}`}
+                      className={`border-b border-border-subtle bg-surface-elevated px-4 py-2.5 text-center whitespace-nowrap text-[0.88rem] text-text-base transition-colors duration-200 ${rowCellClassName}`}
                       style={header.width ? { minWidth: header.width } : undefined}
                     >
                       {header.content
@@ -283,7 +284,7 @@ function Table({
                   {stickyColumns.map((header, idx) => (
                     <td
                       key={header.key}
-                      className={`sticky z-[2] border-b border-border-subtle bg-surface-elevated px-4 py-3.5 text-center whitespace-nowrap text-[0.92rem] text-text-base transition-colors duration-200 ${rowCellClassName}`}
+                      className={`sticky z-[2] border-b border-border-subtle bg-surface-elevated px-4 py-2.5 text-center whitespace-nowrap text-[0.88rem] text-text-base transition-colors duration-200 ${rowCellClassName}`}
                       style={{ right: `${stickyRightOffsets[idx]}px`, minWidth: header.width || undefined }}
                     >
                       {header.content
@@ -295,7 +296,7 @@ function Table({
                   ))}
                   {rowActions.length > 0 ? (
                     <td
-                      className={`sticky right-0 z-[2] border-b border-border-subtle bg-surface-elevated px-4 py-3.5 text-center whitespace-nowrap text-[0.92rem] text-text-base transition-colors duration-200 ${rowCellClassName}`}
+                      className={`sticky right-0 z-[2] border-b border-border-subtle bg-surface-elevated px-4 py-2.5 text-center whitespace-nowrap text-[0.88rem] text-text-base transition-colors duration-200 ${rowCellClassName}`}
                     >
                       <div className="flex flex-wrap items-center justify-center gap-2.5">
                         {rowActions.map((action) => (

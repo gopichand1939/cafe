@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { customerAuthStorage } from "../../auth/customerAuthStorage";
 import { getImageUrl } from "../../Utils/imageUrl";
 import { placeCustomerOrder } from "../../services/orderApi";
 import {
-  confirmCustomerPayment,
-  createCustomerPaymentIntent,
+  createCustomerCheckoutSession,
 } from "../../services/paymentApi";
 import {
   STRIPE_MIN_INR_AMOUNT,
@@ -38,12 +37,6 @@ function CartDrawer({
   const [successMessage, setSuccessMessage] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash_on_delivery");
   const [stripeLoading, setStripeLoading] = useState(false);
-  const [stripeReady, setStripeReady] = useState(false);
-  const [stripeCardComplete, setStripeCardComplete] = useState(false);
-  const stripeMountRef = useRef(null);
-  const stripeRef = useRef(null);
-  const stripeElementsRef = useRef(null);
-  const stripeCardRef = useRef(null);
 
   useEffect(() => {
     setDeliveryForm((prev) => ({
@@ -72,97 +65,6 @@ function CartDrawer({
       setPaymentMethod("cash_on_delivery");
     }
   }, [isStripeOptionDisabled, paymentMethod]);
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    const destroyCardElement = () => {
-      if (stripeCardRef.current) {
-        stripeCardRef.current.destroy();
-        stripeCardRef.current = null;
-      }
-      stripeElementsRef.current = null;
-      setStripeReady(false);
-      setStripeCardComplete(false);
-    };
-
-    const setupStripeCard = async () => {
-      if (paymentMethod !== "stripe" || !cart.length) {
-        destroyCardElement();
-        return;
-      }
-
-      if (!STRIPE_PUBLISHABLE_KEY) {
-        setErrorMessage("Stripe publishable key is not configured.");
-        return;
-      }
-
-      if (!stripeMountRef.current || stripeCardRef.current) {
-        return;
-      }
-
-      setStripeLoading(true);
-
-      try {
-        const stripe = await getStripeClient();
-
-        if (isCancelled || !stripeMountRef.current) {
-          return;
-        }
-
-        const elements = stripe.elements({
-          appearance: {
-            theme: "night",
-            variables: {
-              colorPrimary: "#f59e0b",
-              colorBackground: "rgba(255,255,255,0.05)",
-              colorText: "#ffffff",
-              colorDanger: "#f87171",
-              borderRadius: "14px",
-            },
-          },
-        });
-        const card = elements.create("card", {
-          hidePostalCode: true,
-          style: {
-            base: {
-              color: "#ffffff",
-              fontSize: "15px",
-              "::placeholder": {
-                color: "rgba(255,255,255,0.35)",
-              },
-            },
-          },
-        });
-
-        card.mount(stripeMountRef.current);
-        card.on("change", (event) => {
-          setStripeCardComplete(Boolean(event.complete));
-          setErrorMessage(event.error?.message || "");
-        });
-
-        stripeRef.current = stripe;
-        stripeElementsRef.current = elements;
-        stripeCardRef.current = card;
-        setStripeReady(true);
-      } catch (error) {
-        if (!isCancelled) {
-          setErrorMessage(error.message || "Failed to load Stripe.");
-        }
-      } finally {
-        if (!isCancelled) {
-          setStripeLoading(false);
-        }
-      }
-    };
-
-    void setupStripeCard();
-
-    return () => {
-      isCancelled = true;
-      destroyCardElement();
-    };
-  }, [paymentMethod, cart.length]);
 
   const handleFieldChange = (field, value) => {
     setDeliveryForm((prev) => ({
@@ -206,20 +108,6 @@ function CartDrawer({
       return;
     }
 
-    if (paymentMethod === "stripe") {
-      if (!stripeReady || stripeLoading || !stripeRef.current || !stripeCardRef.current) {
-        setErrorMessage("Secure card form is still loading. Please wait a moment.");
-        setSuccessMessage("");
-        return;
-      }
-
-      if (!stripeCardComplete) {
-        setErrorMessage("Please enter complete card details before placing your order.");
-        setSuccessMessage("");
-        return;
-      }
-    }
-
     setSubmitting(true);
     resetMessages();
 
@@ -230,78 +118,63 @@ function CartDrawer({
         throw new Error("Please sign in again before placing your order.");
       }
 
-      let order = await placeCustomerOrder(
-        {
-          items: cart.map((item) => ({
-            item_id: item.id,
-            quantity: item.qty,
-            selected_addons: item.selected_addons || [],
-            item_notes: item.item_notes || "",
-          })),
-          delivery_address: {
-            recipient_name: deliveryForm.recipient_name.trim(),
-            phone: deliveryForm.phone.trim(),
-            line1: deliveryForm.line1.trim(),
-            line2: deliveryForm.line2.trim(),
-            landmark: deliveryForm.landmark.trim(),
-            city: deliveryForm.city.trim(),
-            state: deliveryForm.state.trim(),
-            pincode: deliveryForm.pincode.trim(),
+      const checkoutPayload = {
+        items: cart.map((item) => ({
+          item_id: item.id,
+          quantity: item.qty,
+          selected_addons: item.selected_addons || [],
+          item_notes: item.item_notes || "",
+        })),
+        delivery_address: {
+          recipient_name: deliveryForm.recipient_name.trim(),
+          phone: deliveryForm.phone.trim(),
+          line1: deliveryForm.line1.trim(),
+          line2: deliveryForm.line2.trim(),
+          landmark: deliveryForm.landmark.trim(),
+          city: deliveryForm.city.trim(),
+          state: deliveryForm.state.trim(),
+          pincode: deliveryForm.pincode.trim(),
+        },
+        order_notes: orderNotes.trim(),
+      };
+
+      if (paymentMethod === "stripe") {
+        setStripeLoading(true);
+        const successUrl = `${window.location.origin}${window.location.pathname}?checkout=success&session_id={CHECKOUT_SESSION_ID}`;
+        const cancelUrl = `${window.location.origin}${window.location.pathname}?checkout=cancelled`;
+        const checkoutSession = await createCustomerCheckoutSession(
+          {
+            checkoutPayload,
+            successUrl,
+            cancelUrl,
           },
-          order_notes: orderNotes.trim(),
+          accessToken
+        );
+
+        if (checkoutSession.url) {
+          window.location.assign(checkoutSession.url);
+          return;
+        }
+
+        const stripe = await getStripeClient();
+        const redirectResult = await stripe.redirectToCheckout({
+          sessionId: checkoutSession.sessionId,
+        });
+
+        if (redirectResult.error) {
+          throw new Error(redirectResult.error.message || "Unable to open Stripe checkout");
+        }
+
+        return;
+      }
+
+      const order = await placeCustomerOrder(
+        {
+          ...checkoutPayload,
           payment_method: paymentMethod,
         },
         accessToken
       );
-
-      if (paymentMethod === "stripe") {
-        if (!stripeRef.current || !stripeCardRef.current || !stripeReady) {
-          throw new Error("Stripe card form is not ready yet.");
-        }
-
-        const paymentIntent = await createCustomerPaymentIntent(
-          {
-            amount: order.total_amount || total,
-            orderId: order.id,
-          },
-          accessToken
-        );
-
-        const paymentResult = await stripeRef.current.confirmCardPayment(
-          paymentIntent.clientSecret,
-          {
-            payment_method: {
-              card: stripeCardRef.current,
-              billing_details: {
-                name: deliveryForm.recipient_name.trim() || customer?.name || "",
-                email: customer?.email || "",
-                phone: deliveryForm.phone.trim() || customer?.phone || "",
-                address: {
-                  line1: deliveryForm.line1.trim(),
-                  line2: deliveryForm.line2.trim(),
-                  city: deliveryForm.city.trim(),
-                  state: deliveryForm.state.trim(),
-                  postal_code: deliveryForm.pincode.trim(),
-                  country: "IN",
-                },
-              },
-            },
-          }
-        );
-
-        if (paymentResult.error) {
-          throw new Error(paymentResult.error.message || "Payment failed");
-        }
-
-        const confirmedPayment = await confirmCustomerPayment(
-          paymentIntent.paymentIntentId,
-          accessToken
-        );
-
-        if (confirmedPayment?.order) {
-          order = confirmedPayment.order;
-        }
-      }
 
       setSuccessMessage(
         paymentMethod === "stripe"
@@ -326,6 +199,7 @@ function CartDrawer({
       setErrorMessage(error.message);
     } finally {
       setSubmitting(false);
+      setStripeLoading(false);
     }
   };
 
@@ -547,20 +421,9 @@ function CartDrawer({
                 ) : null}
 
                 {paymentMethod === "stripe" ? (
-                  <div className="grid gap-2 rounded-[14px] border border-amber-400/25 bg-white/[0.04] p-4">
-                    <div className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-200">
-                      Card Details
-                    </div>
-                    <div
-                      ref={stripeMountRef}
-                      className="min-h-[44px] rounded-[14px] border border-white/10 bg-white/[0.05] px-[14px] py-3"
-                    />
-                    <div className="text-xs leading-5 text-white/45">
-                      Test card: 4242 4242 4242 4242, any future expiry, any CVC.
-                    </div>
-                    {stripeLoading ? (
-                      <div className="text-xs text-amber-200">Loading secure card form...</div>
-                    ) : null}
+                  <div className="rounded-[14px] border border-amber-400/25 bg-white/[0.04] p-4 text-xs leading-5 text-white/55">
+                    You will be redirected to Stripe Checkout. Use test card
+                    4242 4242 4242 4242 with any future expiry and any CVC.
                   </div>
                 ) : null}
               </div>
@@ -594,10 +457,12 @@ function CartDrawer({
               {customer
                 ? submitting
                   ? paymentMethod === "stripe"
-                    ? "Processing Payment..."
+                    ? stripeLoading
+                      ? "Opening Stripe..."
+                      : "Creating Checkout..."
                     : "Placing Order..."
                   : paymentMethod === "stripe"
-                    ? "Pay & Place Order"
+                    ? "Pay on Stripe"
                     : "Place Order"
                 : "Sign In To Order"}
             </button>

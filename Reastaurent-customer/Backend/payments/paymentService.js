@@ -1,5 +1,6 @@
 const Stripe = require("stripe");
 const db = require("../config/db");
+const orderModel = require("../orders/orderModel");
 const { publishOrderChangeSafely } = require("../realtime/orderEvents");
 const { publishPaymentChangeSafely } = require("../realtime/paymentEvents");
 
@@ -204,6 +205,367 @@ const createPaymentIntent = async ({ amount, orderId = null, customer }) => {
   };
 };
 
+const ensurePendingCheckoutTable = async () => {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS pending_payment_checkouts (
+      id SERIAL PRIMARY KEY,
+      session_id VARCHAR(255) NOT NULL UNIQUE,
+      customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE,
+      checkout_payload JSONB NOT NULL,
+      status VARCHAR(40) NOT NULL DEFAULT 'created',
+      order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  await db.query(`
+    CREATE INDEX IF NOT EXISTS idx_pending_payment_checkouts_customer_id
+    ON pending_payment_checkouts(customer_id);
+  `);
+};
+
+const normalizePositiveNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+};
+
+const buildOrderDraftForCheckout = async ({
+  customerId,
+  items,
+  deliveryAddress = {},
+  orderNotes = "",
+  currencyCode = "INR",
+  taxAmount = 0,
+  deliveryFee = 0,
+}) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    const error = new Error("At least one order item is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const customer = await orderModel.getActiveCustomerById(customerId);
+  if (!customer || Number(customer.is_active) !== 1) {
+    const error = new Error("Customer account is not active");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const normalizedItemIds = items
+    .map((item) => Number(item.item_id))
+    .filter((itemId) => Number.isInteger(itemId) && itemId > 0);
+
+  if (normalizedItemIds.length !== items.length) {
+    const error = new Error("Each item must include a valid item_id");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const activeItemsMap = await orderModel.getActiveItemsByIds(normalizedItemIds);
+  const normalizedItems = [];
+
+  for (const rawItem of items) {
+    const sourceItem = activeItemsMap[Number(rawItem.item_id)];
+
+    if (!sourceItem) {
+      const error = new Error(`Item ${rawItem.item_id} is not available`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const quantity = normalizePositiveNumber(rawItem.quantity, 0);
+    if (quantity < 1) {
+      const error = new Error("Each item quantity must be at least 1");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const unitPrice = Number(sourceItem.price || 0);
+    const discountPrice =
+      sourceItem.discount_price === null ||
+      sourceItem.discount_price === undefined ||
+      sourceItem.discount_price === ""
+        ? null
+        : Number(sourceItem.discount_price);
+    const finalUnitPrice =
+      discountPrice !== null && discountPrice < unitPrice
+        ? discountPrice
+        : unitPrice;
+    const selectedAddons = Array.isArray(rawItem.selected_addons)
+      ? rawItem.selected_addons.map((addon) => ({
+          id: addon.id ?? null,
+          addon_group: addon.addon_group || "",
+          addon_name: addon.addon_name || "",
+          addon_price: Number(addon.addon_price || 0),
+        }))
+      : [];
+    const addonAmount = selectedAddons.reduce(
+      (sum, addon) => sum + Number(addon.addon_price || 0),
+      0
+    );
+
+    normalizedItems.push({
+      item_id: sourceItem.id,
+      category_id: sourceItem.category_id,
+      item_name: sourceItem.item_name,
+      item_description: sourceItem.item_description || "",
+      item_image: sourceItem.item_image || "",
+      quantity,
+      unit_price: Number(unitPrice.toFixed(2)),
+      discount_price:
+        discountPrice === null ? null : Number(discountPrice.toFixed(2)),
+      final_unit_price: Number(finalUnitPrice.toFixed(2)),
+      addon_amount: Number(addonAmount.toFixed(2)),
+      line_total: Number(((finalUnitPrice + addonAmount) * quantity).toFixed(2)),
+      selected_addons: selectedAddons,
+      item_notes: rawItem.item_notes ? String(rawItem.item_notes).trim() : "",
+    });
+  }
+
+  const subtotalAmount = Number(
+    normalizedItems
+      .reduce((sum, item) => sum + item.unit_price * item.quantity, 0)
+      .toFixed(2)
+  );
+  const discountAmount = Number(
+    normalizedItems
+      .reduce((sum, item) => {
+        const discountPerUnit =
+          item.discount_price !== null
+            ? Math.max(item.unit_price - item.discount_price, 0)
+            : 0;
+        return sum + discountPerUnit * item.quantity;
+      }, 0)
+      .toFixed(2)
+  );
+  const addonAmount = Number(
+    normalizedItems
+      .reduce((sum, item) => sum + item.addon_amount * item.quantity, 0)
+      .toFixed(2)
+  );
+  const normalizedTaxAmount = Number(normalizePositiveNumber(taxAmount, 0).toFixed(2));
+  const normalizedDeliveryFee = Number(
+    normalizePositiveNumber(deliveryFee, 0).toFixed(2)
+  );
+  const totalAmount = Number(
+    (
+      subtotalAmount -
+      discountAmount +
+      addonAmount +
+      normalizedTaxAmount +
+      normalizedDeliveryFee
+    ).toFixed(2)
+  );
+
+  if (totalAmount < STRIPE_MIN_INR_AMOUNT) {
+    const error = new Error(
+      `Online payment minimum is Rs ${STRIPE_MIN_INR_AMOUNT.toFixed(
+        2
+      )}. Please add more items or choose cash on delivery.`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return {
+    customer,
+    deliveryAddress:
+      deliveryAddress && typeof deliveryAddress === "object" ? deliveryAddress : {},
+    orderNotes: String(orderNotes || "").trim(),
+    paymentMethod: "stripe",
+    currencyCode: String(currencyCode || "INR").trim() || "INR",
+    items: normalizedItems,
+    subtotalAmount,
+    discountAmount,
+    addonAmount,
+    taxAmount: normalizedTaxAmount,
+    deliveryFee: normalizedDeliveryFee,
+    totalAmount,
+  };
+};
+
+const publishCreatedOrder = async (order) => {
+  if (!order) {
+    return;
+  }
+
+  await publishOrderChangeSafely({
+    entity: "order",
+    action: "created",
+    entityId: order.id,
+    orderId: order.id,
+    customerId: order.customer_id,
+    entityData: buildOrderRealtimePayload(order),
+  });
+};
+
+const assertCustomerOrderForPayment = async ({ orderId, customer }) => {
+  if (!customer?.id) {
+    const error = new Error("Customer authentication is required");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const order = await getCustomerOrder({
+    orderId: Number(orderId),
+    customerId: customer.id,
+  });
+
+  if (!order) {
+    const error = new Error("Order not found for this customer");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (String(order.payment_status || "").toLowerCase() === "paid") {
+    const error = new Error("This order is already paid");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const payableAmount = normalizeAmount(order.total_amount);
+  if (!payableAmount) {
+    const error = new Error("A valid order amount is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (payableAmount < STRIPE_MIN_INR_AMOUNT) {
+    const error = new Error(
+      `Online payment minimum is Rs ${STRIPE_MIN_INR_AMOUNT.toFixed(
+        2
+      )}. Please add more items or choose cash on delivery.`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return {
+    order,
+    payableAmount,
+  };
+};
+
+const createCheckoutSession = async ({
+  orderId,
+  checkoutPayload,
+  successUrl,
+  cancelUrl,
+  customer,
+}) => {
+  if (!successUrl || !cancelUrl) {
+    const error = new Error("successUrl and cancelUrl are required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  let order = null;
+  let orderDraft = null;
+  let payableAmount = null;
+
+  if (checkoutPayload) {
+    if (!customer?.id) {
+      const error = new Error("Customer authentication is required");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    orderDraft = await buildOrderDraftForCheckout({
+      customerId: customer.id,
+      items: checkoutPayload.items,
+      deliveryAddress: checkoutPayload.delivery_address,
+      orderNotes: checkoutPayload.order_notes,
+      currencyCode: checkoutPayload.currency_code,
+      taxAmount: checkoutPayload.tax_amount,
+      deliveryFee: checkoutPayload.delivery_fee,
+    });
+    payableAmount = orderDraft.totalAmount;
+  } else {
+    if (!orderId) {
+      const error = new Error("orderId or checkoutPayload is required");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const result = await assertCustomerOrderForPayment({
+      orderId,
+      customer,
+    });
+    order = result.order;
+    payableAmount = result.payableAmount;
+  }
+
+  const amountInPaise = toPaise(payableAmount);
+  const metadata = {
+    orderId: order?.id ? String(order.id) : "",
+    orderNumber: order?.order_number || "",
+    customerId: String(customer.id),
+    customerEmail: customer.email || order?.customer_email || "",
+    createsOrderAfterPayment: orderDraft ? "1" : "0",
+  };
+
+  const session = await getStripe().checkout.sessions.create({
+    mode: "payment",
+    payment_method_types: ["card"],
+    customer_email: customer.email || order?.customer_email || undefined,
+    client_reference_id: order?.id ? String(order.id) : `customer_${customer.id}`,
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: STRIPE_CURRENCY,
+          unit_amount: amountInPaise,
+          product_data: {
+            name: order
+              ? `Order ${order.order_number || order.id}`
+              : "Bagel Master Cafe online order",
+            description: "Bagel Master Cafe online order",
+          },
+        },
+      },
+    ],
+    payment_intent_data: {
+      metadata,
+    },
+    metadata,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+  });
+
+  if (orderDraft) {
+    await ensurePendingCheckoutTable();
+    await db.query(
+      `
+        INSERT INTO pending_payment_checkouts (
+          session_id,
+          customer_id,
+          checkout_payload,
+          status
+        )
+        VALUES ($1, $2, $3::jsonb, 'created')
+        ON CONFLICT (session_id)
+        DO UPDATE SET
+          checkout_payload = EXCLUDED.checkout_payload,
+          status = 'created',
+          updated_at = CURRENT_TIMESTAMP;
+      `,
+      [
+        session.id,
+        customer.id,
+        JSON.stringify({
+          orderDraft,
+        }),
+      ]
+    );
+  }
+
+  return {
+    sessionId: session.id,
+    url: session.url,
+  };
+};
+
 const buildOrderRealtimePayload = (order) =>
   order
     ? {
@@ -262,6 +624,7 @@ const markOrderPaid = async ({ orderId, paymentMethod = "stripe" }) => {
       updated_at = CURRENT_TIMESTAMP
     WHERE id = $1
       AND is_deleted = 0
+      AND payment_status <> 'paid'
     RETURNING
       id,
       order_number,
@@ -295,34 +658,80 @@ const markOrderPaid = async ({ orderId, paymentMethod = "stripe" }) => {
   return order;
 };
 
-const updatePaymentFromSucceededIntent = async ({ paymentIntent, event }) => {
-  const orderId = Number(paymentIntent.metadata?.orderId || 0) || null;
-  const customerId = Number(paymentIntent.metadata?.customerId || 0) || null;
+const updatePaymentFromSucceededIntent = async ({
+  paymentIntent,
+  event,
+  overrideOrderId = null,
+  overrideCustomerId = null,
+}) => {
+  const orderId =
+    Number(overrideOrderId || paymentIntent.metadata?.orderId || 0) || null;
+  const customerId =
+    Number(overrideCustomerId || paymentIntent.metadata?.customerId || 0) || null;
   const chargeId =
     typeof paymentIntent.latest_charge === "string"
       ? paymentIntent.latest_charge
       : paymentIntent.latest_charge?.id || null;
 
   const query = `
-    UPDATE payments
-    SET
-      order_id = COALESCE($2, order_id),
-      customer_id = COALESCE($3, customer_id),
-      provider_payment_id = $4,
-      provider_charge_id = $5,
-      amount = $6,
-      amount_in_paise = $7,
-      currency_code = $8,
-      payment_method = COALESCE($9, payment_method),
-      status = $10,
+    INSERT INTO payments (
+      order_id,
+      customer_id,
+      gateway,
+      rrn,
+      transaction_id,
+      provider_payment_id,
+      provider_charge_id,
+      amount,
+      amount_in_paise,
+      currency_code,
+      payment_method,
+      status,
+      is_payment_success,
+      failure_code,
+      failure_message,
+      metadata,
+      raw_event,
+      paid_at
+    )
+    VALUES (
+      $2,
+      $3,
+      $13,
+      $14,
+      $1,
+      $4,
+      $5,
+      $6,
+      $7,
+      $8,
+      $9,
+      $10,
+      1,
+      NULL,
+      NULL,
+      $11::jsonb,
+      $12::jsonb,
+      CURRENT_TIMESTAMP
+    )
+    ON CONFLICT (transaction_id)
+    DO UPDATE SET
+      order_id = COALESCE(payments.order_id, EXCLUDED.order_id),
+      customer_id = COALESCE(payments.customer_id, EXCLUDED.customer_id),
+      provider_payment_id = EXCLUDED.provider_payment_id,
+      provider_charge_id = EXCLUDED.provider_charge_id,
+      amount = EXCLUDED.amount,
+      amount_in_paise = EXCLUDED.amount_in_paise,
+      currency_code = EXCLUDED.currency_code,
+      payment_method = COALESCE(EXCLUDED.payment_method, payments.payment_method),
+      status = EXCLUDED.status,
       is_payment_success = 1,
       failure_code = NULL,
       failure_message = NULL,
-      metadata = $11::jsonb,
-      raw_event = $12::jsonb,
-      paid_at = CURRENT_TIMESTAMP,
+      metadata = EXCLUDED.metadata,
+      raw_event = EXCLUDED.raw_event,
+      paid_at = COALESCE(payments.paid_at, CURRENT_TIMESTAMP),
       updated_at = CURRENT_TIMESTAMP
-    WHERE transaction_id = $1
     RETURNING *;
   `;
 
@@ -339,16 +748,18 @@ const updatePaymentFromSucceededIntent = async ({ paymentIntent, event }) => {
     paymentIntent.status,
     JSON.stringify(paymentIntent.metadata || {}),
     JSON.stringify(event || {}),
+    PAYMENT_GATEWAY,
+    generateRrn(),
   ]);
 
-  if (orderId) {
+  const payment = result.rows[0] || null;
+
+  if (payment?.order_id) {
     await markOrderPaid({
-      orderId,
+      orderId: payment.order_id,
       paymentMethod: "stripe",
     });
   }
-
-  const payment = result.rows[0] || null;
 
   if (payment) {
     await publishPaymentChangeSafely({
@@ -363,6 +774,167 @@ const updatePaymentFromSucceededIntent = async ({ paymentIntent, event }) => {
   }
 
   return payment;
+};
+
+const finalizePaidCheckoutSession = async ({ session, expectedCustomerId = null }) => {
+  const metadataCustomerId = Number(session.metadata?.customerId || 0);
+
+  if (expectedCustomerId && metadataCustomerId !== Number(expectedCustomerId)) {
+    const error = new Error("Checkout session does not belong to this customer");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  if (session.payment_status !== "paid" || !session.payment_intent) {
+    const error = new Error(`Checkout is not paid yet. Current status: ${session.payment_status}`);
+    error.statusCode = 400;
+    throw error;
+  }
+
+  await ensurePendingCheckoutTable();
+  let order = null;
+  let createdOrderForThisCheckout = null;
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent.id;
+
+  const client = await db.pool.connect();
+  try {
+    await client.query("BEGIN");
+    const pendingResult = await client.query(
+      `
+        SELECT *
+        FROM pending_payment_checkouts
+        WHERE session_id = $1
+          AND customer_id = $2
+        LIMIT 1
+        FOR UPDATE;
+      `,
+      [session.id, metadataCustomerId]
+    );
+    const pendingCheckout = pendingResult.rows[0] || null;
+    const existingPaymentResult = await client.query(
+      `
+        SELECT order_id
+        FROM payments
+        WHERE transaction_id = $1
+          AND order_id IS NOT NULL
+        LIMIT 1
+        FOR UPDATE;
+      `,
+      [paymentIntentId]
+    );
+    const existingPaymentOrderId =
+      Number(existingPaymentResult.rows[0]?.order_id || 0) || null;
+    const existingOrderId = existingPaymentOrderId || pendingCheckout?.order_id;
+
+    if (existingOrderId) {
+      order = await getOrderById(existingOrderId);
+
+      if (pendingCheckout && Number(pendingCheckout.order_id || 0) !== Number(existingOrderId)) {
+        await client.query(
+          `
+            UPDATE pending_payment_checkouts
+            SET
+              status = 'paid',
+              order_id = $2,
+              updated_at = CURRENT_TIMESTAMP
+            WHERE session_id = $1;
+          `,
+          [session.id, existingOrderId]
+        );
+      }
+    } else if (pendingCheckout?.checkout_payload?.orderDraft) {
+      createdOrderForThisCheckout = await orderModel.createOrderForCustomer({
+        ...pendingCheckout.checkout_payload.orderDraft,
+        paymentMethod: "stripe",
+      });
+      order = createdOrderForThisCheckout;
+
+      await client.query(
+        `
+          UPDATE pending_payment_checkouts
+          SET
+            status = 'paid',
+            order_id = $2,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE session_id = $1;
+        `,
+        [session.id, order.id]
+      );
+    }
+
+    if (order?.id) {
+      await client.query(
+        `
+        UPDATE pending_payment_checkouts
+        SET
+          status = 'paid',
+          updated_at = CURRENT_TIMESTAMP
+        WHERE session_id = $1;
+      `,
+        [session.id]
+      );
+    }
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  if (createdOrderForThisCheckout) {
+    await publishCreatedOrder(createdOrderForThisCheckout);
+    order = await getOrderById(createdOrderForThisCheckout.id);
+  }
+
+  const fallbackOrderId = Number(session.metadata?.orderId || 0);
+  if (!order && fallbackOrderId) {
+    order = await getOrderById(fallbackOrderId);
+  }
+
+  const payment = await updatePaymentFromSucceededIntent({
+    paymentIntent: session.payment_intent,
+    event: {
+      type: "frontend.checkout_confirmed",
+      id: `checkout_${session.id}`,
+      checkoutSessionId: session.id,
+    },
+    overrideOrderId: order?.id || null,
+    overrideCustomerId: metadataCustomerId,
+  });
+  const confirmedOrder = order?.id ? await getOrderById(order.id) : null;
+
+  return {
+    payment,
+    order: confirmedOrder,
+  };
+};
+
+const confirmCheckoutSession = async ({ sessionId, customer }) => {
+  if (!sessionId) {
+    const error = new Error("sessionId is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!customer?.id) {
+    const error = new Error("Customer authentication is required");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const session = await getStripe().checkout.sessions.retrieve(sessionId, {
+    expand: ["payment_intent.latest_charge"],
+  });
+
+  return finalizePaidCheckoutSession({
+    session,
+    expectedCustomerId: customer.id,
+  });
 };
 
 const updatePaymentFromFailedIntent = async ({ paymentIntent, event }) => {
@@ -484,12 +1056,24 @@ const handleStripeWebhook = async ({ rawBody, signature }) => {
     });
   }
 
+  if (event.type === "checkout.session.completed") {
+    const session = await getStripe().checkout.sessions.retrieve(event.data.object.id, {
+      expand: ["payment_intent.latest_charge"],
+    });
+
+    await finalizePaidCheckoutSession({
+      session,
+    });
+  }
+
   return event;
 };
 
 module.exports = {
   createPaymentIntent,
+  createCheckoutSession,
   confirmPayment,
+  confirmCheckoutSession,
   handleStripeWebhook,
   getOrderById,
 };

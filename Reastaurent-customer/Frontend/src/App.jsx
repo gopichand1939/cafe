@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 // Lazy load pages
 const Home = lazy(() => import("./Pages/Home/Home"));
 const Office = lazy(() => import("./Pages/Office/Office"));
+const OrderDetails = lazy(() => import("./Pages/OrderDetails/OrderDetails"));
 
 const PageLoader = () => (
   <div style={{ 
@@ -25,6 +26,7 @@ function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/orders/:id" element={<OrderDetails />} />
           <Route path="/office" element={<Office />} />
           {/* Add more routes here as needed */}
         </Routes>

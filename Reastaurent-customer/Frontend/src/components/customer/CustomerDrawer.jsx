@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { customerAuthStorage } from "../../auth/customerAuthStorage";
 import {
   changeCustomerPassword,
@@ -269,6 +270,7 @@ function SignedInView({
   onNotificationSummaryChange,
 }) {
   const LIVE_ITEM_HIGHLIGHT_MS = 30000;
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(initialTab || "profile");
   const [profileForm, setProfileForm] = useState({
     name: customer?.name || "",
@@ -575,6 +577,10 @@ function SignedInView({
     }
   };
 
+  const viewOrderDetails = async (orderId) => {
+    navigate(`/orders/${orderId}`);
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="customer-card">
@@ -745,10 +751,19 @@ function SignedInView({
                       Note: {order.order_notes}
                     </div>
                   ) : null}
+
+                  <button
+                    type="button"
+                    onClick={() => void viewOrderDetails(order.id)}
+                    className="mt-1 w-fit rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-bold text-white transition hover:bg-white/[0.1]"
+                  >
+                    View Details
+                  </button>
                 </div>
               );
             })}
           </div>
+
         </div>
       ) : null}
 

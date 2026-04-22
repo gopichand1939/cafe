@@ -26,6 +26,7 @@ const normalizeOrder = (row) => {
     ...row,
     delivery_address: row.delivery_address || {},
     items: row.items || [],
+    payment_transaction: row.payment_transaction || null,
   };
 };
 
@@ -144,6 +145,37 @@ const getOrderList = async ({
       fo.order_notes,
       fo.created_at,
       fo.updated_at,
+      (
+        SELECT row_to_json(payment_detail)
+        FROM (
+          SELECT
+            p.id,
+            p.gateway,
+            p.rrn,
+            p.transaction_id,
+            p.provider_payment_id,
+            p.provider_charge_id,
+            p.provider_balance_transaction_id,
+            p.amount,
+            p.amount_in_paise,
+            p.currency_code,
+            p.payment_method,
+            p.status,
+            p.is_payment_success,
+            p.failure_code,
+            p.failure_message,
+            p.paid_at,
+            p.created_at,
+            p.updated_at
+          FROM payments p
+          WHERE p.order_id = fo.id
+          ORDER BY
+            p.is_payment_success DESC,
+            p.paid_at DESC NULLS LAST,
+            p.id DESC
+          LIMIT 1
+        ) payment_detail
+      ) AS payment_transaction,
       COALESCE(
         string_agg(
           CONCAT(oi.item_name, ' x', oi.quantity::text),
@@ -211,6 +243,37 @@ const getOrderById = async (id) => {
       o.delivery_address,
       o.created_at,
       o.updated_at,
+      (
+        SELECT row_to_json(payment_detail)
+        FROM (
+          SELECT
+            p.id,
+            p.gateway,
+            p.rrn,
+            p.transaction_id,
+            p.provider_payment_id,
+            p.provider_charge_id,
+            p.provider_balance_transaction_id,
+            p.amount,
+            p.amount_in_paise,
+            p.currency_code,
+            p.payment_method,
+            p.status,
+            p.is_payment_success,
+            p.failure_code,
+            p.failure_message,
+            p.paid_at,
+            p.created_at,
+            p.updated_at
+          FROM payments p
+          WHERE p.order_id = o.id
+          ORDER BY
+            p.is_payment_success DESC,
+            p.paid_at DESC NULLS LAST,
+            p.id DESC
+          LIMIT 1
+        ) payment_detail
+      ) AS payment_transaction,
       COALESCE(
         json_agg(
           json_build_object(

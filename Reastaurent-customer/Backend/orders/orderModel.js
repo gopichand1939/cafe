@@ -9,6 +9,7 @@ const normalizeOrder = (row) => {
     ...row,
     delivery_address: row.delivery_address || {},
     items: row.items || [],
+    payments: row.payments || [],
   };
 };
 
@@ -139,6 +140,56 @@ const getOrderByIdForCustomer = async ({ orderId, customerId }) => {
         ) FILTER (WHERE oi.id IS NOT NULL),
         '[]'::json
       ) AS items
+      ,
+      COALESCE(
+        (
+          SELECT json_agg(
+            json_build_object(
+              'id', p.id,
+              'gateway', p.gateway,
+              'rrn', p.rrn,
+              'transaction_id', p.transaction_id,
+              'provider_payment_id', p.provider_payment_id,
+              'provider_charge_id', p.provider_charge_id,
+              'provider_balance_transaction_id', p.provider_balance_transaction_id,
+              'amount', p.amount,
+              'amount_in_paise', p.amount_in_paise,
+              'currency_code', p.currency_code,
+              'payment_method', p.payment_method,
+              'status', p.status,
+              'is_payment_success', p.is_payment_success,
+              'failure_code', p.failure_code,
+              'failure_message', p.failure_message,
+              'metadata', p.metadata,
+              'raw_event', p.raw_event,
+              'paid_at', p.paid_at,
+              'created_at', p.created_at,
+              'updated_at', p.updated_at
+            )
+            ORDER BY p.id DESC
+          )
+          FROM payments p
+          WHERE (
+              p.order_id = o.id
+              OR p.metadata->>'orderId' = o.id::TEXT
+              OR EXISTS (
+                SELECT 1
+                FROM pending_payment_checkouts pc
+                WHERE pc.order_id = o.id
+                  AND pc.session_id = COALESCE(
+                    p.raw_event->>'checkoutSessionId',
+                    REPLACE(p.raw_event->>'id', 'checkout_', '')
+                  )
+              )
+            )
+            AND (
+              p.customer_id = o.customer_id
+              OR p.customer_id IS NULL
+              OR p.metadata->>'customerId' = o.customer_id::TEXT
+            )
+        ),
+        '[]'::json
+      ) AS payments
     FROM orders o
     LEFT JOIN order_items oi ON oi.order_id = o.id
     WHERE o.id = $1

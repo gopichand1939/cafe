@@ -22,6 +22,48 @@ const formatCurrency = (value, currencyCode = "INR") => {
   }
 };
 
+const humanizeValue = (value) =>
+  String(value || "-")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+
+const formatDateTime = (value) => {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+};
+
+const isPaidOrder = (order) =>
+  String(order?.payment_status || "").toLowerCase() === "paid" ||
+  Number(order?.payment_transaction?.is_payment_success) === 1;
+
+const buildPaymentTransactionRows = (order) => {
+  if (!isPaidOrder(order)) {
+    return [];
+  }
+
+  const payment = order.payment_transaction;
+
+  if (!payment) {
+    return [["Transaction Details", "No transaction record attached"]];
+  }
+
+  return [
+    ["Payment Result", Number(payment.is_payment_success) === 1 ? "Success" : humanizeValue(payment.status)],
+    ["Gateway", humanizeValue(payment.gateway)],
+    ["RRN", payment.rrn],
+    ["Transaction ID", payment.transaction_id],
+    ["Provider Payment ID", payment.provider_payment_id],
+    ["Provider Charge ID", payment.provider_charge_id],
+    ["Balance Transaction ID", payment.provider_balance_transaction_id],
+    ["Paid Amount", formatCurrency(payment.amount ?? order.total_amount, payment.currency_code || order.currency_code)],
+    ["Paid At", formatDateTime(payment.paid_at)],
+  ].filter(([, value]) => value !== undefined && value !== null && value !== "");
+};
+
 function ViewOrder() {
   const { id } = useParams();
   const dispatch = useDispatch();
@@ -87,6 +129,7 @@ function ViewOrder() {
     created_at: new Date(order.created_at).toLocaleString(),
     updated_at: new Date(order.updated_at).toLocaleString(),
     delivery_address: JSON.stringify(order.delivery_address || {}, null, 2),
+    payment_transaction: order.payment_transaction,
   };
 
   const fields = [
@@ -98,6 +141,33 @@ function ViewOrder() {
     { key: "order_status", label: "Order Status" },
     { key: "payment_status", label: "Payment Status" },
     { key: "payment_method", label: "Payment Method" },
+    {
+      key: "payment_transaction",
+      label: "Transaction Details",
+      fullWidth: true,
+      render: () => {
+        const transactionRows = buildPaymentTransactionRows(order);
+
+        if (transactionRows.length === 0) {
+          return <span className="text-sm text-slate-500">Only shown after payment is paid.</span>;
+        }
+
+        return (
+          <div className="grid gap-2 md:grid-cols-2">
+            {transactionRows.map(([label, value]) => (
+              <div key={label} className="rounded-[8px] border border-slate-200 bg-white p-3">
+                <div className="text-[0.72rem] font-bold uppercase text-slate-500">
+                  {label}
+                </div>
+                <div className="mt-1 break-words font-semibold text-slate-900">
+                  {value || "-"}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      },
+    },
     { key: "currency_code", label: "Currency" },
     { key: "item_count", label: "Item Count" },
     { key: "subtotal_amount", label: "Subtotal" },

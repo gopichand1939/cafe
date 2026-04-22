@@ -424,8 +424,8 @@ function AppShell() {
                           type="button"
                           className={`grid gap-1 rounded-[8px] px-3 py-3 text-left transition-all duration-300 ${
                             highlightedNotificationIds.includes(Number(notification.id))
-                              ? "bg-[linear-gradient(90deg,rgba(255,247,237,0.98)_0%,rgba(255,237,213,0.98)_100%)] shadow-[inset_0_0_0_1px_rgba(249,115,22,0.28)] animate-pulse"
-                              : "hover:bg-brand-50/70"
+                              ? "bg-accent-500/10 shadow-[inset_0_0_0_1px_rgba(249,115,22,0.28)] animate-pulse"
+                              : "hover:bg-surface-hover"
                           } ${
                             Number(notification.is_read) === 1 ? "opacity-70" : ""
                           }`}
@@ -453,7 +453,7 @@ function AppShell() {
                   <div className="border-t border-border-subtle px-2 pt-2">
                     <button
                       type="button"
-                      className="w-full rounded-[12px] bg-transparent px-3 py-2.5 text-left font-bold text-text-strong hover:bg-brand-50/70"
+                      className="w-full rounded-[12px] bg-transparent px-3 py-2.5 text-left font-bold text-text-strong hover:bg-surface-hover"
                       onClick={() => {
                         setIsNotificationMenuOpen(false);
                         navigate("/notifications");
@@ -468,7 +468,7 @@ function AppShell() {
               {livePopupNotification ? (
                 <button
                   type="button"
-                  className="absolute right-0 top-[calc(100%+12px)] z-[19] w-[min(330px,82vw)] rounded-[10px] border border-[rgba(249,115,22,0.35)] bg-[linear-gradient(135deg,rgba(255,247,237,0.98)_0%,rgba(255,237,213,0.98)_100%)] p-4 text-left shadow-[0_18px_32px_rgba(249,115,22,0.18)] transition-all duration-300"
+                  className="absolute right-0 top-[calc(100%+12px)] z-[19] w-[min(330px,82vw)] rounded-[10px] border border-[rgba(249,115,22,0.35)] bg-[linear-gradient(135deg,rgba(49,33,20,0.98)_0%,rgba(29,19,12,0.98)_100%)] p-4 text-left shadow-[0_18px_32px_rgba(249,115,22,0.18)] transition-all duration-300"
                   onClick={() => {
                     setLivePopupNotification(null);
                     setIsNotificationMenuOpen(true);
@@ -514,7 +514,7 @@ function AppShell() {
                 <div className="absolute right-0 top-[calc(100%+10px)] z-20 min-w-[180px] rounded-[18px] border border-border-subtle bg-surface-elevated p-2 shadow-lg">
                   <button
                     type="button"
-                    className="w-full rounded-[12px] bg-transparent px-3 py-2.5 text-left font-bold text-text-strong hover:bg-brand-50/70"
+                    className="w-full rounded-[12px] bg-transparent px-3 py-2.5 text-left font-bold text-text-strong hover:bg-surface-hover"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
                       navigate("/timings");
@@ -524,7 +524,7 @@ function AppShell() {
                   </button>
                   <button
                     type="button"
-                    className="w-full rounded-[12px] bg-transparent px-3 py-2.5 text-left font-bold text-red-700 hover:bg-red-50"
+                    className="w-full rounded-[12px] bg-transparent px-3 py-2.5 text-left font-bold text-red-400 hover:bg-red-500/10"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
                       handleLogout();

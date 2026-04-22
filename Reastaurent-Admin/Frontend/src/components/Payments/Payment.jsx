@@ -36,11 +36,11 @@ const formatCurrency = (value, currencyCode = "INR") => {
 
 const renderPill = (label, tone = "neutral") => {
   const toneClassMap = {
-    success: "bg-emerald-100 text-emerald-700",
-    warning: "bg-amber-100 text-amber-700",
-    danger: "bg-rose-100 text-rose-700",
-    info: "bg-sky-100 text-sky-700",
-    neutral: "bg-slate-100 text-slate-700",
+    success: "bg-emerald-500/15 text-emerald-300",
+    warning: "bg-amber-500/15 text-amber-300",
+    danger: "bg-rose-500/15 text-rose-300",
+    info: "bg-sky-500/15 text-sky-300",
+    neutral: "bg-slate-700/60 text-slate-200",
   };
 
   return (
@@ -477,7 +477,7 @@ function Payment() {
 
   return (
     <div className="grid min-h-0 content-start gap-[18px]">
-      <section className="min-h-0 overflow-hidden rounded-[8px] border border-[#d8ece3] bg-[#e7f7f0] p-[10px]">
+      <section className="min-h-0 overflow-hidden rounded-[8px] border border-border-subtle bg-surface-panel p-[10px]">
         <div className="flex min-h-[56px] flex-wrap items-center justify-between gap-3 px-[6px] pb-2 pt-1">
           <div className="grid gap-0.5">
             <p className="m-0 text-[0.78rem] font-bold uppercase tracking-normal text-orange-500">
@@ -490,7 +490,7 @@ function Payment() {
           <div className="flex items-center gap-[10px] font-semibold text-slate-500">
             <span>Home</span>
             <span>/</span>
-            <strong className="text-[#3f9773]">Payments</strong>
+            <strong className="text-brand-500">Payments</strong>
           </div>
         </div>
 
@@ -513,7 +513,7 @@ function Payment() {
           }
           getRowCellClassName={(item) =>
             highlightedPaymentIds.includes(Number(item.id))
-              ? "bg-sky-50 animate-pulse"
+              ? "bg-sky-500/10 animate-pulse"
               : ""
           }
         />

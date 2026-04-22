@@ -6,9 +6,11 @@ function ActionPopover({
   onEdit,
   onDelete,
   onView,
+  onPrint,
   hideEdit = false,
   hideDelete = false,
   hideView = false,
+  hidePrint = false,
 }) {
   if (!open || !anchorEl) {
     return null;
@@ -16,7 +18,7 @@ function ActionPopover({
 
   const rect = anchorEl.getBoundingClientRect();
   const popoverWidth = 156;
-  const popoverHeight = 180;
+  const popoverHeight = hidePrint ? 180 : 230;
   const left = Math.max(8, Math.min(rect.right - popoverWidth, window.innerWidth - popoverWidth - 8));
   const top = Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - popoverHeight - 8));
 
@@ -80,6 +82,20 @@ function ActionPopover({
           >
             <span className="h-[10px] w-[10px] rounded-full bg-red-600" />
             <span>Delete</span>
+          </button>
+        ) : null}
+
+        {!hidePrint ? (
+          <button
+            type="button"
+            className="flex items-center gap-[10px] rounded-[8px] bg-transparent px-[10px] py-2 text-left hover:bg-emerald-500/10"
+            onClick={() => {
+              onPrint?.(selectedRow);
+              handleClose();
+            }}
+          >
+            <span className="h-[10px] w-[10px] rounded-full bg-emerald-600" />
+            <span>Print Invoice</span>
           </button>
         ) : null}
       </div>

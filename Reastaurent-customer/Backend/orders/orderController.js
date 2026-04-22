@@ -281,6 +281,7 @@ const getMyOrderById = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      message: "Order details fetched successfully",
       data: order,
     });
   } catch (error) {

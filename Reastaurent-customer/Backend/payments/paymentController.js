@@ -29,6 +29,33 @@ const createPaymentIntent = async (req, res) => {
   }
 };
 
+const createCheckoutSession = async (req, res) => {
+  try {
+    const { orderId, checkoutPayload, successUrl, cancelUrl } = req.body;
+
+    const result = await paymentService.createCheckoutSession({
+      orderId,
+      checkoutPayload,
+      successUrl,
+      cancelUrl,
+      customer: req.customer,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Checkout session created successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error creating checkout session:", error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Failed to create checkout session",
+    });
+  }
+};
+
 const stripeWebhook = async (req, res) => {
   try {
     const signature = req.headers["stripe-signature"];
@@ -83,8 +110,34 @@ const confirmPayment = async (req, res) => {
   }
 };
 
+const confirmCheckoutSession = async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+
+    const result = await paymentService.confirmCheckoutSession({
+      sessionId,
+      customer: req.customer,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Checkout confirmed successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Error confirming checkout session:", error);
+
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Failed to confirm checkout session",
+    });
+  }
+};
+
 module.exports = {
   createPaymentIntent,
+  createCheckoutSession,
   confirmPayment,
+  confirmCheckoutSession,
   stripeWebhook,
 };

@@ -31,32 +31,32 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("theme");
-      if (saved) return saved;
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      if (saved === "light" || saved === "dark") {
+        return saved;
+      }
     }
-    return "light";
+
+    return "dark";
   });
 
   useEffect(() => {
     const root = window.document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    root.classList.toggle("dark", theme === "dark");
+    root.classList.toggle("light", theme === "light");
     localStorage.setItem("theme", theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
   return (
     <button
       type="button"
       onClick={toggleTheme}
+      aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
       className="group relative grid h-11 w-11 place-items-center rounded-2xl border border-border-subtle bg-surface-muted transition-all duration-300 hover:border-brand-500/30 hover:bg-brand-500/5 shadow-[0_8px_18px_rgba(25,60,48,0.06)]"
-      title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
     >
       <div className="relative h-5 w-5 overflow-hidden">
         <div
