@@ -1,0 +1,52 @@
+{
+  "info": {
+    "name": "Restaurant Customer WebSocket",
+    "_postman_id": "6f4f0df3-cd16-4dc8-b49d-3f70899b2002",
+    "description": "Separate WebSocket collection for customer realtime connections.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "wsBaseUrl",
+      "value": "wss://cafe-customer-backend.onrender.com/ws"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Public Menu WebSocket",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{wsBaseUrl}}",
+          "host": [
+            "{{wsBaseUrl}}"
+          ]
+        },
+        "description": "Public menu realtime socket. No token required."
+      }
+    },
+    {
+      "name": "Customer Realtime WebSocket",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{wsBaseUrl}}?token={{accessToken}}",
+          "host": [
+            "{{wsBaseUrl}}"
+          ],
+          "query": [
+            {
+              "key": "token",
+              "value": "{{accessToken}}"
+            }
+          ]
+        },
+        "description": "Authenticated customer socket for order and notification updates."
+      }
+    }
+  ]
+}

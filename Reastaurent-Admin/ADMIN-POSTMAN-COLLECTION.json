@@ -1,0 +1,1657 @@
+{
+  "info": {
+    "name": "Restaurant Admin APIs",
+    "_postman_id": "e77e3d53-6b33-4a51-b5ef-2f5cdbf61003",
+    "description": "Admin backend API collection covering auth, dashboard, menu, customers, orders, payments, notifications, restaurant settings, and messages.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://cafe-backend-pdkr.onrender.com"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "adminId",
+      "value": "1"
+    },
+    {
+      "key": "categoryId",
+      "value": "1"
+    },
+    {
+      "key": "itemId",
+      "value": "1"
+    },
+    {
+      "key": "addonId",
+      "value": "1"
+    },
+    {
+      "key": "customerId",
+      "value": "1"
+    },
+    {
+      "key": "orderId",
+      "value": "1"
+    },
+    {
+      "key": "paymentId",
+      "value": "1"
+    },
+    {
+      "key": "notificationId",
+      "value": "1"
+    },
+    {
+      "key": "resetToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Admin Auth",
+      "item": [
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@example.com\",\n  \"phone\": \"9876543210\",\n  \"password\": \"123456\",\n  \"confirm_password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Admin Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/refresh-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "refresh-token"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "logout"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "forgot-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reset_token\": \"{{resetToken}}\",\n  \"new_password\": \"1234567\",\n  \"confirm_password\": \"1234567\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reset-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"123456\",\n  \"new_password\": \"1234567\",\n  \"confirm_password\": \"1234567\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "change-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "profile"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Dashboard",
+      "item": [
+        {
+          "name": "Summary",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "summary"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Category Stats",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/category-stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "category-stats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Veg Stats",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/veg-stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "veg-stats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Order Stats",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/order-stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboard",
+                "order-stats"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Category",
+      "item": [
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "category_name",
+                  "value": "Burgers",
+                  "type": "text"
+                },
+                {
+                  "key": "category_description",
+                  "value": "Fresh burger menu",
+                  "type": "text"
+                },
+                {
+                  "key": "category_image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/category/create_category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "category",
+                "create_category"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Category List",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/category/category_list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "category",
+                "category_list"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Category",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/category/get_category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "category",
+                "get_category"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Category By Id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{categoryId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/category/get_category_byId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "category",
+                "get_category_byId"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "id",
+                  "value": "{{categoryId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "category_name",
+                  "value": "Burgers Updated",
+                  "type": "text"
+                },
+                {
+                  "key": "category_description",
+                  "value": "Updated category",
+                  "type": "text"
+                },
+                {
+                  "key": "category_image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/category/update_category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "category",
+                "update_category"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{categoryId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/category/delete_category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "category",
+                "delete_category"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Items",
+      "item": [
+        {
+          "name": "Create Item",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "category_id",
+                  "value": "{{categoryId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "item_name",
+                  "value": "Veg Burger",
+                  "type": "text"
+                },
+                {
+                  "key": "item_description",
+                  "value": "Tasty burger",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "150",
+                  "type": "text"
+                },
+                {
+                  "key": "discount_price",
+                  "value": "120",
+                  "type": "text"
+                },
+                {
+                  "key": "preparation_time",
+                  "value": "15",
+                  "type": "text"
+                },
+                {
+                  "key": "is_popular",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "is_new",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "is_veg",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "item_image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/items/create_item",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "items",
+                "create_item"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Item List",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/items/item_list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "items",
+                "item_list"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Item By Id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{itemId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/items/get_item_byId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "items",
+                "get_item_byId"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Item",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "id",
+                  "value": "{{itemId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "category_id",
+                  "value": "{{categoryId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "item_name",
+                  "value": "Veg Burger Updated",
+                  "type": "text"
+                },
+                {
+                  "key": "item_description",
+                  "value": "Updated description",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "160",
+                  "type": "text"
+                },
+                {
+                  "key": "discount_price",
+                  "value": "140",
+                  "type": "text"
+                },
+                {
+                  "key": "preparation_time",
+                  "value": "20",
+                  "type": "text"
+                },
+                {
+                  "key": "is_popular",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "is_new",
+                  "value": "0",
+                  "type": "text"
+                },
+                {
+                  "key": "is_veg",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "item_image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/items/update_item",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "items",
+                "update_item"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{itemId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/items/delete_item",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "items",
+                "delete_item"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Addons",
+      "item": [
+        {
+          "name": "Create Addon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": {{itemId}},\n  \"addon_group\": \"Extras\",\n  \"addon_name\": \"Cheese\",\n  \"addon_price\": 20,\n  \"sort_order\": 1,\n  \"is_active\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/addons/create_addon",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addons",
+                "create_addon"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Addon List",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 10,\n  \"item_id\": null,\n  \"addon_group\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/addons/addon_list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addons",
+                "addon_list"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Addon By Id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{addonId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/addons/get_addon_byId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addons",
+                "get_addon_byId"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Addon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{addonId}},\n  \"item_id\": {{itemId}},\n  \"addon_group\": \"Extras\",\n  \"addon_name\": \"Cheese Slice\",\n  \"addon_price\": 25,\n  \"sort_order\": 1,\n  \"is_active\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/addons/update_addon",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addons",
+                "update_addon"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Addon",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{addonId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/addons/delete_addon",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addons",
+                "delete_addon"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Addons By Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": {{itemId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/addons/get_addons_by_item",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "addons",
+                "get_addons_by_item"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Customers",
+      "item": [
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Anitha\",\n  \"email\": \"anitha@example.com\",\n  \"phone\": \"9876543210\",\n  \"password\": \"123456\",\n  \"confirm_password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customer/create_customer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer",
+                "create_customer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Customer List",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customer/customer_list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer",
+                "customer_list"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer By Id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{customerId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customer/get_customer_byId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer",
+                "get_customer_byId"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{customerId}},\n  \"name\": \"Anitha Updated\",\n  \"email\": \"anitha@example.com\",\n  \"phone\": \"9876543210\",\n  \"is_active\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customer/update_customer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer",
+                "update_customer"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{customerId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customer/delete_customer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer",
+                "delete_customer"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": {{customerId}},\n  \"items\": [\n    {\n      \"item_id\": {{itemId}},\n      \"quantity\": 1,\n      \"selected_addons\": []\n    }\n  ],\n  \"delivery_address\": {\n    \"recipient_name\": \"Anitha\",\n    \"phone\": \"9876543210\",\n    \"line1\": \"House 10\",\n    \"city\": \"Surat\",\n    \"state\": \"Gujarat\",\n    \"pincode\": \"395007\"\n  },\n  \"payment_method\": \"cash_on_delivery\",\n  \"order_notes\": \"Test order\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/create_order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "create_order"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Order List",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 10,\n  \"status\": \"\",\n  \"customer_id\": null,\n  \"search\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/order_list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "order_list"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Order By Id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{orderId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/get_order_byId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "get_order_byId"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{orderId}},\n  \"order_status\": \"preparing\",\n  \"payment_status\": \"pending\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/update_order_status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "update_order_status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{orderId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/delete_order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "delete_order"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Payments",
+      "item": [
+        {
+          "name": "Payment List",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 10,\n  \"status\": \"\",\n  \"gateway\": \"\",\n  \"is_payment_success\": null,\n  \"order_id\": null,\n  \"customer_id\": null,\n  \"search\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/payment_list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "payment_list"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Payment By Id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{paymentId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/get_payment_byId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "get_payment_byId"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Payment Summary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/payment_summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "payment_summary"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Notifications",
+      "item": [
+        {
+          "name": "Notification List",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 10,\n  \"is_read\": null,\n  \"entity\": \"\",\n  \"notification_type\": \"\",\n  \"search\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/notification_list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "notification_list"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Notification By Id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{notificationId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/get_notification_byId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "get_notification_byId"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification As Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{notificationId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/mark_notification_as_read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "mark_notification_as_read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All Notifications As Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/mark_all_notifications_as_read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "mark_all_notifications_as_read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{notificationId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/delete_notification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "delete_notification"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unread Notification Summary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/unread_notification_summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "unread_notification_summary"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Restaurant Settings",
+      "item": [
+        {
+          "name": "Get Restaurant Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/restaurant/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "restaurant",
+                "settings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Restaurant Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"restaurant_name\": \"Cafe Demo\",\n  \"email\": \"hello@example.com\",\n  \"phone\": \"9876543210\",\n  \"address\": \"Main Road\",\n  \"gst_number\": \"GST12345\",\n  \"currency_code\": \"INR\",\n  \"timezone\": \"Asia/Kolkata\",\n  \"opening_time\": \"09:00\",\n  \"closing_time\": \"23:00\",\n  \"accepts_orders\": true,\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/restaurant/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "restaurant",
+                "settings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Toggle Restaurant Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"manual_is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/restaurant/toggle-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "restaurant",
+                "toggle-status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Messages",
+      "item": [
+        {
+          "name": "Get Message Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/messages/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "messages",
+                "settings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Message Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mail_enabled\": true,\n  \"mail_from_name\": \"Cafe Demo\",\n  \"mail_from_email\": \"hello@example.com\",\n  \"smtp_host\": \"smtp.example.com\",\n  \"smtp_port\": 587,\n  \"smtp_user\": \"user@example.com\",\n  \"smtp_password\": \"secret\",\n  \"smtp_secure\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/messages/settings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "messages",
+                "settings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Test Mail",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"test@example.com\",\n  \"subject\": \"Test mail\",\n  \"message\": \"Hello from admin API\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/messages/test-mail",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "messages",
+                "test-mail"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

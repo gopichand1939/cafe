@@ -1,0 +1,713 @@
+{
+  "info": {
+    "name": "Restaurant Customer Portal APIs",
+    "_postman_id": "9d7b4b26-6d1f-4a78-bb8e-2d9f8dce1001",
+    "description": "Customer portal API collection for the Reastaurent-customer app. Base URL defaults to the deployed backend from Frontend/.env. Update collection variables to test localhost.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://cafe-customer-backend.onrender.com/api"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": "1"
+    },
+    {
+      "key": "notificationId",
+      "value": "1"
+    },
+    {
+      "key": "sessionId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Menu",
+      "item": [
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "description": "Fetch all active menu categories. No auth required."
+          }
+        },
+        {
+          "name": "Get Items By Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_id\": \"all\",\n  \"page\": 1,\n  \"limit\": 12\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/items-by-category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "items-by-category"
+              ]
+            },
+            "description": "Fetch menu items for one category or all categories."
+          }
+        },
+        {
+          "name": "Get Item Addons",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/item-addons",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "item-addons"
+              ]
+            },
+            "description": "Fetch add-ons for an item."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Auth",
+      "item": [
+        {
+          "name": "Register Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dishant\",\n  \"email\": \"dishant@example.com\",\n  \"phone\": \"9876543210\",\n  \"password\": \"123456\",\n  \"confirm_password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Creates a customer account and returns access_token and refresh_token."
+          }
+        },
+        {
+          "name": "Login Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"dishant@example.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Main login API used by the customer sign-in drawer."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh-token"
+              ]
+            },
+            "description": "Available in the frontend service layer, but not auto-used in the current UI flow."
+          }
+        },
+        {
+          "name": "Logout Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Ends the current authenticated session."
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"123456\",\n  \"new_password\": \"1234567\",\n  \"confirm_password\": \"1234567\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "change-password"
+              ]
+            },
+            "description": "Used in the Customer Panel > My Account tab."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Profile",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customer/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer",
+                "profile"
+              ]
+            },
+            "description": "Loads the signed-in customer's latest profile."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dishant\",\n  \"email\": \"dishant@example.com\",\n  \"phone\": \"9876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customer/update-profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer",
+                "update-profile"
+              ]
+            },
+            "description": "Used in the Customer Panel > My Profile tab."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Orders",
+      "item": [
+        {
+          "name": "Place Order - Cash On Delivery",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"item_id\": 1,\n      \"quantity\": 2,\n      \"selected_addons\": [\n        {\n          \"id\": 11,\n          \"addon_group\": \"Extras\",\n          \"addon_name\": \"Cheese\",\n          \"addon_price\": 20\n        }\n      ],\n      \"item_notes\": \"Less spicy\"\n    }\n  ],\n  \"delivery_address\": {\n    \"recipient_name\": \"Dishant\",\n    \"phone\": \"9876543210\",\n    \"line1\": \"House 10\",\n    \"line2\": \"Near Market\",\n    \"landmark\": \"Main Road\",\n    \"city\": \"Surat\",\n    \"state\": \"Gujarat\",\n    \"pincode\": \"395007\"\n  },\n  \"order_notes\": \"Ring the bell\",\n  \"payment_method\": \"cash_on_delivery\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/place-order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "place-order"
+              ]
+            },
+            "description": "Actual API used when customer chooses cash on delivery."
+          }
+        },
+        {
+          "name": "My Orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 20\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/my-orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "my-orders"
+              ]
+            },
+            "description": "Loads order list in the Customer Panel > My Orders tab."
+          }
+        },
+        {
+          "name": "Order Details",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{orderId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/order-details",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "order-details"
+              ]
+            },
+            "description": "Loads the full order detail page."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Payments",
+      "item": [
+        {
+          "name": "Create Checkout Session - Stripe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"checkoutPayload\": {\n    \"items\": [\n      {\n        \"item_id\": 1,\n        \"quantity\": 1,\n        \"selected_addons\": [],\n        \"item_notes\": \"\"\n      }\n    ],\n    \"delivery_address\": {\n      \"recipient_name\": \"Dishant\",\n      \"phone\": \"9876543210\",\n      \"line1\": \"House 10\",\n      \"line2\": \"Near Market\",\n      \"landmark\": \"Main Road\",\n      \"city\": \"Surat\",\n      \"state\": \"Gujarat\",\n      \"pincode\": \"395007\"\n    },\n    \"order_notes\": \"Fast delivery please\"\n  },\n  \"successUrl\": \"http://localhost:5173/?checkout=success&session_id={CHECKOUT_SESSION_ID}\",\n  \"cancelUrl\": \"http://localhost:5173/?checkout=cancelled\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/create-checkout-session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "create-checkout-session"
+              ]
+            },
+            "description": "Actual Stripe API used in the current customer cart flow."
+          }
+        },
+        {
+          "name": "Confirm Checkout Session - Stripe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"{{sessionId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/confirm-checkout-session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "confirm-checkout-session"
+              ]
+            },
+            "description": "Called by Home page after Stripe redirects back with session_id."
+          }
+        },
+        {
+          "name": "Create Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 150,\n  \"orderId\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/create-payment-intent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "create-payment-intent"
+              ]
+            },
+            "description": "Available in backend/frontend service code, but not used by the current customer UI."
+          }
+        },
+        {
+          "name": "Confirm Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentIntentId\": \"pi_test_123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/confirm-payment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "confirm-payment"
+              ]
+            },
+            "description": "Available in backend/frontend service code, but not used by the current customer UI."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Notifications",
+      "item": [
+        {
+          "name": "Unread Summary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"limit\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/unread-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "unread-summary"
+              ]
+            },
+            "description": "Used on page load and when realtime notification updates arrive."
+          }
+        },
+        {
+          "name": "Notification List",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"page\": 1,\n  \"limit\": 30\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "list"
+              ]
+            },
+            "description": "Loads notifications in Customer Panel > Notifications."
+          }
+        },
+        {
+          "name": "Notification By Id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{notificationId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/by-id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "by-id"
+              ]
+            },
+            "description": "Available in service code, but not called by the current customer UI."
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{notificationId}}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/mark-as-read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "mark-as-read"
+              ]
+            },
+            "description": "Called when the user opens one unread notification."
+          }
+        },
+        {
+          "name": "Mark All Notifications Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/mark-all-as-read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "mark-all-as-read"
+              ]
+            },
+            "description": "Called by the 'Mark all read' button."
+          }
+        }
+      ]
+    }
+  ]
+}
