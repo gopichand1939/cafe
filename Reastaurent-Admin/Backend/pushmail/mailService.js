@@ -151,7 +151,15 @@ const sendAdminNotificationMailSafely = async ({ notification, admin }) => {
   try {
     return await sendAdminNotificationMail({ notification, admin });
   } catch (error) {
-    console.error("Failed to send admin notification mail:", error);
+    console.error("Failed to send admin notification mail:", {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      notificationEntity: notification?.entity,
+      notificationAction: notification?.action,
+      adminId: admin?.id,
+    });
     return false;
   }
 };
@@ -160,7 +168,16 @@ const sendCustomerNotificationMailSafely = async ({ notification, admin }) => {
   try {
     return await sendCustomerNotificationMail({ notification, admin });
   } catch (error) {
-    console.error("Failed to send customer notification mail:", error);
+    console.error("Failed to send customer notification mail:", {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      notificationEntity: notification?.entity,
+      notificationAction: notification?.action,
+      customerEmail: resolveCustomerEmail(notification),
+      adminId: admin?.id,
+    });
     return false;
   }
 };
@@ -182,7 +199,16 @@ const sendTestAdminMailSafely = async ({ settings, admin }) => {
       html: template.html,
     });
   } catch (error) {
-    console.error("Failed to send test admin mail:", error);
+    console.error("Failed to send test admin mail:", {
+      message: error.message,
+      code: error.code,
+      command: error.command,
+      response: error.response,
+      adminId: admin?.id,
+      smtpHost: settings?.smtp_host,
+      smtpPort: settings?.smtp_port,
+      smtpUser: settings?.smtp_user,
+    });
     return false;
   }
 };

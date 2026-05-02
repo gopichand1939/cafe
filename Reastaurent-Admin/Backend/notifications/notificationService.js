@@ -140,8 +140,45 @@ const resolveTargetAdmin = ({ payload }) => ({
 const shouldSendAdminMailForSource = (payload = {}) =>
   String(payload.source || "").toLowerCase() !== "admin-backend";
 
-const shouldSendCustomerMailForSource = (payload = {}) =>
-  String(payload.source || "").toLowerCase() === "admin-backend";
+const shouldSendCustomerMailForSource = (payload = {}) => {
+  const source = String(payload.source || "").toLowerCase();
+
+  return source === "admin-backend" || source === "customer-backend";
+};
+
+const isStripeOrderAwaitingPayment = (payload = {}) => {
+  const paymentMethod = String(payload?.entityData?.payment_method || "").toLowerCase();
+  const paymentStatus = String(payload?.entityData?.payment_status || "").toLowerCase();
+
+  return paymentMethod === "stripe" && paymentStatus !== "paid";
+};
+
+const shouldSkipOrderChangeNotification = ({ entity, action, payload }) => {
+  if (entity !== "order") {
+    return false;
+  }
+
+  if (action === "created" && isStripeOrderAwaitingPayment(payload)) {
+    return true;
+  }
+
+  if (action !== "updated") {
+    return false;
+  }
+
+  if (String(payload?.changeCategory || "").toLowerCase() === "payment_status") {
+    return !(
+      String(payload?.entityData?.payment_method || "").toLowerCase() === "stripe" &&
+      String(payload?.entityData?.payment_status || "").toLowerCase() === "paid"
+    );
+  }
+
+  const orderStatus = String(payload?.entityData?.order_status || "").toLowerCase();
+  const paymentStatus = String(payload?.entityData?.payment_status || "").toLowerCase();
+  const paymentMethod = String(payload?.entityData?.payment_method || "").toLowerCase();
+
+  return paymentMethod === "stripe" && orderStatus === "placed" && paymentStatus !== "paid";
+};
 
 const createNotificationFromChange = async ({
   entity,
@@ -150,6 +187,10 @@ const createNotificationFromChange = async ({
   source = "",
   payload = {},
 }) => {
+  if (shouldSkipOrderChangeNotification({ entity, action, payload })) {
+    return null;
+  }
+
   let content = null;
 
   if (entity === "order") {

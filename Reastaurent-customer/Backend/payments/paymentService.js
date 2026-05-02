@@ -611,7 +611,11 @@ const getOrderById = async (orderId) => {
   return result.rows[0] || null;
 };
 
-const markOrderPaid = async ({ orderId, paymentMethod = "stripe" }) => {
+const markOrderPaid = async ({
+  orderId,
+  paymentMethod = "stripe",
+  publishChange = true,
+}) => {
   if (!orderId) {
     return null;
   }
@@ -644,13 +648,14 @@ const markOrderPaid = async ({ orderId, paymentMethod = "stripe" }) => {
   const result = await db.query(query, [orderId, paymentMethod]);
   const order = result.rows[0] || null;
 
-  if (order) {
+  if (order && publishChange) {
     await publishOrderChangeSafely({
       entity: "order",
       action: "updated",
       entityId: order.id,
       orderId: order.id,
       customerId: order.customer_id,
+      changeCategory: "payment_status",
       entityData: buildOrderRealtimePayload(order),
     });
   }
@@ -663,6 +668,7 @@ const updatePaymentFromSucceededIntent = async ({
   event,
   overrideOrderId = null,
   overrideCustomerId = null,
+  suppressOrderPaidEvent = false,
 }) => {
   const orderId =
     Number(overrideOrderId || paymentIntent.metadata?.orderId || 0) || null;
@@ -672,6 +678,23 @@ const updatePaymentFromSucceededIntent = async ({
     typeof paymentIntent.latest_charge === "string"
       ? paymentIntent.latest_charge
       : paymentIntent.latest_charge?.id || null;
+  const existingPaymentResult = await db.query(
+    `
+      SELECT
+        id,
+        status,
+        is_payment_success
+      FROM payments
+      WHERE transaction_id = $1
+      LIMIT 1;
+    `,
+    [paymentIntent.id]
+  );
+  const existingPayment = existingPaymentResult.rows[0] || null;
+  const wasAlreadySucceeded =
+    existingPayment &&
+    String(existingPayment.status || "").toLowerCase() === "succeeded" &&
+    Number(existingPayment.is_payment_success) === 1;
 
   const query = `
     INSERT INTO payments (
@@ -758,10 +781,11 @@ const updatePaymentFromSucceededIntent = async ({
     await markOrderPaid({
       orderId: payment.order_id,
       paymentMethod: "stripe",
+      publishChange: !suppressOrderPaidEvent,
     });
   }
 
-  if (payment) {
+  if (payment && !wasAlreadySucceeded) {
     await publishPaymentChangeSafely({
       entity: "payment",
       action: "succeeded",
@@ -886,11 +910,6 @@ const finalizePaidCheckoutSession = async ({ session, expectedCustomerId = null 
     client.release();
   }
 
-  if (createdOrderForThisCheckout) {
-    await publishCreatedOrder(createdOrderForThisCheckout);
-    order = await getOrderById(createdOrderForThisCheckout.id);
-  }
-
   const fallbackOrderId = Number(session.metadata?.orderId || 0);
   if (!order && fallbackOrderId) {
     order = await getOrderById(fallbackOrderId);
@@ -905,8 +924,13 @@ const finalizePaidCheckoutSession = async ({ session, expectedCustomerId = null 
     },
     overrideOrderId: order?.id || null,
     overrideCustomerId: metadataCustomerId,
+    suppressOrderPaidEvent: Boolean(createdOrderForThisCheckout),
   });
   const confirmedOrder = order?.id ? await getOrderById(order.id) : null;
+
+  if (createdOrderForThisCheckout && confirmedOrder) {
+    await publishCreatedOrder(confirmedOrder);
+  }
 
   return {
     payment,
