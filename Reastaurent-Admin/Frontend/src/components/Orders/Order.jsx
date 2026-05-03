@@ -608,6 +608,12 @@ function Order() {
   const headers = [
     { key: "id", label: "Id", width: "45px" },
     {
+      key: "order_status",
+      label: "Order Status",
+      width: "95px",
+      content: (item) => <StatusPill active={item.order_status !== "cancelled"} label={item.order_status} />,
+    },
+    {
       key: "order_number",
       label: "Order Number",
       width: "145px",
@@ -722,12 +728,6 @@ function Order() {
           {formatCurrency(item.total_amount, item.currency_code)}
         </span>
       ),
-    },
-    {
-      key: "order_status",
-      label: "Order Status",
-      width: "95px",
-      content: (item) => <StatusPill active={item.order_status !== "cancelled"} label={item.order_status} />,
     },
     {
       key: "payment_status",
