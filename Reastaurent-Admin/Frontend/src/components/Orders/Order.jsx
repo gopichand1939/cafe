@@ -541,6 +541,35 @@ function Order() {
 
   useEffect(() => {
     return subscribeToAdminRealtimeEvent(
+      ADMIN_REALTIME_EVENT_TYPES.NOTIFICATION_UPDATED,
+      (change) => {
+        const isOrderCreatedNotification =
+          String(change?.action || "").toLowerCase() === "created" &&
+          String(change?.entityData?.entity || "").toLowerCase() === "order" &&
+          String(change?.entityData?.action || "").toLowerCase() === "created" &&
+          String(change?.entityData?.source || "").toLowerCase() !== "admin-backend";
+
+        if (!isOrderCreatedNotification) {
+          return;
+        }
+
+        const targetOrderId =
+          change?.entityData?.entity_id ||
+          change?.entityData?.payload?.orderId ||
+          null;
+
+        if (targetOrderId) {
+          highlightOrder(targetOrderId);
+        }
+
+        setCurrentPage(1);
+        fetchData(1, pageSize);
+      }
+    );
+  }, [pageSize]);
+
+  useEffect(() => {
+    return subscribeToAdminRealtimeEvent(
       ADMIN_REALTIME_EVENT_TYPES.CONNECTION_OPENED,
       () => {
         if (!hasSeenRealtimeConnectionRef.current) {
