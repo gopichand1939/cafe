@@ -40,7 +40,14 @@ const getExternalImageUrl = (dataTransfer) => {
   return /^(https?:\/\/|data:image\/)/i.test(firstUrl || "") ? firstUrl : "";
 };
 
-function ImageDropZone({ label, imageLabel, onFileSelect, onError, error }) {
+function ImageDropZone({
+  label,
+  imageLabel,
+  onFileSelect,
+  onError,
+  error,
+  compact = false,
+}) {
   const inputId = useId();
   const [isDragging, setIsDragging] = useState(false);
   const [isLoadingExternalImage, setIsLoadingExternalImage] = useState(false);
@@ -97,13 +104,17 @@ function ImageDropZone({ label, imageLabel, onFileSelect, onError, error }) {
   };
 
   return (
-    <div className="ui-field-shell">
+    <div className="ui-field-shell min-w-0 overflow-hidden">
       <span className="ui-label">{label}</span>
       <div
-        className={`grid min-h-[190px] place-items-center rounded-[22px] border-2 border-dashed px-5 py-6 text-center transition-all duration-200 ${
+        className={`grid min-w-0 place-items-center overflow-hidden border border-dashed text-center transition-all duration-200 ${
+          compact
+            ? "min-h-[126px] rounded-[16px] px-4 py-4"
+            : "min-h-[190px] rounded-[22px] px-5 py-6"
+        } ${
           isDragging
-            ? "border-accent-500 bg-[rgba(249,115,22,0.08)] shadow-[0_18px_30px_rgba(249,115,22,0.14)]"
-            : "border-border-subtle bg-[linear-gradient(180deg,rgba(255,255,255,0.94)_0%,rgba(247,250,248,0.95)_100%)]"
+            ? "border-emerald-400 bg-emerald-50 shadow-[0_16px_30px_rgba(16,185,129,0.14)]"
+            : "border-slate-200 bg-slate-50/80 hover:border-emerald-300 hover:bg-white"
         }`}
         onDragEnter={(event) => {
           event.preventDefault();
@@ -116,16 +127,20 @@ function ImageDropZone({ label, imageLabel, onFileSelect, onError, error }) {
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
       >
-        <div className="grid justify-items-center gap-3">
-          <div className="grid h-14 w-14 place-items-center rounded-full bg-white text-2xl text-brand-600 shadow-[0_10px_22px_rgba(15,23,42,0.12)]">
+        <div className={`grid min-w-0 max-w-full justify-items-center ${compact ? "gap-2" : "gap-3"}`}>
+          <div
+            className={`grid place-items-center rounded-full bg-white text-emerald-600 shadow-[0_10px_22px_rgba(15,23,42,0.10)] ${
+              compact ? "h-10 w-10 text-xl" : "h-14 w-14 text-2xl"
+            }`}
+          >
             <span aria-hidden="true">+</span>
           </div>
-          <div>
-            <p className="m-0 text-[1rem] font-bold text-text-strong">
+          <div className="min-w-0 max-w-full">
+            <p className={`m-0 max-w-full text-wrap font-extrabold text-slate-950 ${compact ? "text-[0.9rem]" : "text-[1rem]"}`}>
               {isLoadingExternalImage ? "Importing image..." : "Drag and drop image here"}
             </p>
-            <p className="mt-1 mb-0 text-[0.88rem] leading-6 text-text-muted">
-              Drop from your computer, or try dragging a direct image from another source.
+            <p className={`mt-1 mb-0 max-w-full text-wrap text-slate-500 ${compact ? "text-[0.76rem] leading-5" : "text-[0.88rem] leading-6"}`}>
+              Drop an image, or choose a file from your device.
             </p>
           </div>
           <input
@@ -136,14 +151,14 @@ function ImageDropZone({ label, imageLabel, onFileSelect, onError, error }) {
             onChange={handleFilePick}
           />
           <label
-            className="ui-button ui-button-secondary ui-button-sm cursor-pointer rounded-full"
+            className="ui-button ui-button-secondary ui-button-sm cursor-pointer rounded-full border-slate-200 bg-white px-4 shadow-none"
             htmlFor={inputId}
           >
             Browse files
           </label>
         </div>
       </div>
-      <small className="ui-help-text">{imageLabel}</small>
+      <small className="ui-help-text block max-w-full overflow-hidden break-all">{imageLabel}</small>
       {error ? <small className="ui-error-text">{error}</small> : null}
     </div>
   );

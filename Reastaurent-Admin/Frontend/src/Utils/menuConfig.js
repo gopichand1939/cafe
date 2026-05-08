@@ -16,7 +16,7 @@ const MENU_ROUTE_MAP = {
     matchPaths: ["/timings"],
   },
   menu_management: {
-    path: "",
+    path: "/category",
     matchPaths: ["/category", "/addcategory", "/viewcategory/", "/editcategory/", "/deletecategory/", "/items", "/additem", "/viewitem/", "/edititem/", "/deleteitem/", "/addon", "/addaddon", "/viewaddon/", "/editaddon/", "/deleteaddon/"],
   },
   category: {

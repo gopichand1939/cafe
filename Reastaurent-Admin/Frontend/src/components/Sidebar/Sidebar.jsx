@@ -291,6 +291,18 @@ const isPathMatched = (pathname, menuKey = "", children = []) => {
 const getSidebarLabel = (menu) =>
   en.sidebar.menu[menu.menu_key] || menu.menu_name || menu.module_name || menu.menu_key;
 
+const simplifyMenuManagement = (menu) => {
+  if (menu.menu_key !== "menu_management") {
+    return menu;
+  }
+
+  return {
+    ...menu,
+    children: [],
+    resolvedPath: getMenuRoutePath("menu_management"),
+  };
+};
+
 function Sidebar({ collapsed = false, onNavigate, onLogout }) {
   const location = useLocation();
   const [storedMenus, setStoredMenus] = useState(() => getStoredAdminMenuTree());
@@ -301,16 +313,18 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
 
   const normalizedMenu = useMemo(
     () =>
-      storedMenus.map((menu) => ({
-        ...menu,
-        resolvedPath: getMenuRoutePath(menu.menu_key),
-        isActive: isPathMatched(location.pathname, menu.menu_key, menu.children || []),
-        children: (menu.children || []).map((child) => ({
-          ...child,
-          resolvedPath: getMenuRoutePath(child.menu_key),
-          isActive: isPathMatched(location.pathname, child.menu_key, child.children || []),
-        })),
-      })),
+      storedMenus.map((menu) =>
+        simplifyMenuManagement({
+          ...menu,
+          resolvedPath: getMenuRoutePath(menu.menu_key),
+          isActive: isPathMatched(location.pathname, menu.menu_key, menu.children || []),
+          children: (menu.children || []).map((child) => ({
+            ...child,
+            resolvedPath: getMenuRoutePath(child.menu_key),
+            isActive: isPathMatched(location.pathname, child.menu_key, child.children || []),
+          })),
+        })
+      ),
     [location.pathname, storedMenus]
   );
 
