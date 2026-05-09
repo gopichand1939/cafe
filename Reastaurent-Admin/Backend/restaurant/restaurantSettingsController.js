@@ -1,6 +1,25 @@
 const restaurantSettingsModel = require("./restaurantSettingsModel");
 
 const TIME_FORMATTER_CACHE = new Map();
+const DAY_FORMATTER_CACHE = new Map();
+const WEEK_DAYS = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+const DEFAULT_WEEKLY_SCHEDULE = {
+  sunday: { enabled: true, start_time: "07:00", end_time: "23:00" },
+  monday: { enabled: true, start_time: "07:00", end_time: "23:00" },
+  tuesday: { enabled: true, start_time: "07:00", end_time: "23:00" },
+  wednesday: { enabled: true, start_time: "07:00", end_time: "23:00" },
+  thursday: { enabled: true, start_time: "07:00", end_time: "23:00" },
+  friday: { enabled: true, start_time: "07:00", end_time: "02:00" },
+  saturday: { enabled: true, start_time: "08:00", end_time: "02:00" },
+};
 
 const getTimeFormatter = (timezoneName) => {
   if (!TIME_FORMATTER_CACHE.has(timezoneName)) {
@@ -19,11 +38,33 @@ const getTimeFormatter = (timezoneName) => {
   return TIME_FORMATTER_CACHE.get(timezoneName);
 };
 
+const getDayFormatter = (timezoneName) => {
+  if (!DAY_FORMATTER_CACHE.has(timezoneName)) {
+    DAY_FORMATTER_CACHE.set(
+      timezoneName,
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: timezoneName,
+        weekday: "long",
+      })
+    );
+  }
+
+  return DAY_FORMATTER_CACHE.get(timezoneName);
+};
+
 const getCurrentTimeInTimezone = (timezoneName) => {
   try {
     return getTimeFormatter(timezoneName).format(new Date());
   } catch (_error) {
     return getTimeFormatter("Asia/Kolkata").format(new Date());
+  }
+};
+
+const getCurrentDayInTimezone = (timezoneName) => {
+  try {
+    return getDayFormatter(timezoneName).format(new Date()).toLowerCase();
+  } catch (_error) {
+    return getDayFormatter("Asia/Kolkata").format(new Date()).toLowerCase();
   }
 };
 
@@ -41,6 +82,52 @@ const normalizeTime = (value) => {
 };
 
 const isValidTimeString = (value) => /^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/.test(String(value));
+
+const normalizeWeeklySchedule = (input, fallbackStartTime = null, fallbackEndTime = null) => {
+  const source = input && typeof input === "object" ? input : {};
+
+  return WEEK_DAYS.reduce((schedule, day) => {
+    const fallbackDay = DEFAULT_WEEKLY_SCHEDULE[day];
+    const incoming = source[day] || {};
+    const enabled =
+      typeof incoming.enabled !== "undefined"
+        ? Boolean(incoming.enabled)
+        : typeof incoming.closed !== "undefined"
+          ? !Boolean(incoming.closed)
+          : Boolean(fallbackDay.enabled);
+    const startTime = normalizeTime(incoming.start_time || incoming.open_time || fallbackStartTime || fallbackDay.start_time);
+    const endTime = normalizeTime(incoming.end_time || incoming.close_time || fallbackEndTime || fallbackDay.end_time);
+
+    schedule[day] = {
+      enabled,
+      closed: !enabled,
+      start_time: enabled && startTime ? startTime.slice(0, 5) : null,
+      end_time: enabled && endTime ? endTime.slice(0, 5) : null,
+    };
+
+    return schedule;
+  }, {});
+};
+
+const validateWeeklySchedule = (schedule) => {
+  for (const day of WEEK_DAYS) {
+    const daySchedule = schedule[day];
+
+    if (!daySchedule.enabled) {
+      continue;
+    }
+
+    if (!daySchedule.start_time || !daySchedule.end_time) {
+      return `${day} opening and closing time are required`;
+    }
+
+    if (!isValidTimeString(daySchedule.start_time) || !isValidTimeString(daySchedule.end_time)) {
+      return `${day} has an invalid time format. Use HH:MM`;
+    }
+  }
+
+  return null;
+};
 
 const isWithinScheduledWindow = (currentTime, startTime, endTime) => {
   if (!startTime || !endTime) {
@@ -61,25 +148,42 @@ const isWithinScheduledWindow = (currentTime, startTime, endTime) => {
 const buildSettingsResponse = (settings) => {
   const timezoneName = settings.timezone_name || "Asia/Kolkata";
   const currentTime = getCurrentTimeInTimezone(timezoneName);
-  const startTime = normalizeTime(settings.schedule_start_time);
-  const endTime = normalizeTime(settings.schedule_end_time);
+  const currentDay = getCurrentDayInTimezone(timezoneName);
+  const fallbackStartTime = normalizeTime(settings.schedule_start_time);
+  const fallbackEndTime = normalizeTime(settings.schedule_end_time);
+  const weeklySchedule = normalizeWeeklySchedule(
+    settings.weekly_schedule,
+    fallbackStartTime,
+    fallbackEndTime
+  );
+  const todaySchedule = weeklySchedule[currentDay];
   const scheduleEnabled = Number(settings.schedule_enabled) === 1;
+  const manualOverrideEnabled = Number(settings.manual_override_enabled) === 1;
   const manualIsActive = Number(settings.manual_is_active) === 1;
 
   const scheduleIsActive =
-    scheduleEnabled && startTime && endTime
-      ? isWithinScheduledWindow(currentTime, startTime, endTime)
+    scheduleEnabled && todaySchedule?.enabled && todaySchedule.start_time && todaySchedule.end_time
+      ? isWithinScheduledWindow(currentTime, `${todaySchedule.start_time}:00`, `${todaySchedule.end_time}:00`)
       : false;
 
-  const currentStatus = scheduleEnabled ? scheduleIsActive : manualIsActive;
+  const currentStatus = manualOverrideEnabled || !scheduleEnabled ? manualIsActive : scheduleIsActive;
+  const currentStatusSource = manualOverrideEnabled
+    ? "manual override"
+    : scheduleEnabled
+      ? `${currentDay} schedule`
+      : "manual";
 
   return {
     ...settings,
-    schedule_start_time: startTime ? startTime.slice(0, 5) : "",
-    schedule_end_time: endTime ? endTime.slice(0, 5) : "",
+    manual_override_enabled: manualOverrideEnabled ? 1 : 0,
+    schedule_start_time: fallbackStartTime ? fallbackStartTime.slice(0, 5) : "",
+    schedule_end_time: fallbackEndTime ? fallbackEndTime.slice(0, 5) : "",
+    weekly_schedule: weeklySchedule,
     current_status: currentStatus ? 1 : 0,
-    current_status_source: scheduleEnabled ? "schedule" : "manual",
+    current_status_source: currentStatusSource,
     current_time: currentTime.slice(0, 5),
+    current_day: currentDay,
+    today_schedule: todaySchedule || null,
     schedule_is_active_now: scheduleIsActive ? 1 : 0,
   };
 };
@@ -106,10 +210,12 @@ const updateRestaurantSettings = async (req, res) => {
     const {
       institution_name,
       restaurant_name,
+      manual_override_enabled,
       manual_is_active,
       schedule_enabled,
       schedule_start_time,
       schedule_end_time,
+      weekly_schedule,
       timezone_name,
     } = req.body;
 
@@ -123,20 +229,20 @@ const updateRestaurantSettings = async (req, res) => {
     const normalizedStartTime = normalizeTime(schedule_start_time);
     const normalizedEndTime = normalizeTime(schedule_end_time);
     const normalizedScheduleEnabled = Number(schedule_enabled) === 1 ? 1 : 0;
+    const normalizedManualOverrideEnabled = Number(manual_override_enabled) === 1 ? 1 : 0;
     const normalizedManualIsActive = Number(manual_is_active) === 0 ? 0 : 1;
+    const normalizedWeeklySchedule = normalizeWeeklySchedule(
+      weekly_schedule,
+      normalizedStartTime,
+      normalizedEndTime
+    );
 
     if (normalizedScheduleEnabled) {
-      if (!normalizedStartTime || !normalizedEndTime) {
+      const scheduleError = validateWeeklySchedule(normalizedWeeklySchedule);
+      if (scheduleError) {
         return res.status(400).json({
           success: false,
-          message: "schedule_start_time and schedule_end_time are required when schedule is enabled",
-        });
-      }
-
-      if (!isValidTimeString(normalizedStartTime) || !isValidTimeString(normalizedEndTime)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid schedule time format. Use HH:MM",
+          message: scheduleError,
         });
       }
     }
@@ -145,10 +251,12 @@ const updateRestaurantSettings = async (req, res) => {
       adminId: req.admin.id,
       institutionName: String(institution_name).trim(),
       restaurantName: String(restaurant_name).trim(),
+      manualOverrideEnabled: normalizedManualOverrideEnabled,
       manualIsActive: normalizedManualIsActive,
       scheduleEnabled: normalizedScheduleEnabled,
       scheduleStartTime: normalizedScheduleEnabled ? normalizedStartTime : null,
       scheduleEndTime: normalizedScheduleEnabled ? normalizedEndTime : null,
+      weeklySchedule: normalizedWeeklySchedule,
       timezoneName: timezone_name ? String(timezone_name).trim() : "Asia/Kolkata",
     });
 
@@ -168,7 +276,7 @@ const updateRestaurantSettings = async (req, res) => {
 
 const toggleRestaurantStatus = async (req, res) => {
   try {
-    const { manual_is_active } = req.body;
+    const { manual_is_active, manual_override_enabled } = req.body;
 
     if (typeof manual_is_active === "undefined") {
       return res.status(400).json({
@@ -179,7 +287,12 @@ const toggleRestaurantStatus = async (req, res) => {
 
     const settings = await restaurantSettingsModel.updateManualStatus(
       req.admin.id,
-      Number(manual_is_active) === 0 ? 0 : 1
+      Number(manual_is_active) === 0 ? 0 : 1,
+      typeof manual_override_enabled === "undefined"
+        ? 1
+        : Number(manual_override_enabled) === 1
+          ? 1
+          : 0
     );
 
     return res.status(200).json({

@@ -43,6 +43,10 @@ const MENU_ROUTE_MAP = {
     path: "/payments",
     matchPaths: ["/payments", "/viewpayment/"],
   },
+  reports: {
+    path: "/reports",
+    matchPaths: ["/reports"],
+  },
   customer: {
     path: "/customer",
     matchPaths: ["/customer", "/customers", "/addcustomer", "/viewcustomer/", "/editcustomer/", "/deletecustomer/"],

@@ -87,6 +87,25 @@ function PaymentsIcon(props) {
   );
 }
 
+function ReportsIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M5 19V5M5 19h15"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9 15v-4M13 15V8M17 15v-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 function CustomersIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
@@ -265,6 +284,7 @@ const iconMap = {
   menu_management: MenuManagementIcon,
   orders: OrdersIcon,
   payments: PaymentsIcon,
+  reports: ReportsIcon,
   customers: CustomersIcon,
   reviews: ReviewsIcon,
   "user-management": UserManagementIcon,

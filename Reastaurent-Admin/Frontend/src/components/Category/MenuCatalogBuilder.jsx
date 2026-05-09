@@ -1022,8 +1022,8 @@ function MenuCatalogBuilder() {
                 <FieldToggle
                   label="Food type"
                   active={itemForm.is_veg}
-                  activeText="Veg"
-                  inactiveText="Non-veg"
+                  activeText="Vegan"
+                  inactiveText="Halal"
                   onClick={() => setItemField("is_veg", !itemForm.is_veg)}
                 />
                 <FieldToggle
@@ -1462,7 +1462,7 @@ function MenuCatalogBuilder() {
                                           ? "bg-success-bg text-success-text"
                                           : "bg-error-bg text-error-text"
                                       }`}>
-                                        {Number(item.is_veg) === 1 ? "Veg" : "Non-veg"}
+                                        {Number(item.is_veg) === 1 ? "Vegan" : "Halal"}
                                       </span>
                                       {Number(item.is_popular) === 1 ? (
                                         <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-[0.72rem] font-extrabold uppercase text-amber-600">

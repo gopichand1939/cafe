@@ -17,6 +17,8 @@ const paymentRoutes = require("./payments/paymentRoutes");
 const notificationRoutes = require("./notifications/notificationRoutes");
 const messageRoutes = require("./messages/messageRoutes");
 const dashboardRoutes = require("./Dashboard/DashboardRoutes");
+const orderReportsRoutes = require("./Order_Reports/orderReportsRoutes");
+const orderReportsModel = require("./Order_Reports/orderReportsModel");
 const { startOrderChangeSubscriber } = require("./realtime/orderChangeSubscriber");
 const { startPaymentChangeSubscriber } = require("./realtime/paymentChangeSubscriber");
 const { startCustomerChangeSubscriber } = require("./realtime/customerChangeSubscriber");
@@ -81,6 +83,8 @@ app.use("/payments", paymentRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/messages", messageRoutes);
 app.use("/dashboard", dashboardRoutes);
+app.use("/api/order-reports", orderReportsRoutes);
+app.use("/order-reports", orderReportsRoutes);
 
 const PORT = Number(process.env.PORT) || 5000;
 
@@ -89,6 +93,7 @@ const startServer = async () => {
     await adminModel.ensureAdminTable();
     await menuAccessModel.ensureAccessControlData();
     await restaurantSettingsModel.ensureRestaurantSettingsTable();
+    await orderReportsModel.ensureOrderReportsAccessControlData();
     const adminUpdatesGateway = createAdminUpdatesGateway(server);
 
     startOrderChangeSubscriber({

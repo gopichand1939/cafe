@@ -43,6 +43,10 @@ export const DASHBOARD_SUMMARY = `${BACKEND_BASE_URL}/dashboard/summary`;
 export const DASHBOARD_CATEGORY_STATS = `${BACKEND_BASE_URL}/dashboard/category-stats`;
 export const DASHBOARD_VEG_STATS = `${BACKEND_BASE_URL}/dashboard/veg-stats`;
 export const DASHBOARD_ORDER_STATS = `${BACKEND_BASE_URL}/dashboard/order-stats`;
+export const ORDER_REPORTS_DASHBOARD = `${BACKEND_BASE_URL}/api/order-reports/dashboard`;
+export const ORDER_REPORTS_EXPORT_PDF = `${BACKEND_BASE_URL}/api/order-reports/export/pdf`;
+export const ORDER_REPORTS_EXPORT_EXCEL = `${BACKEND_BASE_URL}/api/order-reports/export/excel`;
+export const ORDER_REPORTS_EXPORT_CSV = `${BACKEND_BASE_URL}/api/order-reports/export/csv`;
 
 
 

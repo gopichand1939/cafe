@@ -12,6 +12,7 @@ const Register = lazy(() => import("../Pages/Register/Register"));
 const Dashboard = lazy(() => import("../components/Dashboard/Dashboard"));
 const RestaurantTimings = lazy(() => import("../components/Restaurant/RestaurantTimings"));
 const ModulePlaceholder = lazy(() => import("../components/common/ModulePlaceholder"));
+const OrderReports = lazy(() => import("../components/Reports/OrderReports"));
 
 // Category Module
 const Category = lazy(() => import("../components/Category/Category"));
@@ -104,6 +105,10 @@ export const appRoutes = [
       {
         path: "payments",
         element: withSuspense(<Payment />),
+      },
+      {
+        path: "reports",
+        element: withSuspense(<OrderReports />),
       },
       {
         path: "addorder",

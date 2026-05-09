@@ -25,12 +25,22 @@ const COLORS = [
 ];
 
 const DIET_COLORS = {
-  Veg: "#10b981",
+  Vegan: "#10b981",
   Egg: "#f59e0b",
-  "Non-Veg": "#f43f5e",
+  Halal: "#f43f5e",
 };
 
 const DashboardCharts = ({ categoryStats, vegStats, barChartData }) => {
+  const displayVegStats = vegStats.map((entry) => ({
+    ...entry,
+    type:
+      entry.type === "Veg"
+        ? "Vegan"
+        : entry.type === "Non-Veg" || entry.type === "Non-veg"
+          ? "Halal"
+          : entry.type,
+  }));
+
   return (
     <section className="grid gap-[18px] lg:grid-cols-2">
       <Card className="grid content-start gap-[20px]">
@@ -74,11 +84,11 @@ const DashboardCharts = ({ categoryStats, vegStats, barChartData }) => {
       <Card className="grid content-start gap-[20px]">
         <strong className="text-[1.1rem] text-text-strong">Dietary Breakdown</strong>
         <div className="h-[300px] w-full">
-          {vegStats.length > 0 ? (
+          {displayVegStats.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={vegStats}
+                  data={displayVegStats}
                   dataKey="count"
                   nameKey="type"
                   cx="50%"
@@ -87,7 +97,7 @@ const DashboardCharts = ({ categoryStats, vegStats, barChartData }) => {
                   outerRadius={90}
                   paddingAngle={5}
                 >
-                  {vegStats.map((entry, index) => (
+                  {displayVegStats.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={DIET_COLORS[entry.type] || COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

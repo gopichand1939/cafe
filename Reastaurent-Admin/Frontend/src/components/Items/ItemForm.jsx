@@ -303,7 +303,7 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
               </div>
 
               <div className="ui-field-shell">
-                <span className="ui-label">Veg / Non-Veg</span>
+                <span className="ui-label">Vegan / Halal</span>
                 <button
                   type="button"
                   className={`ui-status-toggle ${formData.is_veg ? "bg-success-bg text-success-text" : "bg-red-500/10 text-red-400"}`}
@@ -311,7 +311,7 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
                 >
                   <span className={`ui-status-toggle-dot ${formData.is_veg ? "bg-success-text" : "bg-red-500"}`} />
                   <span className="text-[0.92rem] font-bold">
-                    {formData.is_veg ? "Veg 🟢" : "Non-Veg 🔴"}
+                    {formData.is_veg ? "Vegan" : "Halal"}
                   </span>
                 </button>
               </div>
