@@ -4,14 +4,28 @@ const itemModel = {
   createItem: async (category_id, item_name, item_description, item_image, price, discount_price, preparation_time, is_popular, is_new, is_veg) => {
     const query = `
       WITH category_target AS (
-        SELECT id
+        SELECT id, is_veg_nonveg_applicable
         FROM category
         WHERE id = $1::INT
           AND is_deleted = 0
       )
       INSERT INTO items
       (category_id, item_name, item_description, item_image, price, discount_price, preparation_time, is_popular, is_new, is_veg)
-      SELECT $1::INT, $2::VARCHAR(255), $3::TEXT, $4::VARCHAR(255), $5::DECIMAL(10,2), $6::DECIMAL(10,2), $7::INT, $8::SMALLINT, $9::SMALLINT, $10::SMALLINT
+      SELECT
+        $1::INT,
+        $2::VARCHAR(255),
+        $3::TEXT,
+        $4::VARCHAR(255),
+        $5::DECIMAL(10,2),
+        $6::DECIMAL(10,2),
+        $7::INT,
+        $8::SMALLINT,
+        $9::SMALLINT,
+        CASE
+          WHEN (SELECT is_veg_nonveg_applicable FROM category_target LIMIT 1) = 1
+            THEN $10::SMALLINT
+          ELSE NULL::SMALLINT
+        END
       WHERE EXISTS (SELECT 1 FROM category_target)
         AND NOT EXISTS (
           SELECT 1
@@ -34,6 +48,7 @@ const itemModel = {
         items.category_id,
         category.category_name,
         category.category_image,
+        category.is_veg_nonveg_applicable,
         items.item_name,
         items.item_description,
         items.item_image,
@@ -65,6 +80,7 @@ const itemModel = {
         items.category_id,
         category.category_name,
         category.category_image,
+        category.is_veg_nonveg_applicable,
         items.item_name,
         items.item_description,
         items.item_image,
@@ -109,7 +125,7 @@ const itemModel = {
           AND is_deleted = 0
       ),
       category_target AS (
-        SELECT id
+        SELECT id, is_veg_nonveg_applicable
         FROM category
         WHERE id = $2::INT
           AND is_deleted = 0
@@ -139,7 +155,11 @@ const itemModel = {
           preparation_time = $9::INT,
           is_popular = $10::SMALLINT,
           is_new = $11::SMALLINT,
-          is_veg = $12::SMALLINT,
+          is_veg = CASE
+            WHEN (SELECT is_veg_nonveg_applicable FROM category_target LIMIT 1) = 1
+              THEN $12::SMALLINT
+            ELSE NULL::SMALLINT
+          END,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $1::INT
           AND is_deleted = 0
@@ -162,6 +182,7 @@ const itemModel = {
         updated.is_popular,
         updated.is_new,
         updated.is_veg,
+        (SELECT is_veg_nonveg_applicable FROM category_target LIMIT 1) AS is_veg_nonveg_applicable,
         updated.created_at,
         updated.updated_at,
         updated.is_deleted,

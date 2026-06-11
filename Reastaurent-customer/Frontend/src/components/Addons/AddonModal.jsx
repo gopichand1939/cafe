@@ -12,8 +12,6 @@ function AddonModal({ item, addons, loading, onClose, onConfirm }) {
     return addons.map((group) => ({
       addon_group: group.addon_group || group.title || "Add-ons",
       title: group.title || group.addon_group || "Add-ons",
-      min_select: Number(group.min_select || 0),
-      max_select: Number(group.max_select || 99),
       options: Array.isArray(group.options) ? group.options : [],
     }));
   }, [addons]);
@@ -37,14 +35,6 @@ function AddonModal({ item, addons, loading, onClose, onConfirm }) {
         return prev.filter((selected) => selected.id !== addon.id);
       }
 
-      const selectedInGroup = prev.filter(
-        (selected) => selected.addon_group === group.addon_group
-      ).length;
-
-      if (selectedInGroup >= group.max_select) {
-        return prev;
-      }
-
       return [
         ...prev,
         {
@@ -55,13 +45,6 @@ function AddonModal({ item, addons, loading, onClose, onConfirm }) {
       ];
     });
   };
-
-  const canConfirm = addonGroups.every((group) => {
-    const selectedInGroup = selectedAddons.filter(
-      (addon) => addon.addon_group === group.addon_group
-    ).length;
-    return selectedInGroup >= group.min_select && selectedInGroup <= group.max_select;
-  });
 
   return (
     <>
@@ -119,9 +102,6 @@ function AddonModal({ item, addons, loading, onClose, onConfirm }) {
                   <h3 className="m-0 text-base font-bold text-white">
                     {group.title}
                   </h3>
-                  <span className="text-xs font-bold text-white/45">
-                    Max {group.max_select}
-                  </span>
                 </div>
 
                 <div className="mt-[14px] flex flex-col gap-2.5">
@@ -173,8 +153,7 @@ function AddonModal({ item, addons, loading, onClose, onConfirm }) {
 
           <button
             onClick={() => onConfirm(selectedAddons)}
-            disabled={!canConfirm}
-            className="rounded-2xl border-0 bg-gradient-to-br from-amber-500 to-red-500 px-[22px] py-[14px] text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(245,158,11,0.24)] transition-all duration-200 hover:scale-[1.01] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-55"
+            className="rounded-2xl border-0 bg-gradient-to-br from-amber-500 to-red-500 px-[22px] py-[14px] text-sm font-extrabold text-white shadow-[0_10px_24px_rgba(245,158,11,0.24)] transition-all duration-200 hover:scale-[1.01] hover:shadow-lg"
           >
             Add Item
           </button>

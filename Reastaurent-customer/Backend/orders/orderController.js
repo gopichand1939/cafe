@@ -131,30 +131,24 @@ const placeOrder = async (req, res) => {
 
       const selectedAddons = addonIds.map((addonId) => activeAddonsMap[addonId]);
 
-      if (selectedAddons.some((addon) => !addon || addon.item_id !== null)) {
+      if (selectedAddons.some((addon) => !addon)) {
         return res.status(400).json({
           success: false,
-          message: "One or more add-ons are not available in Addon Master",
+          message: "One or more add-ons are not available",
         });
       }
 
-      const addonCountsByGroup = selectedAddons.reduce((acc, addon) => {
-        const key = addon.addon_group;
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      }, {});
+      const eligibleAddonIds = new Set(
+        (addonGroupsByItemId[sourceItem.id] || []).map((addon) =>
+          Number(addon.addon_item_id)
+        )
+      );
 
-      for (const group of addonGroupsByItemId[sourceItem.id] || []) {
-        const selectedCount = addonCountsByGroup[group.addon_group] || 0;
-        const minSelect = Number(group.min_select || 0);
-        const maxSelect = Number(group.max_select || 99);
-
-        if (selectedCount < minSelect || selectedCount > maxSelect) {
-          return res.status(400).json({
-            success: false,
-            message: `${group.addon_group} allows ${minSelect}-${maxSelect} selections`,
-          });
-        }
+      if (addonIds.some((addonId) => !eligibleAddonIds.has(Number(addonId)))) {
+        return res.status(400).json({
+          success: false,
+          message: "One or more add-ons are not configured for this item",
+        });
       }
 
       const normalizedSelectedAddons = selectedAddons.map((addon) => ({

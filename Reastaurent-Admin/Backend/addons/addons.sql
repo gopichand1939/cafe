@@ -2,8 +2,6 @@ CREATE TABLE item_addons (
     id SERIAL PRIMARY KEY,
     item_id INT REFERENCES items(id),
     addon_group VARCHAR(120) NOT NULL,
-    min_select INT DEFAULT 0,
-    max_select INT DEFAULT 99,
     addon_name VARCHAR(255) NOT NULL,
     addon_price DECIMAL(10, 2) DEFAULT 0.00,
     sort_order INT DEFAULT 0,
@@ -20,9 +18,7 @@ CREATE INDEX idx_item_addons_group_name ON item_addons(addon_group, addon_name);
 -- ALTER TABLE item_addons
 --   ALTER COLUMN item_id DROP NOT NULL,
 --   ADD COLUMN addon_price DECIMAL(10, 2) DEFAULT 0.00,
---   ADD COLUMN sort_order INT DEFAULT 0,
---   ADD COLUMN min_select INT DEFAULT 0,
---   ADD COLUMN max_select INT DEFAULT 99;
+--   ADD COLUMN sort_order INT DEFAULT 0;
 
 
 

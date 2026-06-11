@@ -7,6 +7,14 @@ const { publishMenuChangeSafely } = require("../realtime/menuEvents");
 const toRealtimeCategory = (req, category) =>
   category ? attachImageFields(req, category, ["category_image"]) : null;
 
+const normalizeVegNonVegApplicable = (value) => {
+  if (value === undefined || value === null || value === "") {
+    return 1;
+  }
+
+  return Number(value) === 0 ? 0 : 1;
+};
+
 const toListCategoryResponse = (req, category) => {
   const hydratedCategory = attachImageFields(req, category, ["category_image"]);
 
@@ -18,13 +26,18 @@ const toListCategoryResponse = (req, category) => {
     updated_at: hydratedCategory.updated_at,
     is_deleted: hydratedCategory.is_deleted,
     is_active: hydratedCategory.is_active,
+    is_veg_nonveg_applicable: hydratedCategory.is_veg_nonveg_applicable,
     category_image_url: hydratedCategory.category_image_url,
   };
 };
 
 const createCategory = async (req, res) => {
   try {
-    const { category_name, category_description } = req.body;
+    const {
+      category_name,
+      category_description,
+      is_veg_nonveg_applicable,
+    } = req.body;
 
     if (!category_name || !String(category_name).trim()) {
       return res.status(400).json({
@@ -34,6 +47,8 @@ const createCategory = async (req, res) => {
     }
 
     const normalizedName = String(category_name).trim();
+    const normalizedVegNonVegApplicable =
+      normalizeVegNonVegApplicable(is_veg_nonveg_applicable);
     const uploadedImage = req.file
       ? await uploadImage({ req, file: req.file, folderName: "category-images" })
       : null;
@@ -49,7 +64,8 @@ const createCategory = async (req, res) => {
     const data = await categoryModel.createCategory(
       normalizedName,
       category_description || null,
-      normalizedImage || null
+      normalizedImage || null,
+      normalizedVegNonVegApplicable
     );
 
     if (!data) {
@@ -163,6 +179,7 @@ const updateCategory = async (req, res) => {
       category_name,
       category_description,
       is_active = 1,
+      is_veg_nonveg_applicable,
     } = req.body;
 
     if (!id || !category_name || !String(category_name).trim()) {
@@ -178,13 +195,16 @@ const updateCategory = async (req, res) => {
       : null;
     const normalizedImage = uploadedImage?.path || null;
     const normalizedActive = Number(is_active) === 0 ? 0 : 1;
+    const normalizedVegNonVegApplicable =
+      normalizeVegNonVegApplicable(is_veg_nonveg_applicable);
 
     const data = await categoryModel.updateCategory(
       id,
       normalizedName,
       category_description || null,
       normalizedImage || null,
-      normalizedActive
+      normalizedActive,
+      normalizedVegNonVegApplicable
     );
 
     if (!data?.target_exists) {
@@ -280,7 +300,8 @@ const getCategory = async (req, res) => {
       SELECT
         id,
         category_name,
-        category_image
+        category_image,
+        is_veg_nonveg_applicable
       FROM category
       WHERE is_deleted = 0
         AND is_active = 1

@@ -61,6 +61,8 @@ function ViewCategory() {
     category_name: category.category_name || "-",
     category_description: category.category_description || "-",
     category_image: category.category_image || "-",
+    veg_nonveg_applicable:
+      Number(category.is_veg_nonveg_applicable) === 0 ? "Not applicable" : "Applicable",
     is_active: Number(category.is_active) === 1 ? "Active" : "Inactive",
     created_at: new Date(category.created_at).toLocaleString(),
     updated_at: new Date(category.updated_at).toLocaleString(),

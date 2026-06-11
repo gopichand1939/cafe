@@ -13,10 +13,6 @@ import {
   MdSearch,
 } from "react-icons/md";
 import {
-  ADDON_CREATE,
-  ADDON_DELETE,
-  ADDON_LIST,
-  ADDON_UPDATE,
   CATEGORY_CREATE,
   CATEGORY_DELETE,
   CATEGORY_LIST,
@@ -28,7 +24,7 @@ import {
 } from "../../Utils/Constant";
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { getImageUrl } from "../../Utils/imageUrl";
-import { setAddonData, setCategoryData, setItemData } from "../../Redux/CardSlice";
+import { setCategoryData, setItemData } from "../../Redux/CardSlice";
 import ImageDropZone from "../common/ImageDropZone";
 import StatusPill from "../common/StatusPill";
 import { Button, Card, InputField, PageSection } from "../ui";
@@ -36,6 +32,7 @@ import { Button, Card, InputField, PageSection } from "../ui";
 const blankCategoryForm = () => ({
   category_name: "",
   category_description: "",
+  is_veg_nonveg_applicable: true,
   is_active: true,
   image_file: null,
   image_label: "No image selected",
@@ -78,20 +75,21 @@ const toFormBool = (value, fallback = true) =>
   typeof value === "undefined" || value === null ? fallback : Number(value) === 1;
 
 const foodTypeOptions = [
-  { label: "Veg", value: 1, activeClassName: "border-emerald-500 bg-emerald-50 text-emerald-700" },
-  { label: "Non-Veg", value: 0, activeClassName: "border-red-500 bg-red-50 text-red-600" },
-  { label: "Both / N/A", value: 2, activeClassName: "border-slate-500 bg-slate-100 text-slate-800" },
+  { label: "Vegan", value: 1, activeClassName: "bg-emerald-600 text-white shadow-sm" },
+  { label: "Halal", value: 0, activeClassName: "bg-red-600 text-white shadow-sm" },
 ];
 
 const foodTypeLabel = (value) =>
-  foodTypeOptions.find((option) => option.value === Number(value))?.label || "Non-Veg";
+  value === null || typeof value === "undefined"
+    ? "Not applicable"
+    : foodTypeOptions.find((option) => option.value === Number(value))?.label || "Halal";
 
 const foodTypeBadgeClassName = (value) => {
   if (Number(value) === 1) {
     return "bg-success-bg text-success-text";
   }
 
-  if (Number(value) === 2) {
+  if (value === null || typeof value === "undefined") {
     return "bg-slate-100 text-slate-700";
   }
 
@@ -100,12 +98,13 @@ const foodTypeBadgeClassName = (value) => {
 
 const toFoodTypeValue = (value) => {
   const numericValue = Number(value);
-  return [0, 1, 2].includes(numericValue) ? numericValue : null;
+  return [0, 1].includes(numericValue) ? numericValue : null;
 };
 
 const buildCategoryForm = (category) => ({
   category_name: category?.category_name || "",
   category_description: category?.category_description || "",
+  is_veg_nonveg_applicable: toFormBool(category?.is_veg_nonveg_applicable),
   is_active: toFormBool(category?.is_active),
   image_file: null,
   image_label: getImageUrl(category, "category_image") ? "Current image selected" : "No image selected",
@@ -175,9 +174,9 @@ function FieldToggle({ label, active, activeText, inactiveText, onClick }) {
 
 function FoodTypeChoice({ value, onChange }) {
   return (
-    <div className="ui-field-shell">
+    <div className="ui-field-shell min-w-[220px]">
       <span className="ui-label">Food type</span>
-      <div className="inline-flex w-fit flex-wrap rounded-full border border-slate-200 bg-white p-1 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+      <div className="grid h-12 w-full max-w-[260px] grid-cols-2 rounded-full border border-slate-200 bg-white p-1 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
         {foodTypeOptions.map((option) => {
           const isSelected = value === option.value;
 
@@ -186,8 +185,8 @@ function FoodTypeChoice({ value, onChange }) {
               key={option.label}
               type="button"
               aria-pressed={isSelected}
-              className={`rounded-full px-4 py-2 text-[0.9rem] font-extrabold transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 ${
-                isSelected ? option.activeClassName : "border-transparent text-slate-500 hover:bg-slate-50"
+              className={`grid h-10 min-w-0 place-items-center rounded-full px-3 text-center text-[0.9rem] font-extrabold leading-none transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 ${
+                isSelected ? option.activeClassName : "text-slate-500 hover:bg-slate-50"
               }`}
               onClick={() => onChange(option.value)}
             >
@@ -253,7 +252,7 @@ function MenuCatalogBuilder() {
     setLoading(true);
 
     try {
-      const [categoryResponse, itemResponse, addonResponse] = await Promise.all([
+      const [categoryResponse, itemResponse] = await Promise.all([
         fetchWithRefreshToken(CATEGORY_LIST, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -264,17 +263,11 @@ function MenuCatalogBuilder() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ page: 1, limit: 1000 }),
         }),
-        fetchWithRefreshToken(ADDON_LIST, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ page: 1, limit: 3000 }),
-        }),
       ]);
 
-      const [categoryData, itemData, addonData] = await Promise.all([
+      const [categoryData, itemData] = await Promise.all([
         categoryResponse.json(),
         itemResponse.json(),
-        addonResponse.json(),
       ]);
 
       if (!categoryResponse.ok || categoryData.success === false) {
@@ -285,20 +278,14 @@ function MenuCatalogBuilder() {
         throw new Error(itemData.message || "Failed to fetch items");
       }
 
-      if (!addonResponse.ok || addonData.success === false) {
-        throw new Error(addonData.message || "Failed to fetch add-ons");
-      }
-
       const nextCategories = categoryData.data || [];
       const nextItems = itemData.data || [];
-      const nextAddons = addonData.data || [];
 
       setCategories(nextCategories);
       setItems(nextItems);
-      setAddons(nextAddons);
+      setAddons([]);
       dispatch(setCategoryData(nextCategories));
       dispatch(setItemData(nextItems));
-      dispatch(setAddonData(nextAddons));
 
       if (typeof preferredOpenCategoryId !== "undefined") {
         setOpenCategoryId(preferredOpenCategoryId);
@@ -371,6 +358,12 @@ function MenuCatalogBuilder() {
   const selectedCategoryName =
     categories.find((category) => String(category.id) === String(openCategoryId))?.category_name ||
     "Choose a category";
+  const selectedItemCategory =
+    categories.find((category) => String(category.id) === String(itemForm.category_id)) || null;
+  const itemVegNonVegApplicable =
+    !selectedItemCategory || typeof selectedItemCategory.is_veg_nonveg_applicable === "undefined"
+      ? true
+      : Number(selectedItemCategory.is_veg_nonveg_applicable) === 1;
   const selectedAddonItemName =
     items.find((item) => String(item.id) === String(openAddonItemId))?.item_name ||
     "this item";
@@ -380,7 +373,19 @@ function MenuCatalogBuilder() {
   };
 
   const setItemField = (field, value) => {
-    setItemForm((current) => ({ ...current, [field]: value }));
+    setItemForm((current) => {
+      const next = { ...current, [field]: value };
+
+      if (field === "category_id") {
+        const nextCategory = categories.find((category) => String(category.id) === String(value));
+
+        if (Number(nextCategory?.is_veg_nonveg_applicable) === 0) {
+          next.is_veg = null;
+        }
+      }
+
+      return next;
+    });
   };
 
   const setAddonField = (field, value) => {
@@ -538,6 +543,7 @@ function MenuCatalogBuilder() {
 
     formData.append("category_name", categoryForm.category_name.trim());
     formData.append("category_description", categoryForm.category_description.trim());
+    formData.append("is_veg_nonveg_applicable", categoryForm.is_veg_nonveg_applicable ? 1 : 0);
 
     if (categoryForm.image_file) {
       formData.append("category_image", categoryForm.image_file);
@@ -583,8 +589,8 @@ function MenuCatalogBuilder() {
       return;
     }
 
-    if (itemForm.is_veg === null) {
-      toast.error("Please select Veg, Non-Veg, or Both / N/A food type");
+    if (itemVegNonVegApplicable && itemForm.is_veg === null) {
+      toast.error("Please select Veg or Non-Veg food type");
       return;
     }
 
@@ -602,7 +608,9 @@ function MenuCatalogBuilder() {
     formData.append("price", itemForm.price === "" ? 0 : itemForm.price);
     formData.append("is_popular", itemForm.is_popular ? 1 : 0);
     formData.append("is_new", itemForm.is_new ? 1 : 0);
-    formData.append("is_veg", itemForm.is_veg);
+    if (itemVegNonVegApplicable && itemForm.is_veg !== null) {
+      formData.append("is_veg", itemForm.is_veg);
+    }
 
     if (itemForm.discount_price !== "") {
       formData.append("discount_price", itemForm.discount_price);
@@ -646,6 +654,10 @@ function MenuCatalogBuilder() {
     formData.append("category_name", category.category_name || "");
     formData.append("category_description", category.category_description || "");
     formData.append("is_active", nextActive);
+    formData.append(
+      "is_veg_nonveg_applicable",
+      Number(category.is_veg_nonveg_applicable) === 0 ? 0 : 1
+    );
 
     setSubmittingKey(`category-status-${category.id}`);
 
@@ -680,7 +692,9 @@ function MenuCatalogBuilder() {
     formData.append("price", item.price != null ? item.price : 0);
     formData.append("is_popular", Number(item.is_popular) === 1 ? 1 : 0);
     formData.append("is_new", Number(item.is_new) === 1 ? 1 : 0);
-    formData.append("is_veg", toFoodTypeValue(item.is_veg) ?? 0);
+    if (toFoodTypeValue(item.is_veg) !== null) {
+      formData.append("is_veg", toFoodTypeValue(item.is_veg));
+    }
 
     if (item.discount_price != null) {
       formData.append("discount_price", item.discount_price);
@@ -712,47 +726,9 @@ function MenuCatalogBuilder() {
     }
   };
 
-  const submitAddon = async (event) => {
+  const submitAddon = (event) => {
     event.preventDefault();
-
-    if (!addonForm.item_id || !addonForm.addon_group.trim() || !addonForm.addon_name.trim()) {
-      toast.error("Add-on group and add-on name are required");
-      return;
-    }
-
-    const isEdit = addonMode?.type === "edit";
-
-    setSubmittingKey("addon");
-
-    try {
-      const response = await fetchWithRefreshToken(isEdit ? ADDON_UPDATE : ADDON_CREATE, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: addonMode?.id,
-          item_id: Number(addonForm.item_id),
-          addon_group: addonForm.addon_group.trim(),
-          addon_name: addonForm.addon_name.trim(),
-          addon_price: addonForm.addon_price === "" ? 0 : Number(addonForm.addon_price),
-          sort_order: addonForm.sort_order === "" ? 0 : Number(addonForm.sort_order),
-          is_active: addonForm.is_active ? 1 : 0,
-        }),
-      });
-      const data = await response.json();
-
-      if (!response.ok || data.success === false) {
-        throw new Error(data.message || "Failed to save add-on");
-      }
-
-      toast.success(isEdit ? "Add-on updated" : "Add-on created");
-      setOpenAddonItemId(Number(addonForm.item_id));
-      closeAddonForm();
-      await fetchCatalog(openCategoryId);
-    } catch (error) {
-      toast.error(error.message || "Failed to save add-on");
-    } finally {
-      setSubmittingKey("");
-    }
+    window.location.href = "/addon-eligibility";
   };
 
   const deleteCategory = async (category) => {
@@ -811,32 +787,8 @@ function MenuCatalogBuilder() {
     }
   };
 
-  const deleteAddon = async (addon) => {
-    if (!window.confirm(`Delete "${addon.addon_name}" from this item?`)) {
-      return;
-    }
-
-    setSubmittingKey(`addon-delete-${addon.id}`);
-
-    try {
-      const response = await fetchWithRefreshToken(ADDON_DELETE, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: addon.id }),
-      });
-      const data = await response.json();
-
-      if (!response.ok || data.success === false) {
-        throw new Error(data.message || "Failed to delete add-on");
-      }
-
-      toast.success("Add-on deleted");
-      await fetchCatalog(openCategoryId);
-    } catch (error) {
-      toast.error(error.message || "Failed to delete add-on");
-    } finally {
-      setSubmittingKey("");
-    }
+  const deleteAddon = () => {
+    window.location.href = "/addon-eligibility";
   };
 
   const renderCategoryForm = () => {
@@ -902,6 +854,18 @@ function MenuCatalogBuilder() {
                   onChange={(event) => setCategoryField("category_description", event.target.value)}
                   placeholder="A simple note for the team"
                   inputClassName={compactTextareaClassName}
+                />
+                <FieldToggle
+                  label="Vegan / Halal"
+                  active={categoryForm.is_veg_nonveg_applicable}
+                  activeText="Applicable"
+                  inactiveText="Not applicable"
+                  onClick={() =>
+                    setCategoryField(
+                      "is_veg_nonveg_applicable",
+                      !categoryForm.is_veg_nonveg_applicable
+                    )
+                  }
                 />
                 {isEdit ? (
                   <FieldToggle
@@ -1076,11 +1040,13 @@ function MenuCatalogBuilder() {
                   inputClassName={compactInputClassName}
                 />
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <FoodTypeChoice
-                  value={itemForm.is_veg}
-                  onChange={(value) => setItemField("is_veg", value)}
-                />
+              <div className="flex flex-wrap items-end gap-4">
+                {itemVegNonVegApplicable ? (
+                  <FoodTypeChoice
+                    value={itemForm.is_veg}
+                    onChange={(value) => setItemField("is_veg", value)}
+                  />
+                ) : null}
                 <FieldToggle
                   label="Popular"
                   active={itemForm.is_popular}
@@ -1543,13 +1509,12 @@ function MenuCatalogBuilder() {
                                     <Button
                                       variant="secondary"
                                       size="sm"
-                                      leadingIcon={areAddonsOpen ? <MdExpandLess /> : <MdExpandMore />}
+                                      leadingIcon={<MdRestaurantMenu />}
                                       onClick={() => {
-                                        setOpenAddonItemId(areAddonsOpen ? null : item.id);
-                                        setAddonMode(null);
+                                        window.location.href = "/addon-eligibility";
                                       }}
                                     >
-                                      Add-ons ({itemAddons.length})
+                                      Manage Add-ons
                                     </Button>
                                     <Button
                                       variant="secondary"

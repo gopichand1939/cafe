@@ -21,7 +21,7 @@ const getFoodTypeMarker = (value) => {
   return {
     borderClassName: "border-red-500",
     dotClassName: "bg-red-500",
-    label: "Non-Veg",
+    label: "Halal",
   };
 };
 

@@ -20,7 +20,9 @@ function AddItem() {
       formData.append("price", payload.price);
       formData.append("is_popular", payload.is_popular);
       formData.append("is_new", payload.is_new);
-      formData.append("is_veg", payload.is_veg);
+      if (payload.is_veg !== null && typeof payload.is_veg !== "undefined") {
+        formData.append("is_veg", payload.is_veg);
+      }
       if (payload.discount_price != null) {
         formData.append("discount_price", payload.discount_price);
       }

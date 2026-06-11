@@ -58,8 +58,6 @@ const seedAddonMaster = async () => {
         id SERIAL PRIMARY KEY,
         item_id INT REFERENCES items(id),
         addon_group VARCHAR(120) NOT NULL,
-        min_select INT DEFAULT 0,
-        max_select INT DEFAULT 99,
         addon_name VARCHAR(255) NOT NULL,
         addon_price DECIMAL(10, 2) DEFAULT 0.00,
         sort_order INT DEFAULT 0,
@@ -70,8 +68,8 @@ const seedAddonMaster = async () => {
       );
     `);
     await client.query("ALTER TABLE item_addons ALTER COLUMN item_id DROP NOT NULL;");
-    await client.query("ALTER TABLE item_addons ADD COLUMN IF NOT EXISTS min_select INT DEFAULT 0;");
-    await client.query("ALTER TABLE item_addons ADD COLUMN IF NOT EXISTS max_select INT DEFAULT 99;");
+    await client.query("ALTER TABLE item_addons DROP COLUMN IF EXISTS min_select;");
+    await client.query("ALTER TABLE item_addons DROP COLUMN IF EXISTS max_select;");
     await client.query("ALTER TABLE item_addons ADD COLUMN IF NOT EXISTS addon_price DECIMAL(10, 2) DEFAULT 0.00;");
     await client.query("ALTER TABLE item_addons ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;");
     await client.query(
@@ -85,16 +83,14 @@ const seedAddonMaster = async () => {
           INSERT INTO item_addons (
             item_id,
             addon_group,
-            min_select,
-            max_select,
             addon_name,
             addon_price,
             sort_order,
             is_active
           )
-          VALUES (NULL, $1, $2, $3, $4, $5, $6, 1);
+          VALUES (NULL, $1, $2, $3, $4, 1);
         `,
-        row
+        [row[0], row[3], row[4], row[5]]
       );
     }
 

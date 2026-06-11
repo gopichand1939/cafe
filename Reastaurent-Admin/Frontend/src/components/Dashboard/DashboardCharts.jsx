@@ -27,7 +27,7 @@ const COLORS = [
 const DIET_COLORS = {
   Veg: "#10b981",
   "Non-Veg": "#f43f5e",
-  "Both / N/A": "#64748b",
+  "Not applicable": "#64748b",
 };
 
 const DashboardCharts = ({ categoryStats, vegStats, barChartData }) => {
@@ -36,8 +36,8 @@ const DashboardCharts = ({ categoryStats, vegStats, barChartData }) => {
     type:
       entry.type === "Veg"
         ? "Veg"
-        : entry.type === "Both / Not applicable"
-          ? "Both / N/A"
+        : entry.type === "Not applicable"
+          ? "Not applicable"
           : entry.type,
   }));
 

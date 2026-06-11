@@ -1,11 +1,16 @@
 const db = require("../config/db");
 
 const categoryModel = {
-  createCategory: async (category_name, category_description, category_image) => {
+  createCategory: async (
+    category_name,
+    category_description,
+    category_image,
+    is_veg_nonveg_applicable
+  ) => {
     const query = `
       INSERT INTO category
-      (category_name, category_description, category_image)
-      SELECT $1::VARCHAR(255), $2::TEXT, $3::VARCHAR(255)
+      (category_name, category_description, category_image, is_veg_nonveg_applicable)
+      SELECT $1::VARCHAR(255), $2::TEXT, $3::VARCHAR(255), $4::SMALLINT
       WHERE NOT EXISTS (
         SELECT 1
         FROM category
@@ -14,7 +19,12 @@ const categoryModel = {
       )
       RETURNING *;
     `;
-    const values = [category_name, category_description, category_image];
+    const values = [
+      category_name,
+      category_description,
+      category_image,
+      is_veg_nonveg_applicable,
+    ];
     const result = await db.query(query, values);
     return result.rows[0] || null;
   },
@@ -30,6 +40,7 @@ const categoryModel = {
         updated_at,
         is_deleted,
         is_active,
+        is_veg_nonveg_applicable,
         COUNT(*) OVER()::INT AS total_records
       FROM category
       WHERE is_deleted = 0
@@ -50,7 +61,8 @@ const categoryModel = {
         created_at,
         updated_at,
         is_deleted,
-        is_active
+        is_active,
+        is_veg_nonveg_applicable
       FROM category
       WHERE id = $1 AND is_deleted = 0
     `;
@@ -83,7 +95,8 @@ const categoryModel = {
     category_name,
     category_description,
     category_image,
-    is_active
+    is_active,
+    is_veg_nonveg_applicable
   ) => {
     const query = `
       WITH target AS (
@@ -109,6 +122,7 @@ const categoryModel = {
             (SELECT category_image FROM target LIMIT 1)
           ),
           is_active = $5::SMALLINT,
+          is_veg_nonveg_applicable = $6::SMALLINT,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $1::INT
           AND is_deleted = 0
@@ -121,7 +135,8 @@ const categoryModel = {
           created_at,
           updated_at,
           is_deleted,
-          is_active
+          is_active,
+          is_veg_nonveg_applicable
       )
       SELECT
         EXISTS (SELECT 1 FROM target) AS target_exists,
@@ -133,11 +148,19 @@ const categoryModel = {
         updated.created_at,
         updated.updated_at,
         updated.is_deleted,
-        updated.is_active
+        updated.is_active,
+        updated.is_veg_nonveg_applicable
       FROM (SELECT 1) AS base
       LEFT JOIN updated ON TRUE;
     `;
-    const values = [id, category_name, category_description, category_image, is_active];
+    const values = [
+      id,
+      category_name,
+      category_description,
+      category_image,
+      is_active,
+      is_veg_nonveg_applicable,
+    ];
     const result = await db.query(query, values);
     return result.rows[0];
   },

@@ -61,8 +61,8 @@ const getVegStats = async (req, res) => {
       SELECT 
         CASE 
           WHEN is_veg = 1 THEN 'Veg'
-          WHEN is_veg = 2 THEN 'Both / Not applicable'
-          ELSE 'Non-Veg'
+          WHEN is_veg = 0 THEN 'Non-Veg'
+          ELSE 'Not applicable'
         END as type,
         COUNT(*)::INT as count
       FROM items

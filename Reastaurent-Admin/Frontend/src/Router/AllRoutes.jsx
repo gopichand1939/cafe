@@ -34,6 +34,8 @@ const AddAddon = lazy(() => import("../components/Addons/AddAddon"));
 const ViewAddon = lazy(() => import("../components/Addons/ViewAddon"));
 const EditAddon = lazy(() => import("../components/Addons/EditAddon"));
 const DeleteAddon = lazy(() => import("../components/Addons/DeleteAddon"));
+const AddonItemMaster = lazy(() => import("../components/Addons/AddonItemMaster"));
+const AddonEligibility = lazy(() => import("../components/Addons/AddonEligibility"));
 
 // Customer Module
 const Customer = lazy(() => import("../components/customer/Customer"));
@@ -153,6 +155,14 @@ export const appRoutes = [
       {
         path: "deleteaddon/:id",
         element: withSuspense(<DeleteAddon />),
+      },
+      {
+        path: "addon-items",
+        element: withSuspense(<AddonItemMaster />),
+      },
+      {
+        path: "addon-eligibility",
+        element: withSuspense(<AddonEligibility />),
       },
       {
         path: "customer",

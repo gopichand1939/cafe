@@ -33,14 +33,13 @@ const getInitialFormState = (selectedItem) => ({
 });
 
 const foodTypeOptions = [
-  { label: "Veg", value: 1, className: "bg-success-bg text-success-text" },
-  { label: "Non-Veg", value: 0, className: "bg-red-500/10 text-red-500" },
-  { label: "Both / N/A", value: 2, className: "bg-slate-100 text-slate-800" },
+  { label: "Vegan", value: 1, className: "bg-emerald-600 text-white shadow-sm" },
+  { label: "Halal", value: 0, className: "bg-red-600 text-white shadow-sm" },
 ];
 
 function normalizeFoodType(value) {
   const numericValue = Number(value);
-  return [0, 1, 2].includes(numericValue) ? numericValue : null;
+  return [0, 1].includes(numericValue) ? numericValue : null;
 }
 
 function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
@@ -105,6 +104,22 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
     [categories, formData.category_id]
   );
 
+  const isVegNonVegApplicable = useMemo(() => {
+    const source = selectedCategoryData || selectedItem;
+
+    if (!source || typeof source.is_veg_nonveg_applicable === "undefined") {
+      return true;
+    }
+
+    return Number(source.is_veg_nonveg_applicable) === 1;
+  }, [selectedCategoryData, selectedItem]);
+
+  useEffect(() => {
+    if (!isVegNonVegApplicable && formData.is_veg !== null) {
+      setFieldValue("is_veg", null);
+    }
+  }, [formData.is_veg, isVegNonVegApplicable]);
+
   const setFieldValue = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: null }));
@@ -155,8 +170,8 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
       nextErrors.preparation_time = "Preparation time must be a valid positive number";
     }
 
-    if (formData.is_veg === null) {
-      nextErrors.is_veg = "Select Veg, Non-Veg, or Both / N/A";
+    if (isVegNonVegApplicable && formData.is_veg === null) {
+      nextErrors.is_veg = "Select Vegan or Halal";
     }
 
     setErrors(nextErrors);
@@ -182,7 +197,7 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
       preparation_time: formData.preparation_time !== "" ? parseInt(formData.preparation_time, 10) : null,
       is_popular: formData.is_popular ? 1 : 0,
       is_new: formData.is_new ? 1 : 0,
-      is_veg: formData.is_veg,
+      is_veg: isVegNonVegApplicable ? formData.is_veg : null,
       is_active: formData.is_active ? 1 : 0,
     });
   };
@@ -317,31 +332,33 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
                 </button>
               </div>
 
-              <div className="ui-field-shell">
-                <span className="ui-label">Food Type</span>
-                <div className="inline-flex w-fit rounded-full border border-slate-200 bg-white p-1 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-                  {foodTypeOptions.map((option) => {
-                    const isSelected = formData.is_veg === option.value;
+              {isVegNonVegApplicable ? (
+                <div className="ui-field-shell min-w-[220px]">
+                  <span className="ui-label">Food Type</span>
+                  <div className="grid h-12 w-full max-w-[260px] grid-cols-2 rounded-full border border-slate-200 bg-white p-1 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+                    {foodTypeOptions.map((option) => {
+                      const isSelected = formData.is_veg === option.value;
 
-                    return (
-                      <button
-                        key={option.label}
-                        type="button"
-                        aria-pressed={isSelected}
-                        className={`rounded-full px-4 py-2 text-[0.92rem] font-bold transition-all ${
-                          isSelected ? option.className : "text-text-muted hover:bg-slate-50"
-                        }`}
-                        onClick={() => setFieldValue("is_veg", option.value)}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={option.label}
+                          type="button"
+                          aria-pressed={isSelected}
+                          className={`grid h-10 min-w-0 place-items-center rounded-full px-3 text-center text-[0.92rem] font-bold leading-none transition-all ${
+                            isSelected ? option.className : "text-text-muted hover:bg-slate-50"
+                          }`}
+                          onClick={() => setFieldValue("is_veg", option.value)}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {errors.is_veg ? (
+                    <span className="text-[0.82rem] font-semibold text-red-500">{errors.is_veg}</span>
+                  ) : null}
                 </div>
-                {errors.is_veg ? (
-                  <span className="text-[0.82rem] font-semibold text-red-500">{errors.is_veg}</span>
-                ) : null}
-              </div>
+              ) : null}
             </div>
 
               <div className="ui-field-shell mt-2">

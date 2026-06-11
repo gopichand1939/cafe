@@ -23,6 +23,7 @@ const toListItemResponse = (req, item) => {
     is_popular: hydratedItem.is_popular,
     is_new: hydratedItem.is_new,
     is_veg: hydratedItem.is_veg,
+    is_veg_nonveg_applicable: hydratedItem.is_veg_nonveg_applicable,
     created_at: hydratedItem.created_at,
     updated_at: hydratedItem.updated_at,
     is_deleted: hydratedItem.is_deleted,
@@ -32,7 +33,7 @@ const toListItemResponse = (req, item) => {
 
 const normalizeFoodType = (value) => {
   const numericValue = Number(value);
-  return [0, 1, 2].includes(numericValue) ? numericValue : 0;
+  return numericValue === 0 ? 0 : 1;
 };
 
 const createItem = async (req, res) => {

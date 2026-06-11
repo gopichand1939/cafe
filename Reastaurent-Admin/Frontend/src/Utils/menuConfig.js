@@ -17,7 +17,7 @@ const MENU_ROUTE_MAP = {
   },
   menu_management: {
     path: "/category",
-    matchPaths: ["/category", "/addcategory", "/viewcategory/", "/editcategory/", "/deletecategory/", "/items", "/additem", "/viewitem/", "/edititem/", "/deleteitem/", "/addon", "/addaddon", "/viewaddon/", "/editaddon/", "/deleteaddon/"],
+    matchPaths: ["/category", "/addcategory", "/viewcategory/", "/editcategory/", "/deletecategory/", "/items", "/additem", "/viewitem/", "/edititem/", "/deleteitem/", "/addon", "/addaddon", "/viewaddon/", "/editaddon/", "/deleteaddon/", "/addon-items", "/addon-eligibility"],
   },
   category: {
     path: "/category",
@@ -30,6 +30,14 @@ const MENU_ROUTE_MAP = {
   addon: {
     path: "/addon",
     matchPaths: ["/addon", "/addaddon", "/viewaddon/", "/editaddon/", "/deleteaddon/"],
+  },
+  addon_item_master: {
+    path: "/addon-items",
+    matchPaths: ["/addon-items"],
+  },
+  addons_eligible_for_items: {
+    path: "/addon-eligibility",
+    matchPaths: ["/addon-eligibility"],
   },
   offers: {
     path: "/offers",

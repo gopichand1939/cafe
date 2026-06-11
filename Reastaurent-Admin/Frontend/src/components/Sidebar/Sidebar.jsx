@@ -295,13 +295,25 @@ const iconMap = {
   category: CategoryIcon,
   items: ItemIcon,
   addon: ItemIcon,
+  addon_item_master: ItemIcon,
+  addons_eligible_for_items: ItemIcon,
 };
 
 const isPathMatched = (pathname, menuKey = "", children = []) => {
   const matchPaths = getMenuMatchPaths(menuKey);
 
   if (
-    matchPaths.some((path) => path && (pathname === path || pathname.startsWith(path)))
+    matchPaths.some((path) => {
+      if (!path) {
+        return false;
+      }
+
+      if (pathname === path) {
+        return true;
+      }
+
+      return path.endsWith("/") && pathname.startsWith(path);
+    })
   ) {
     return true;
   }
@@ -312,17 +324,7 @@ const isPathMatched = (pathname, menuKey = "", children = []) => {
 const getSidebarLabel = (menu) =>
   en.sidebar.menu[menu.menu_key] || menu.menu_name || menu.module_name || menu.menu_key;
 
-const simplifyMenuManagement = (menu) => {
-  if (menu.menu_key !== "menu_management") {
-    return menu;
-  }
-
-  return {
-    ...menu,
-    children: [],
-    resolvedPath: getMenuRoutePath("menu_management"),
-  };
-};
+const simplifyMenuManagement = (menu) => menu;
 
 function Sidebar({ collapsed = false, onNavigate, onLogout }) {
   const location = useLocation();

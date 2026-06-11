@@ -196,7 +196,7 @@ function Home() {
   }, [loadingItems, isFetchingMore, currentPage, totalPages, selectedCategory]);
 
   const loadAddonsForItem = useEffectEvent(async (item, options = {}) => {
-    const { useCache = true, openModal = true } = options;
+    const { useCache = false, openModal = true } = options;
 
     if (!item) {
       return [];
@@ -291,7 +291,12 @@ function Home() {
       return;
     }
 
-    if (payload.entity === "addon") {
+    if (
+      payload.entity === "addon" ||
+      payload.entity === "addon_group" ||
+      payload.entity === "addon_item" ||
+      payload.entity === "addon_eligibility"
+    ) {
       const affectedItemIds = [
         payload.itemId,
         payload.previousItemId,
@@ -299,7 +304,10 @@ function Home() {
       ]
         .filter(Boolean)
         .map((itemId) => Number(itemId));
-      const isMasterAddonChange = affectedItemIds.length === 0;
+      const isMasterAddonChange =
+        affectedItemIds.length === 0 ||
+        payload.entity === "addon_group" ||
+        payload.entity === "addon_item";
 
       setAddonCache((prev) => {
         if (isMasterAddonChange) {
@@ -591,7 +599,7 @@ function Home() {
     setSelectedItem(item);
 
     const addons = await loadAddonsForItem(item, {
-      useCache: true,
+      useCache: false,
       openModal: false,
     });
 
@@ -610,7 +618,7 @@ function Home() {
 
     setSelectedItem(item);
     const addons = await loadAddonsForItem(item, {
-      useCache: true,
+      useCache: false,
       openModal: false,
     });
 

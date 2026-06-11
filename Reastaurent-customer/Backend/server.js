@@ -86,8 +86,8 @@ const PORT = Number(process.env.PORT) || 15014;
 
 const ensureAddonCompatibilityColumns = async () => {
   await db.query(`ALTER TABLE IF EXISTS item_addons ALTER COLUMN item_id DROP NOT NULL;`);
-  await db.query(`ALTER TABLE IF EXISTS item_addons ADD COLUMN IF NOT EXISTS min_select INT DEFAULT 0;`);
-  await db.query(`ALTER TABLE IF EXISTS item_addons ADD COLUMN IF NOT EXISTS max_select INT DEFAULT 99;`);
+  await db.query(`ALTER TABLE IF EXISTS item_addons DROP COLUMN IF EXISTS min_select;`);
+  await db.query(`ALTER TABLE IF EXISTS item_addons DROP COLUMN IF EXISTS max_select;`);
 };
 
 const startServer = async () => {

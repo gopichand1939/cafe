@@ -8,6 +8,10 @@ const getInitialFormState = (selectedCategory) => ({
   category_name: selectedCategory?.category_name || "",
   category_description: selectedCategory?.category_description || "",
   category_image: selectedCategory?.category_image || "",
+  is_veg_nonveg_applicable:
+    selectedCategory && typeof selectedCategory.is_veg_nonveg_applicable !== "undefined"
+      ? Number(selectedCategory.is_veg_nonveg_applicable) === 1
+      : true,
   is_active:
     selectedCategory && typeof selectedCategory.is_active !== "undefined"
       ? Number(selectedCategory.is_active) === 1
@@ -99,6 +103,7 @@ function CategoryForm({ selectedCategory, onSubmit, isSubmitting }) {
       category_description: formData.category_description.trim(),
       category_image: formData.category_image.trim(),
       category_image_file: selectedFile,
+      is_veg_nonveg_applicable: formData.is_veg_nonveg_applicable ? 1 : 0,
       is_active: formData.is_active ? 1 : 0,
     });
   };
@@ -155,6 +160,33 @@ function CategoryForm({ selectedCategory, onSubmit, isSubmitting }) {
               value={formData.category_image}
               readOnly
             />
+
+              <div className="ui-field-shell">
+                <span className="ui-label">Vegan / Halal Applicable</span>
+                <button
+                  type="button"
+                  className={`ui-status-toggle ${
+                    formData.is_veg_nonveg_applicable ? "bg-success-bg text-success-text" : ""
+                  }`}
+                  onClick={() =>
+                    setFieldValue(
+                      "is_veg_nonveg_applicable",
+                      !formData.is_veg_nonveg_applicable
+                    )
+                  }
+                >
+                  <span
+                    className={`ui-status-toggle-dot ${
+                      formData.is_veg_nonveg_applicable
+                        ? "bg-success-text"
+                        : "bg-text-muted/40"
+                    }`}
+                  />
+                  <span className="text-[0.92rem] font-bold">
+                    {formData.is_veg_nonveg_applicable ? "Applicable" : "Not Applicable"}
+                  </span>
+                </button>
+              </div>
 
               <div className="ui-field-shell">
                 <span className="ui-label">Active Status</span>

@@ -3,7 +3,6 @@ const { attachImageUrl } = require("../media");
 const {
   cache,
   isCacheValid,
-  setAddonsCache,
   setCategoryCache,
   setItemsCache,
 } = require("../cache/menuCache");
@@ -152,55 +151,66 @@ const getItemAddons = async (req, res) => {
       });
     }
 
-    const cacheKey = `${item_id}_master_all`;
+    const normalizedItemId = parseInt(item_id, 10);
 
-    if (isCacheValid(cache.addons[cacheKey])) {
-      return res.status(200).json({
-        ...cache.addons[cacheKey].data,
-        cached: true,
+    if (Number.isNaN(normalizedItemId) || normalizedItemId < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "item_id must be a valid positive number",
       });
     }
 
     const addonsQuery = `
       SELECT
-        ia.id,
-        ia.item_id,
-        ia.addon_group,
-        ia.min_select,
-        ia.max_select,
-        ia.addon_name,
-        ia.addon_price,
-        ia.sort_order,
-        ia.created_at,
-        ia.updated_at,
-        ia.is_deleted,
-        ia.is_active
-      FROM item_addons ia
-      WHERE ia.item_id IS NULL
-        AND ia.is_deleted = 0
-        AND ia.is_active = 1
-      ORDER BY ia.addon_group ASC, ia.sort_order ASC, ia.id ASC
+        aefi.id AS eligibility_id,
+        aefi.item_id,
+        aefi.group_id,
+        aefi.is_required,
+        ag.group_name,
+        aim.id AS addon_item_id,
+        aim.addon_item_name,
+        aim.price,
+        aim.description
+      FROM addons_eligible_for_items aefi
+      INNER JOIN addon_group_master ag
+        ON ag.id = aefi.group_id
+      INNER JOIN addons_eligible_item_options aeio
+        ON aeio.eligibility_id = aefi.id
+      INNER JOIN addon_item_master aim
+        ON aim.id = aeio.addon_item_id
+       AND aim.group_id = ag.id
+      WHERE aefi.item_id = $1
+        AND aefi.is_deleted = 0
+        AND aefi.is_active = 1
+        AND ag.is_deleted = 0
+        AND ag.is_active = 1
+        AND aim.is_deleted = 0
+        AND aim.is_active = 1
+      ORDER BY ag.group_name ASC, aim.addon_item_name ASC
     `;
-    const addonsResult = await db.query(addonsQuery);
+    const addonsResult = await db.query(addonsQuery, [normalizedItemId]);
     const totalRecords = addonsResult.rowCount || 0;
 
     const groupedMap = addonsResult.rows.reduce((acc, addon) => {
-      if (!acc[addon.addon_group]) {
-        acc[addon.addon_group] = {
-          addon_group: addon.addon_group,
-          title: addon.addon_group,
-          min_select: Number(addon.min_select || 0),
-          max_select: Number(addon.max_select || 99),
+      if (!acc[addon.group_id]) {
+        acc[addon.group_id] = {
+          id: addon.eligibility_id,
+          group_id: addon.group_id,
+          addon_group: addon.group_name,
+          title: addon.group_name,
+          is_required: Number(addon.is_required) === 1,
           options: [],
         };
       }
 
-      acc[addon.addon_group].options.push({
-        id: addon.id,
-        addonOptionId: addon.id,
-        addon_name: addon.addon_name,
-        addon_price: Number(addon.addon_price || 0),
-        sort_order: Number(addon.sort_order || 0),
+      acc[addon.group_id].options.push({
+        id: addon.addon_item_id,
+        addonOptionId: addon.addon_item_id,
+        addon_name: addon.addon_item_name,
+        addon_item_name: addon.addon_item_name,
+        addon_price: Number(addon.price || 0),
+        price: Number(addon.price || 0),
+        description: addon.description,
       });
 
       return acc;
@@ -217,8 +227,6 @@ const getItemAddons = async (req, res) => {
         limit: totalRecords,
       },
     };
-
-    setAddonsCache(cacheKey, responseData);
 
     return res.status(200).json(responseData);
   } catch (error) {

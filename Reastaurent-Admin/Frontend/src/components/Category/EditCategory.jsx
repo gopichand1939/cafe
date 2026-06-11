@@ -61,6 +61,7 @@ function EditCategory() {
       formData.append("category_name", payload.category_name);
       formData.append("category_description", payload.category_description);
       formData.append("is_active", payload.is_active);
+      formData.append("is_veg_nonveg_applicable", payload.is_veg_nonveg_applicable);
       if (payload.category_image_file) {
         formData.append("category_image", payload.category_image_file);
       }

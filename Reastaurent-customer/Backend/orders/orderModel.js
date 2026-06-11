@@ -65,21 +65,19 @@ const getActiveAddonsByIds = async (addonIds) => {
 
   const query = `
     SELECT
-      ia.id,
-      ia.item_id,
-      ia.addon_group,
-      ia.min_select,
-      ia.max_select,
-      ia.addon_name,
-      ia.addon_price,
-      ia.sort_order,
-      ia.is_active,
-      ia.is_deleted
-    FROM item_addons ia
-    WHERE ia.id = ANY($1::INT[])
-      AND ia.item_id IS NULL
-      AND ia.is_deleted = 0
-      AND ia.is_active = 1;
+      aim.id,
+      ag.group_name AS addon_group,
+      aim.addon_item_name AS addon_name,
+      aim.price AS addon_price,
+      aim.is_active,
+      aim.is_deleted
+    FROM addon_item_master aim
+    INNER JOIN addon_group_master ag ON ag.id = aim.group_id
+    WHERE aim.id = ANY($1::INT[])
+      AND aim.is_deleted = 0
+      AND aim.is_active = 1
+      AND ag.is_deleted = 0
+      AND ag.is_active = 1;
   `;
 
   const result = await db.query(query, [addonIds]);
@@ -97,20 +95,32 @@ const getActiveAddonGroupsByItemIds = async (itemIds) => {
 
   const query = `
     SELECT DISTINCT
-      ia.item_id,
-      ia.addon_group,
-      ia.min_select,
-      ia.max_select
-    FROM item_addons ia
-    WHERE ia.item_id IS NULL
-      AND ia.is_deleted = 0
-      AND ia.is_active = 1
+      aefi.item_id,
+      aeio.addon_item_id,
+      ag.group_name AS addon_group
+    FROM addons_eligible_for_items aefi
+    INNER JOIN addon_group_master ag
+      ON ag.id = aefi.group_id
+    INNER JOIN addons_eligible_item_options aeio
+      ON aeio.eligibility_id = aefi.id
+    INNER JOIN addon_item_master aim
+      ON aim.id = aeio.addon_item_id
+     AND aim.group_id = ag.id
+    WHERE aefi.item_id = ANY($1::INT[])
+      AND aefi.is_deleted = 0
+      AND aefi.is_active = 1
+      AND ag.is_deleted = 0
+      AND ag.is_active = 1
+      AND aim.is_deleted = 0
+      AND aim.is_active = 1
   `;
 
-  const result = await db.query(query);
+  const result = await db.query(query, [itemIds]);
 
-  return itemIds.reduce((accumulator, itemId) => {
-    accumulator[Number(itemId)] = result.rows;
+  return result.rows.reduce((accumulator, row) => {
+    const itemId = Number(row.item_id);
+    accumulator[itemId] = accumulator[itemId] || [];
+    accumulator[itemId].push(row);
     return accumulator;
   }, {});
 };

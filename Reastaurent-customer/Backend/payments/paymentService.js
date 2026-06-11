@@ -319,28 +319,22 @@ const buildOrderDraftForCheckout = async ({
 
     const selectedAddons = addonIds.map((addonId) => activeAddonsMap[addonId]);
 
-    if (selectedAddons.some((addon) => !addon || addon.item_id !== null)) {
-      const error = new Error("One or more add-ons are not available in Addon Master");
+    if (selectedAddons.some((addon) => !addon)) {
+      const error = new Error("One or more add-ons are not available");
       error.statusCode = 400;
       throw error;
     }
 
-    const addonCountsByGroup = selectedAddons.reduce((acc, addon) => {
-      const key = addon.addon_group;
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
+    const eligibleAddonIds = new Set(
+      (addonGroupsByItemId[sourceItem.id] || []).map((addon) =>
+        Number(addon.addon_item_id)
+      )
+    );
 
-    for (const group of addonGroupsByItemId[sourceItem.id] || []) {
-      const selectedCount = addonCountsByGroup[group.addon_group] || 0;
-      const minSelect = Number(group.min_select || 0);
-      const maxSelect = Number(group.max_select || 99);
-
-      if (selectedCount < minSelect || selectedCount > maxSelect) {
-        const error = new Error(`${group.addon_group} allows ${minSelect}-${maxSelect} selections`);
-        error.statusCode = 400;
-        throw error;
-      }
+    if (addonIds.some((addonId) => !eligibleAddonIds.has(Number(addonId)))) {
+      const error = new Error("One or more add-ons are not configured for this item");
+      error.statusCode = 400;
+      throw error;
     }
 
     const normalizedSelectedAddons = selectedAddons.map((addon) => ({

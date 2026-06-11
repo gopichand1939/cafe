@@ -49,11 +49,26 @@ export const ITEM_BY_ID = `${BACKEND_BASE_URL}/items/get_item_byId`;
 export const ITEM_UPDATE = `${BACKEND_BASE_URL}/items/update_item`;
 export const ITEM_DELETE = `${BACKEND_BASE_URL}/items/delete_item`;
 
-export const ADDON_CREATE = `${BACKEND_BASE_URL}/addons/create_addon`;
-export const ADDON_LIST = `${BACKEND_BASE_URL}/addons/addon_list`;
-export const ADDON_BY_ID = `${BACKEND_BASE_URL}/addons/get_addon_byId`;
-export const ADDON_UPDATE = `${BACKEND_BASE_URL}/addons/update_addon`;
-export const ADDON_DELETE = `${BACKEND_BASE_URL}/addons/delete_addon`;
+export const ADDON_GROUP_CREATE = `${BACKEND_BASE_URL}/addons/create_addon_group`;
+export const ADDON_GROUP_LIST = `${BACKEND_BASE_URL}/addons/addon_group_list`;
+export const ADDON_GROUP_BY_ID = `${BACKEND_BASE_URL}/addons/add_on_master_getById`;
+export const ADDON_GROUP_UPDATE = `${BACKEND_BASE_URL}/addons/update_addon_group`;
+export const ADDON_GROUP_DELETE = `${BACKEND_BASE_URL}/addons/delete_addon_group`;
+
+export const ADDON_ITEM_CREATE = `${BACKEND_BASE_URL}/addons/create_addon_item`;
+export const ADDON_ITEM_LIST = `${BACKEND_BASE_URL}/addons/addon_item_list`;
+export const ADDON_ITEM_BY_ID = `${BACKEND_BASE_URL}/addons/get_addon_item_byId`;
+export const ADDON_ITEM_UPDATE = `${BACKEND_BASE_URL}/addons/update_addon_item`;
+export const ADDON_ITEM_DELETE = `${BACKEND_BASE_URL}/addons/delete_addon_item`;
+
+export const ADDON_ELIGIBILITY_LOOKUPS = `${BACKEND_BASE_URL}/addons/addon_eligibility_lookups`;
+export const ADDON_ITEMS_BY_GROUP = `${BACKEND_BASE_URL}/addons/addon_items_by_group`;
+export const ADDON_ELIGIBILITY_CREATE = `${BACKEND_BASE_URL}/addons/create_addon_eligibility`;
+export const ADDON_ELIGIBILITY_BULK_ASSIGN = `${BACKEND_BASE_URL}/addons/bulk_assign_addon_eligibility`;
+export const ADDON_ELIGIBILITY_LIST = `${BACKEND_BASE_URL}/addons/addon_eligibility_list`;
+export const ADDON_ELIGIBILITY_BY_ID = `${BACKEND_BASE_URL}/addons/get_addon_eligibility_byId`;
+export const ADDON_ELIGIBILITY_UPDATE = `${BACKEND_BASE_URL}/addons/update_addon_eligibility`;
+export const ADDON_ELIGIBILITY_DELETE = `${BACKEND_BASE_URL}/addons/delete_addon_eligibility`;
 export const ADDON_BY_ITEM = `${BACKEND_BASE_URL}/addons/get_addons_by_item`;
 
 
