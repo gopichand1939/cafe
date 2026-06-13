@@ -46,6 +46,25 @@
   --color-sidebar-bg: #050811;
   --color-sidebar-card: linear-gradient(135deg, #1a2333 0%, #0f172a 100%);
   --sidebar-shadow: 0 12px 26px rgba(0, 0, 0, 0.3);
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-section-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-header-start: #1a2333;
+  --color-sidebar-header-end: #0f172a;
+  --color-sidebar-nav-start: #050811;
+  --color-sidebar-nav-end: #0b1220;
+  --color-sidebar-active-bg: #10b981;
+  --color-sidebar-active-text: #ffffff;
+  --color-sidebar-active-indicator: #ffffff;
+  --color-sidebar-inactive-text: #e2e8f0;
+  --color-sidebar-icon-bg: rgba(255, 255, 255, 0.05);
+  --color-sidebar-icon-active-bg: rgba(255, 255, 255, 0.18);
+  --color-sidebar-submenu-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-submenu-inactive-text: #94a3b8;
+  --color-sidebar-submenu-active-bg: rgba(16, 185, 129, 0.16);
+  --color-sidebar-footer-bg: #050811;
+  --color-sidebar-logout-bg: rgba(127, 29, 29, 0.18);
+  --color-sidebar-logout-border: rgba(248, 113, 113, 0.24);
+  --color-sidebar-logout-text: #fca5a5;
 }
 
 .dark {
@@ -90,6 +109,25 @@
   --color-sidebar-bg: #050811;
   --color-sidebar-card: linear-gradient(135deg, #1a2333 0%, #0f172a 100%);
   --sidebar-shadow: 0 12px 26px rgba(0, 0, 0, 0.3);
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-section-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-header-start: #1a2333;
+  --color-sidebar-header-end: #0f172a;
+  --color-sidebar-nav-start: #050811;
+  --color-sidebar-nav-end: #0b1220;
+  --color-sidebar-active-bg: #10b981;
+  --color-sidebar-active-text: #ffffff;
+  --color-sidebar-active-indicator: #ffffff;
+  --color-sidebar-inactive-text: #e2e8f0;
+  --color-sidebar-icon-bg: rgba(255, 255, 255, 0.05);
+  --color-sidebar-icon-active-bg: rgba(255, 255, 255, 0.18);
+  --color-sidebar-submenu-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-submenu-inactive-text: #94a3b8;
+  --color-sidebar-submenu-active-bg: rgba(16, 185, 129, 0.16);
+  --color-sidebar-footer-bg: #050811;
+  --color-sidebar-logout-bg: rgba(127, 29, 29, 0.18);
+  --color-sidebar-logout-border: rgba(248, 113, 113, 0.24);
+  --color-sidebar-logout-text: #fca5a5;
 }
 
 .light {
@@ -131,6 +169,25 @@
   --color-sidebar-bg: #ffffff;
   --color-sidebar-card: linear-gradient(135deg, #ffffff 0%, #ecfdf5 56%, #dcf7e8 100%);
   --sidebar-shadow: 0 12px 26px rgba(45, 111, 84, 0.08);
+  --color-sidebar-border: #d8e7df;
+  --color-sidebar-section-border: #eef2f7;
+  --color-sidebar-header-start: #ffffff;
+  --color-sidebar-header-end: #f8fafc;
+  --color-sidebar-nav-start: #ffffff;
+  --color-sidebar-nav-end: #f8fafc;
+  --color-sidebar-active-bg: #10b981;
+  --color-sidebar-active-text: #ffffff;
+  --color-sidebar-active-indicator: #ffffff;
+  --color-sidebar-inactive-text: #000000;
+  --color-sidebar-icon-bg: #f8fafc;
+  --color-sidebar-icon-active-bg: rgba(255, 255, 255, 0.18);
+  --color-sidebar-submenu-border: #eef2f7;
+  --color-sidebar-submenu-inactive-text: #64748b;
+  --color-sidebar-submenu-active-bg: rgba(16, 185, 129, 0.12);
+  --color-sidebar-footer-bg: #ffffff;
+  --color-sidebar-logout-bg: #fef2f2;
+  --color-sidebar-logout-border: rgba(239, 68, 68, 0.18);
+  --color-sidebar-logout-text: #dc2626;
 }
 
 @theme inline {

@@ -380,13 +380,17 @@ function AppShell() {
       ) : null}
 
       <aside
-        className={`overflow-hidden border-r border-border-subtle bg-surface-elevated transition-all duration-200 ${
+        className={`overflow-hidden transition-all duration-200 ${
           isMobile
             ? `fixed inset-y-0 left-0 z-20 w-[min(295px,82vw)] shadow-lg ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`
             : isSidebarOpen
               ? "h-screen w-[295px]"
               : "h-screen w-[92px]"
         }`}
+        style={{
+          backgroundColor: "var(--color-sidebar-bg)",
+          borderRight: "1px solid var(--color-sidebar-border)",
+        }}
       >
         <Sidebar
           collapsed={!isSidebarOpen && !isMobile}

@@ -313,6 +313,7 @@ const getHourlySales = async (filters) => {
       SELECT
         restaurant_order_hour AS hour,
         COUNT(*)::INT AS total_orders,
+        COUNT(*) FILTER (WHERE order_status = 'delivered')::INT AS delivered_orders,
         COALESCE(SUM(total_amount), 0)::NUMERIC(12, 2) AS total_sales
       FROM filtered_orders
       GROUP BY restaurant_order_hour
@@ -321,10 +322,31 @@ const getHourlySales = async (filters) => {
     values
   );
 
-  return result.rows.map((row) => ({
-    ...row,
-    hour_label: formatHourRange(Number(row.hour)),
-  }));
+  const hourlyMap = result.rows.reduce((accumulator, row) => {
+    const hour = Number(row.hour);
+    accumulator[hour] = {
+      hour,
+      total_orders: numberValue(row.total_orders),
+      delivered_orders: numberValue(row.delivered_orders),
+      total_sales: numberValue(row.total_sales),
+    };
+    return accumulator;
+  }, {});
+
+  return Array.from({ length: 24 }, (_, hour) => {
+    const entry = hourlyMap[hour] || {
+      hour,
+      total_orders: 0,
+      delivered_orders: 0,
+      total_sales: 0,
+    };
+
+    return {
+      ...entry,
+      hour_label: formatHourRange(hour),
+      short_hour_label: formatHour(hour),
+    };
+  });
 };
 
 const getDailySales = async (filters) => {

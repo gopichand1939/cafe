@@ -41,6 +41,18 @@ const orderStatusOptions = [
   "delivered",
   "cancelled",
 ];
+const paymentMethodOptions = [
+  "",
+  "cash_on_delivery",
+
+  "stripe",
+
+];
+
+const formatFilterLabel = (value) =>
+  String(value || "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 const colors = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#14b8a6"];
 const paymentColors = {
@@ -52,6 +64,11 @@ const paymentColors = {
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
+const monthsAgo = (count) => {
+  const date = new Date();
+  date.setMonth(date.getMonth() - count);
+  return date.toISOString().slice(0, 10);
+};
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("en-IN", {
@@ -59,6 +76,17 @@ const formatCurrency = (value) =>
     currency: "INR",
     maximumFractionDigits: 0,
   }).format(Number(value || 0));
+
+const formatHourlyMetric = (value, name) =>
+  String(name || "").toLowerCase().includes("sales")
+    ? formatCurrency(value)
+    : `${Number(value || 0)} delivered`;
+
+const renderHourlyTick = (value) => {
+  const label = String(value || "");
+  const [start] = label.split(" - ");
+  return start || label;
+};
 
 const buildUrl = (baseUrl, filters) => {
   const params = new URLSearchParams();
@@ -114,14 +142,14 @@ function StatTile({ label, value, tone = "emerald" }) {
   return (
     <div className={`rounded-lg border p-4 ${toneMap[tone] || toneMap.emerald}`}>
       <p className="m-0 text-sm font-bold opacity-80">{label}</p>
-      <strong className="mt-2 block text-2xl leading-tight text-text-strong">{value}</strong>
+      <strong className="mt-2 block text-2xl leading-tight text-current">{value}</strong>
     </div>
   );
 }
 
 function OrderReports() {
   const [filters, setFilters] = useState({
-    from_date: today(),
+    from_date: monthsAgo(4),
     to_date: today(),
     payment_status: "",
     order_status: "",
@@ -192,6 +220,13 @@ function OrderReports() {
 
   const summary = report?.summary || {};
   const orders = report?.orders || [];
+  const displayedOrders = useMemo(
+    () =>
+      filters.payment_method
+        ? orders.filter((order) => String(order.payment_method || "") === filters.payment_method)
+        : orders,
+    [filters.payment_method, orders]
+  );
   const payments = normalizePaymentAnalytics(report?.payments);
   const topProducts = Array.isArray(report?.topProducts) ? report.topProducts : [];
   const hourlySales = Array.isArray(report?.hourlySales) ? report.hourlySales : [];
@@ -209,7 +244,7 @@ function OrderReports() {
         </div>
         <button
           type="button"
-          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-text-strong px-4 font-bold text-white"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-500 px-4 font-bold text-white shadow-[0_10px_22px_rgba(16,185,129,0.2)] transition hover:bg-brand-600"
           onClick={loadReport}
         >
           <LuRefreshCw size={18} />
@@ -218,7 +253,7 @@ function OrderReports() {
       </div>
 
       <Card className="grid gap-4" padding="md">
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-5">
           <label className="grid gap-2 text-sm font-bold text-text-muted">
             From Date
             <input
@@ -265,6 +300,21 @@ function OrderReports() {
               {orderStatusOptions.map((option) => (
                 <option key={option || "all"} value={option}>
                   {option || "All"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-bold text-text-muted">
+            Method
+            <select
+              name="payment_method"
+              value={filters.payment_method}
+              onChange={handleFilterChange}
+              className="min-h-11 rounded-lg border border-border-subtle bg-white px-3 text-text-strong"
+            >
+              {paymentMethodOptions.map((option) => (
+                <option key={option || "all"} value={option}>
+                  {option ? formatFilterLabel(option) : "All"}
                 </option>
               ))}
             </select>
@@ -343,25 +393,53 @@ function OrderReports() {
         <Card className="grid min-h-[360px] gap-4">
           <h2 className="m-0 text-lg font-bold text-text-strong">Hourly Sales Analytics</h2>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={hourlySales}>
+            <LineChart data={hourlySales} margin={{ top: 12, right: 18, left: 6, bottom: 6 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="hour_label" />
-              <YAxis />
-              <Tooltip formatter={(value) => formatCurrency(value)} />
-              <Bar dataKey="total_sales" fill="#10b981" radius={[6, 6, 0, 0]} />
-            </BarChart>
+              <XAxis dataKey="hour_label" tickFormatter={renderHourlyTick} minTickGap={18} />
+              <YAxis yAxisId="sales" tickFormatter={(value) => formatCurrency(value)} width={74} />
+              <YAxis yAxisId="orders" orientation="right" allowDecimals={false} width={44} />
+              <Tooltip formatter={formatHourlyMetric} />
+              <Legend />
+              <Line
+                yAxisId="sales"
+                type="monotone"
+                dataKey="total_sales"
+                name="Hourly sales"
+                stroke="#f97316"
+                strokeWidth={3}
+                dot={{ r: 3, strokeWidth: 2 }}
+                activeDot={{ r: 6 }}
+              />
+              <Line
+                yAxisId="orders"
+                type="monotone"
+                dataKey="delivered_orders"
+                name="Delivered orders"
+                stroke="#8b5cf6"
+                strokeWidth={3}
+                dot={{ r: 3, strokeWidth: 2 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
           </ResponsiveContainer>
         </Card>
 
         <Card className="grid min-h-[360px] gap-4">
           <h2 className="m-0 text-lg font-bold text-text-strong">Top Products</h2>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={topProducts.slice(0, 8)} layout="vertical">
+            <BarChart data={topProducts.slice(0, 8)} margin={{ top: 8, right: 12, left: 0, bottom: 56 }}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" />
-              <YAxis dataKey="item_name" type="category" width={130} />
+              <XAxis
+                dataKey="item_name"
+                interval={0}
+                angle={-20}
+                textAnchor="end"
+                height={72}
+                tick={{ fontSize: 12 }}
+              />
+              <YAxis />
               <Tooltip formatter={(value) => formatCurrency(value)} />
-              <Bar dataKey="total_sales" fill="#3b82f6" radius={[0, 6, 6, 0]} />
+              <Bar dataKey="total_sales" fill="#3b82f6" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -432,9 +510,28 @@ function OrderReports() {
 
       <Card className="grid gap-4 overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="m-0 text-lg font-bold text-text-strong">Orders Table</h2>
-          <div className="text-sm font-semibold text-text-muted">
-            Peak: {summary.peak_sales_hour || "-"} - Top Product: {summary.top_selling_product || "-"}
+          <div className="grid gap-1">
+            <h2 className="m-0 text-lg font-bold text-text-strong">Orders Table</h2>
+            <div className="text-sm font-semibold text-text-muted">
+              Peak: {summary.peak_sales_hour || "-"} - Top Product: {summary.top_selling_product || "-"}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="grid gap-1 text-sm font-bold text-text-muted">
+              Method Filter
+              <select
+                name="payment_method"
+                value={filters.payment_method}
+                onChange={handleFilterChange}
+                className="min-h-10 min-w-[220px] rounded-lg border border-border-subtle bg-white px-3 text-text-strong"
+              >
+                {paymentMethodOptions.map((option) => (
+                  <option key={option || "all-table"} value={option}>
+                    {option ? formatFilterLabel(option) : "All Methods"}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
         <div className="max-h-[420px] overflow-auto rounded-lg border border-border-subtle">
@@ -443,7 +540,9 @@ function OrderReports() {
               <tr className="border-b border-border-subtle text-text-muted">
                 <th className="px-4 py-3">Order</th>
                 <th className="px-4 py-3">Customer</th>
+                {/*
                 <th className="px-4 py-3">Items</th>
+                */}
                 <th className="px-4 py-3">Order Status</th>
                 <th className="px-4 py-3">Payment</th>
                 <th className="px-4 py-3">Method</th>
@@ -451,11 +550,13 @@ function OrderReports() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((order) => (
+              {displayedOrders.map((order) => (
                 <tr key={order.id} className="border-b border-border-subtle">
                   <td className="px-4 py-3 font-bold text-text-strong">{order.order_number}</td>
                   <td className="px-4 py-3 text-text-base">{order.customer_name}</td>
+                  {/*
                   <td className="max-w-[280px] truncate px-4 py-3 text-text-muted">{order.ordered_items}</td>
+                  */}
                   <td className="px-4 py-3 text-text-base">{order.order_status}</td>
                   <td className="px-4 py-3 text-text-base">{order.payment_status}</td>
                   <td className="px-4 py-3 text-text-base">{order.payment_method}</td>
@@ -464,9 +565,9 @@ function OrderReports() {
                   </td>
                 </tr>
               ))}
-              {!loading && orders.length === 0 ? (
+              {!loading && displayedOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-8 text-center font-semibold text-text-muted">
+                  <td colSpan="6" className="py-8 text-center font-semibold text-text-muted">
                     No orders found for this report range.
                   </td>
                 </tr>

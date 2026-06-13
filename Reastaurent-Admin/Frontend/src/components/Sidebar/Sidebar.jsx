@@ -3,7 +3,6 @@ import { NavLink, useLocation } from "react-router-dom";
 import { getStoredAdminMenuTree } from "../../Utils/authStorage";
 import { getMenuMatchPaths, getMenuRoutePath } from "../../Utils/menuConfig";
 import en from "../../Utils/i18n/en.json";
-import THEME_COLORS from "../../theme/colors";
 
 function DashboardIcon(props) {
   return (
@@ -329,7 +328,29 @@ const simplifyMenuManagement = (menu) => menu;
 function Sidebar({ collapsed = false, onNavigate, onLogout }) {
   const location = useLocation();
   const [storedMenus, setStoredMenus] = useState(() => getStoredAdminMenuTree());
-  const sidebarColors = THEME_COLORS.sidebar;
+  const sidebarColors = {
+    panelBackground: "var(--color-sidebar-bg)",
+    panelBorder: "var(--color-sidebar-border)",
+    panelShadow: "var(--sidebar-shadow)",
+    sectionBorder: "var(--color-sidebar-section-border)",
+    headerGradientStart: "var(--color-sidebar-header-start)",
+    headerGradientEnd: "var(--color-sidebar-header-end)",
+    navGradientStart: "var(--color-sidebar-nav-start)",
+    navGradientEnd: "var(--color-sidebar-nav-end)",
+    activeBackground: "var(--color-sidebar-active-bg)",
+    activeText: "var(--color-sidebar-active-text)",
+    activeIndicator: "var(--color-sidebar-active-indicator)",
+    inactiveText: "var(--color-sidebar-inactive-text)",
+    iconBackground: "var(--color-sidebar-icon-bg)",
+    iconActiveBackground: "var(--color-sidebar-icon-active-bg)",
+    submenuBorder: "var(--color-sidebar-submenu-border)",
+    submenuInactiveText: "var(--color-sidebar-submenu-inactive-text)",
+    submenuActiveBackground: "var(--color-sidebar-submenu-active-bg)",
+    footerBackground: "var(--color-sidebar-footer-bg)",
+    logoutBackground: "var(--color-sidebar-logout-bg)",
+    logoutBorder: "var(--color-sidebar-logout-border)",
+    logoutText: "var(--color-sidebar-logout-text)",
+  };
 
   useEffect(() => {
     setStoredMenus(getStoredAdminMenuTree());
@@ -337,18 +358,27 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
 
   const normalizedMenu = useMemo(
     () =>
-      storedMenus.map((menu) =>
-        simplifyMenuManagement({
-          ...menu,
-          resolvedPath: getMenuRoutePath(menu.menu_key),
-          isActive: isPathMatched(location.pathname, menu.menu_key, menu.children || []),
-          children: (menu.children || []).map((child) => ({
-            ...child,
-            resolvedPath: getMenuRoutePath(child.menu_key),
-            isActive: isPathMatched(location.pathname, child.menu_key, child.children || []),
-          })),
-        })
-      ),
+      storedMenus
+        .map((menu) =>
+          simplifyMenuManagement({
+            ...menu,
+            resolvedPath: getMenuRoutePath(menu.menu_key),
+            isActive: isPathMatched(location.pathname, menu.menu_key, menu.children || []),
+            children: (menu.children || []).map((child) => ({
+              ...child,
+              resolvedPath: getMenuRoutePath(child.menu_key),
+              isActive: isPathMatched(location.pathname, child.menu_key, child.children || []),
+            })),
+          })
+        )
+        .filter((menu) => {
+          /*
+          if (menu.menu_key === "reports") {
+            return false;
+          }
+          */
+          return menu.menu_key !== "reports";
+        }),
     [location.pathname, storedMenus]
   );
 
@@ -386,14 +416,14 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
 
   return (
     <div
-      className="flex h-screen min-h-0 flex-col overflow-hidden px-4 py-[18px] transition-colors duration-300"
+      className="flex h-screen min-h-0 flex-col overflow-hidden px-4 py-[18px]"
       style={{
         backgroundColor: sidebarColors.panelBackground,
         borderRight: `1px solid ${sidebarColors.panelBorder}`,
       }}
     >
       <div className={`${collapsed ? "grid justify-items-center pb-3 pt-1" : "pb-4"}`}>
-        <div className={`transition-all duration-300 ${
+        <div className={`transition-[width,height,padding,transform,border-radius] duration-300 ${
           collapsed ? "grid h-14 w-14 place-items-center rounded-2xl" : "rounded-[22px] px-4 py-[18px]"
         }`}
         style={{
@@ -425,7 +455,7 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
           const Icon = iconMap[menu.menu_key] || DefaultIcon;
           const menuLabel = getSidebarLabel(menu);
 
-          const parentClassName = `relative flex items-center gap-3 font-bold text-left no-underline transition-all duration-200 ${
+          const parentClassName = `relative flex items-center gap-3 font-bold text-left no-underline transition-[transform,box-shadow] duration-200 ${
             collapsed
               ? "h-14 w-14 justify-center rounded-[18px] px-0"
               : "min-h-[54px] w-full justify-start rounded-2xl px-[14px]"
@@ -443,7 +473,7 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
                 title={collapsed ? menuLabel : undefined}
                 style={{
                   transform: menu.isActive ? "translateX(2px)" : undefined,
-                  backgroundColor: menu.isActive ? sidebarColors.activeBackground : THEME_COLORS.common.transparent,
+                  backgroundColor: menu.isActive ? sidebarColors.activeBackground : "transparent",
                   color: menu.isActive ? sidebarColors.activeText : sidebarColors.inactiveText,
                   boxShadow: menu.isActive ? "0 10px 20px rgba(52,211,153,0.18)" : "none",
                 }}
@@ -475,7 +505,7 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
                 aria-expanded={collapsed ? false : isOpen}
                 style={{
                   transform: menu.isActive ? "translateX(2px)" : undefined,
-                  backgroundColor: menu.isActive ? sidebarColors.activeBackground : THEME_COLORS.common.transparent,
+                  backgroundColor: menu.isActive ? sidebarColors.activeBackground : "transparent",
                   color: menu.isActive ? sidebarColors.activeText : sidebarColors.inactiveText,
                   boxShadow: menu.isActive ? "0 10px 20px rgba(52,211,153,0.18)" : "none",
                 }}
@@ -513,14 +543,14 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
                       <NavLink
                         key={child.menu_id}
                         to={child.resolvedPath || "#"}
-                        className="flex min-h-11 items-center gap-[10px] rounded-xl px-3 no-underline font-semibold transition-all duration-200"
+                        className="flex min-h-11 items-center gap-[10px] rounded-xl px-3 no-underline font-semibold transition-[transform] duration-200"
                         onClick={child.resolvedPath ? onNavigate : undefined}
                         style={{
                           transform: child.isActive ? "translateX(2px)" : undefined,
                           backgroundColor: child.isActive
                             ? sidebarColors.submenuActiveBackground
-                            : THEME_COLORS.common.transparent,
-                          color: child.isActive ? THEME_COLORS.brand.primary : sidebarColors.submenuInactiveText,
+                            : "transparent",
+                          color: child.isActive ? "var(--color-brand-500)" : sidebarColors.submenuInactiveText,
                         }}
                       >
                         <span
@@ -548,7 +578,7 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
       >
         <button
           type="button"
-          className={`flex items-center gap-3 rounded-2xl border font-bold transition-all duration-200 hover:-translate-y-px ${
+          className={`flex items-center gap-3 rounded-2xl border font-bold transition-[transform,box-shadow] duration-200 hover:-translate-y-px ${
             collapsed ? "h-14 w-14 justify-center px-0" : "min-h-[52px] w-full justify-start px-[14px]"
           }`}
           onClick={onLogout}

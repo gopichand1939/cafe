@@ -128,37 +128,37 @@ function Dashboard() {
         />
       </section>
 
-      {/* Heavy charts section lazy loaded */}
       <Suspense fallback={
-        <div className="grid gap-[18px] lg:grid-cols-2 mt-[18px]">
-          <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
-          <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
-          <Card className="col-span-full h-[380px] animate-pulse bg-surface-muted/30" />
+        <div className="mt-[18px] grid gap-[24px]">
+          <div className="grid gap-4 border-t border-border-subtle pt-[26px]">
+            <Card className="h-[160px] animate-pulse bg-surface-muted/30" />
+            <div className="grid gap-4 xl:grid-cols-2">
+              <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
+              <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
+            </div>
+          </div>
+          <div className="grid gap-[18px] lg:grid-cols-2">
+            <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
+            <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
+            <Card className="col-span-full h-[380px] animate-pulse bg-surface-muted/30" />
+          </div>
         </div>
       }>
-        {!loading && (
-          <div className="mt-[18px]">
-            <DashboardCharts 
-              categoryStats={categoryStats} 
-              vegStats={vegStats} 
-              barChartData={barChartData} 
-            />
-          </div>
-        )}
-      </Suspense>
+        {!loading ? (
+          <div className="mt-[18px] grid gap-[24px]">
+            <section className="border-t border-border-subtle pt-[26px]">
+              <DashboardReportsSection />
+            </section>
 
-      <Suspense fallback={
-        <div className="mt-[18px] grid gap-4">
-          <Card className="h-[160px] animate-pulse bg-surface-muted/30" />
-          <div className="grid gap-4 xl:grid-cols-2">
-            <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
-            <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
+            <section>
+              <DashboardCharts
+                categoryStats={categoryStats}
+                vegStats={vegStats}
+                barChartData={barChartData}
+              />
+            </section>
           </div>
-        </div>
-      }>
-        <div className="mt-[18px]">
-          <DashboardReportsSection />
-        </div>
+        ) : null}
       </Suspense>
     </div>
   );
