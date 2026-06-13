@@ -227,8 +227,21 @@ function OrderReports() {
         : orders,
     [filters.payment_method, orders]
   );
+  const selectedMethodOrderCount = displayedOrders.length;
   const payments = normalizePaymentAnalytics(report?.payments);
   const topProducts = Array.isArray(report?.topProducts) ? report.topProducts : [];
+  const topProductChartData = useMemo(
+    () =>
+      topProducts
+        .slice(0, 8)
+        .map((product) => ({
+          ...product,
+          total_sales: Number(product.total_sales || 0),
+          total_quantity: Number(product.total_quantity || 0),
+        }))
+        .filter((product) => product.total_sales > 0),
+    [topProducts]
+  );
   const hourlySales = Array.isArray(report?.hourlySales) ? report.hourlySales : [];
   const dailySales = Array.isArray(report?.dailySales) ? report.dailySales : [];
   const statusAnalytics = Array.isArray(report?.statusAnalytics) ? report.statusAnalytics : [];
@@ -426,29 +439,70 @@ function OrderReports() {
 
         <Card className="grid min-h-[360px] gap-4">
           <h2 className="m-0 text-lg font-bold text-text-strong">Top Products</h2>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={topProducts.slice(0, 8)} margin={{ top: 8, right: 12, left: 0, bottom: 56 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="item_name"
-                interval={0}
-                angle={-20}
-                textAnchor="end"
-                height={72}
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis />
-              <Tooltip formatter={(value) => formatCurrency(value)} />
-              <Bar dataKey="total_sales" fill="#3b82f6" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {topProductChartData.length > 0 ? (
+            <div className="grid min-h-[280px] items-center gap-4 lg:grid-cols-[minmax(160px,0.72fr)_minmax(260px,1.08fr)]">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={topProductChartData}
+                    dataKey="total_sales"
+                    nameKey="item_name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    paddingAngle={3}
+                    stroke="var(--color-surface-panel)"
+                    strokeWidth={3}
+                  >
+                    {topProductChartData.map((entry, index) => (
+                      <Cell
+                        key={`${entry.item_name}-${index}`}
+                        fill={colors[index % colors.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="grid max-h-[260px] content-start gap-2 overflow-y-auto pr-1">
+                {topProductChartData.map((product, index) => (
+                  <div
+                    key={`${product.item_name}-${index}`}
+                    className="grid grid-cols-[12px_minmax(0,1fr)] gap-2 rounded-lg border border-border-subtle p-3"
+                  >
+                    <span
+                      className="mt-1 h-3 w-3 rounded-[3px]"
+                      style={{ backgroundColor: colors[index % colors.length] }}
+                    />
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-black text-text-strong">
+                          {product.item_name}
+                        </span>
+                        <span className="text-sm font-black text-text-strong">
+                          {formatCurrency(product.total_sales)}
+                        </span>
+                      </div>
+                      <p className="m-0 mt-1 text-xs font-semibold text-text-muted">
+                        {product.total_quantity} sold
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-[280px] items-center justify-center rounded-lg border border-border-subtle text-sm font-semibold text-text-muted">
+              No top product analytics available.
+            </div>
+          )}
         </Card>
 
         <Card className="grid min-h-[360px] gap-4">
           <h2 className="m-0 text-lg font-bold text-text-strong">Payment Analytics</h2>
           {payments?.length > 0 ? (
-            <div className="grid min-h-[280px] gap-3 lg:grid-cols-[minmax(220px,1fr)_minmax(190px,0.85fr)]">
-              <ResponsiveContainer width="100%" height={260}>
+            <div className="grid min-h-[280px] items-center gap-4 lg:grid-cols-[minmax(180px,0.8fr)_minmax(240px,1fr)]">
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
                     data={payments}
@@ -456,8 +510,8 @@ function OrderReports() {
                     nameKey="payment_status"
                     cx="50%"
                     cy="50%"
-                    innerRadius={58}
-                    outerRadius={96}
+                    innerRadius={52}
+                    outerRadius={92}
                     paddingAngle={3}
                     stroke="var(--color-surface-panel)"
                     strokeWidth={3}
@@ -517,6 +571,10 @@ function OrderReports() {
             </div>
           </div>
           <div className="flex flex-wrap items-end gap-3">
+            <div className="rounded-lg border border-border-subtle bg-surface-panel px-3 py-2 text-sm font-semibold text-text-muted">
+              {filters.payment_method ? `${formatFilterLabel(filters.payment_method)} Orders` : "Total Orders"}
+              <span className="ml-2 font-black text-text-strong">{selectedMethodOrderCount}</span>
+            </div>
             <label className="grid gap-1 text-sm font-bold text-text-muted">
               Method Filter
               <select
