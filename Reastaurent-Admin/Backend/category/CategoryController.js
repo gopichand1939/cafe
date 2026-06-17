@@ -301,11 +301,12 @@ const getCategory = async (req, res) => {
         id,
         category_name,
         category_image,
-        is_veg_nonveg_applicable
+        is_veg_nonveg_applicable,
+        sort_order
       FROM category
       WHERE is_deleted = 0
         AND is_active = 1
-      ORDER BY id
+      ORDER BY sort_order ASC, id ASC
     `);
 
     return res.status(200).json({
@@ -322,6 +323,37 @@ const getCategory = async (req, res) => {
   }
 };
 
+const reorderCategories = async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+
+    if (!orderedIds || !Array.isArray(orderedIds) || orderedIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "orderedIds is required and must be a non-empty array",
+      });
+    }
+
+    await categoryModel.reorderCategories(orderedIds);
+
+    await publishMenuChangeSafely({
+      entity: "category",
+      action: "reordered",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Categories reordered successfully",
+    });
+  } catch (error) {
+    console.error("Error reordering categories:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
+
 module.exports = {
   createCategory,
   getCategoryList,
@@ -330,4 +362,5 @@ module.exports = {
   updateCategory,
   deleteCategory,
   getCategory,
+  reorderCategories,
 };

@@ -59,11 +59,7 @@ const getVegStats = async (req, res) => {
   try {
     const result = await db.query(`
       SELECT 
-        CASE 
-          WHEN is_veg = 1 THEN 'Veg'
-          WHEN is_veg = 0 THEN 'Non-Veg'
-          ELSE 'Not applicable'
-        END as type,
+        COALESCE(is_veg, 'Not applicable') as type,
         COUNT(*)::INT as count
       FROM items
       WHERE is_deleted = 0

@@ -42,12 +42,14 @@ export const CATEGORY_GET = `${BACKEND_BASE_URL}/category/get_category`;
 export const CATEGORY_BY_ID = `${BACKEND_BASE_URL}/category/get_category_byId`;
 export const CATEGORY_UPDATE = `${BACKEND_BASE_URL}/category/update_category`;
 export const CATEGORY_DELETE = `${BACKEND_BASE_URL}/category/delete_category`;
+export const CATEGORY_REORDER = `${BACKEND_BASE_URL}/category/reorder_categories`;
 
 export const ITEM_CREATE = `${BACKEND_BASE_URL}/items/create_item`;
 export const ITEM_LIST = `${BACKEND_BASE_URL}/items/item_list`;
 export const ITEM_BY_ID = `${BACKEND_BASE_URL}/items/get_item_byId`;
 export const ITEM_UPDATE = `${BACKEND_BASE_URL}/items/update_item`;
 export const ITEM_DELETE = `${BACKEND_BASE_URL}/items/delete_item`;
+export const ITEM_REORDER = `${BACKEND_BASE_URL}/items/reorder_items`;
 
 export const ADDON_GROUP_CREATE = `${BACKEND_BASE_URL}/addons/create_addon_group`;
 export const ADDON_GROUP_LIST = `${BACKEND_BASE_URL}/addons/addon_group_list`;

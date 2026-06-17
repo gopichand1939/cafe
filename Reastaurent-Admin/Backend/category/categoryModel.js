@@ -9,8 +9,13 @@ const categoryModel = {
   ) => {
     const query = `
       INSERT INTO category
-      (category_name, category_description, category_image, is_veg_nonveg_applicable)
-      SELECT $1::VARCHAR(255), $2::TEXT, $3::VARCHAR(255), $4::SMALLINT
+      (category_name, category_description, category_image, is_veg_nonveg_applicable, sort_order)
+      SELECT 
+        $1::VARCHAR(255), 
+        $2::TEXT, 
+        $3::VARCHAR(255), 
+        $4::SMALLINT,
+        COALESCE((SELECT MAX(sort_order) FROM category WHERE is_deleted = 0), 0) + 1
       WHERE NOT EXISTS (
         SELECT 1
         FROM category
@@ -41,10 +46,11 @@ const categoryModel = {
         is_deleted,
         is_active,
         is_veg_nonveg_applicable,
+        sort_order,
         COUNT(*) OVER()::INT AS total_records
       FROM category
       WHERE is_deleted = 0
-      ORDER BY id DESC
+      ORDER BY sort_order ASC, id ASC
       LIMIT $1 OFFSET $2
     `;
     const result = await db.query(query, [limit, offset]);
@@ -176,6 +182,31 @@ const categoryModel = {
     `;
     const result = await db.query(query, [id]);
     return result.rows[0];
+  },
+
+  reorderCategories: async (orderedIds) => {
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const query = `
+        UPDATE category
+        SET
+          sort_order = CASE id
+            ${orderedIds.map((id, index) => `WHEN $${index + 1}::INT THEN $${orderedIds.length + index + 1}::INT`).join(" ")}
+          END,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id IN (${orderedIds.map((_, i) => `$${i + 1}::INT`).join(", ")}) AND is_deleted = 0;
+      `;
+      const values = [...orderedIds, ...orderedIds.map((_, index) => index + 1)];
+      await client.query(query, values);
+      await client.query("COMMIT");
+      return true;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 };
 

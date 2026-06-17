@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, lazy, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import {
   LuTrendingUp,
   LuTimer,
@@ -9,13 +9,10 @@ import { Card } from "../ui";
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import {
   DASHBOARD_SUMMARY,
-  DASHBOARD_CATEGORY_STATS,
-  DASHBOARD_VEG_STATS,
   DASHBOARD_ORDER_STATS,
 } from "../../Utils/Constant";
 
-// Lazy load the charts component (heavy)
-const DashboardCharts = lazy(() => import("./DashboardCharts"));
+// Lazy load the reports section component (heavy)
 const DashboardReportsSection = lazy(() => import("./DashboardReportsSection"));
 
 const accentClassMap = {
@@ -27,19 +24,21 @@ const accentClassMap = {
 
 function StatCard({ title, value, note, accent, loading, Icon }) {
   return (
-    <Card className="grid gap-[10px]">
-      <div
-        className={`grid h-[42px] w-[42px] place-items-center rounded-xl ${accentClassMap[accent] || "bg-brand-500/15 text-brand-600"}`}
-      >
-        <Icon size={22} />
+    <Card className="flex flex-col gap-1 p-4">
+      <span className="text-[0.88rem] font-bold text-text-muted leading-tight">{title}</span>
+      <div className="flex items-center gap-2.5 mt-1 min-w-0">
+        <div
+          className={`grid h-[32px] w-[32px] shrink-0 place-items-center rounded-lg ${accentClassMap[accent] || "bg-brand-500/15 text-brand-600"}`}
+        >
+          <Icon size={18} />
+        </div>
+        {loading ? (
+          <div className="h-6 w-16 animate-pulse rounded-md bg-surface-muted" />
+        ) : (
+          <strong className="text-[1.6rem] leading-none text-text-strong font-black shrink-0">{value}</strong>
+        )}
+        <span className="text-[0.82rem] font-semibold text-text-muted leading-tight truncate">{note}</span>
       </div>
-      <span className="text-[0.9rem] font-bold text-text-muted">{title}</span>
-      {loading ? (
-        <div className="h-8 w-24 animate-pulse rounded-md bg-surface-muted" />
-      ) : (
-        <strong className="text-[2rem] leading-none text-text-strong">{value}</strong>
-      )}
-      <span className="text-[0.95rem] text-text-base">{note}</span>
     </Card>
   );
 }
@@ -52,29 +51,21 @@ function Dashboard() {
     pendingCount: 0,
     todayCount: 0,
   });
-  const [categoryStats, setCategoryStats] = useState([]);
-  const [vegStats, setVegStats] = useState([]);
 
   useEffect(() => {
     const loadDashboardData = async () => {
       setLoading(true);
       try {
-        const [summaryRes, ordersRes, categoriesRes, vegRes] = await Promise.all([
+        const [summaryRes, ordersRes] = await Promise.all([
           fetchWithRefreshToken(DASHBOARD_SUMMARY, { method: "POST" }),
           fetchWithRefreshToken(DASHBOARD_ORDER_STATS, { method: "POST" }),
-          fetchWithRefreshToken(DASHBOARD_CATEGORY_STATS, { method: "POST" }),
-          fetchWithRefreshToken(DASHBOARD_VEG_STATS, { method: "POST" }),
         ]);
 
         const summaryData = await summaryRes.json();
         const ordersData = await ordersRes.json();
-        const categoriesData = await categoriesRes.json();
-        const vegData = await vegRes.json();
 
         if (summaryData.success) setSummary(summaryData.data);
         if (ordersData.success) setOrderStats(ordersData.data);
-        if (categoriesData.success) setCategoryStats(categoriesData.data);
-        if (vegData.success) setVegStats(vegData.data);
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
       } finally {
@@ -84,12 +75,6 @@ function Dashboard() {
 
     void loadDashboardData();
   }, []);
-
-  const barChartData = useMemo(() => [
-    { name: "Today", count: orderStats.todayCount, fill: "#10b981" },
-    { name: "Pending", count: orderStats.pendingCount, fill: "#f59e0b" },
-    { name: "Delivered", count: orderStats.deliveredCount, fill: "#3b82f6" },
-  ], [orderStats]);
 
   return (
     <div className="ui-page content-start">
@@ -129,33 +114,20 @@ function Dashboard() {
       </section>
 
       <Suspense fallback={
-        <div className="mt-[18px] grid gap-[24px]">
-          <div className="grid gap-4 border-t border-border-subtle pt-[26px]">
+        <div className="mt-3 grid gap-[24px]">
+          <div className="grid gap-4 border-t border-border-subtle pt-3">
             <Card className="h-[160px] animate-pulse bg-surface-muted/30" />
             <div className="grid gap-4 xl:grid-cols-2">
               <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
               <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
             </div>
           </div>
-          <div className="grid gap-[18px] lg:grid-cols-2">
-            <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
-            <Card className="h-[360px] animate-pulse bg-surface-muted/30" />
-            <Card className="col-span-full h-[380px] animate-pulse bg-surface-muted/30" />
-          </div>
         </div>
       }>
         {!loading ? (
-          <div className="mt-[18px] grid gap-[24px]">
-            <section className="border-t border-border-subtle pt-[26px]">
+          <div className="mt-3 grid gap-[24px]">
+            <section className="border-t border-border-subtle pt-3">
               <DashboardReportsSection />
-            </section>
-
-            <section>
-              <DashboardCharts
-                categoryStats={categoryStats}
-                vegStats={vegStats}
-                barChartData={barChartData}
-              />
             </section>
           </div>
         ) : null}

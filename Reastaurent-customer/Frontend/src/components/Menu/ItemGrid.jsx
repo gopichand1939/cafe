@@ -2,26 +2,28 @@ import { useState } from "react";
 import { getImageUrl } from "../../Utils/imageUrl";
 
 const getFoodTypeMarker = (value) => {
-  if (Number(value) === 1) {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (normalized === "vegan") {
     return {
       borderClassName: "border-green-500",
       dotClassName: "bg-green-500",
-      label: "Veg",
+      label: "Vegan",
     };
   }
 
-  if (Number(value) === 2) {
+  if (normalized === "halal") {
     return {
-      borderClassName: "border-slate-300",
-      dotClassName: "bg-slate-300",
-      label: "Both / N/A",
+      borderClassName: "border-red-500",
+      dotClassName: "bg-red-500",
+      label: "Halal",
     };
   }
 
   return {
-    borderClassName: "border-red-500",
-    dotClassName: "bg-red-500",
-    label: "Halal",
+    borderClassName: "border-slate-300",
+    dotClassName: "bg-slate-300",
+    label: "N/A",
   };
 };
 
@@ -85,15 +87,17 @@ function ItemCard({
           ) : null}
         </div>
 
-        <div
-          className={`absolute right-2.5 top-2.5 grid h-6 w-6 place-items-center rounded-md border-2 bg-black/60 backdrop-blur ${
-            foodTypeMarker.borderClassName
-          }`}
-          title={foodTypeMarker.label}
-          aria-label={foodTypeMarker.label}
-        >
-          <div className={`h-2.5 w-2.5 rounded-full ${foodTypeMarker.dotClassName}`} />
-        </div>
+        {(item.is_veg === "Vegan" || item.is_veg === "Halal") ? (
+          <div
+            className={`absolute right-2.5 top-2.5 grid h-6 w-6 place-items-center rounded-md border-2 bg-black/60 backdrop-blur ${
+              foodTypeMarker.borderClassName
+            }`}
+            title={foodTypeMarker.label}
+            aria-label={foodTypeMarker.label}
+          >
+            <div className={`h-2.5 w-2.5 rounded-full ${foodTypeMarker.dotClassName}`} />
+          </div>
+        ) : null}
       </button>
 
       <div className="flex flex-1 flex-col gap-2 p-4">

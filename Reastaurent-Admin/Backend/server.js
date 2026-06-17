@@ -25,6 +25,7 @@ const { startPaymentChangeSubscriber } = require("./realtime/paymentChangeSubscr
 const { startCustomerChangeSubscriber } = require("./realtime/customerChangeSubscriber");
 const { startNotificationChangeSubscriber } = require("./realtime/notificationChangeSubscriber");
 const { createAdminUpdatesGateway } = require("./realtime/adminUpdatesGateway");
+const db = require("./config/db");
 
 const app = express();
 const server = http.createServer(app);
@@ -91,6 +92,8 @@ const PORT = Number(process.env.PORT) || 5000;
 
 const startServer = async () => {
   try {
+    console.log("Warming up database connection...");
+    await db.warmUp();
     await adminModel.ensureAdminTable();
     await addonModel.ensureAddonTable();
     await menuAccessModel.ensureAccessControlData();

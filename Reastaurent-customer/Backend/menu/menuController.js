@@ -21,11 +21,12 @@ const getCategory = async (req, res) => {
       SELECT
         id,
         category_name,
-        category_image
+        category_image,
+        sort_order
       FROM category
       WHERE is_deleted = 0
         AND is_active = 1
-      ORDER BY id
+      ORDER BY sort_order ASC, id ASC
     `);
 
     const categories = result.rows.map((row) =>
@@ -87,12 +88,13 @@ const getItemsByCategory = async (req, res) => {
         is_popular,
         is_new,
         is_veg,
-        is_active
+        is_active,
+        sort_order
       FROM items
       WHERE ${isAll ? "1=1" : "category_id = $1"}
         AND is_deleted = 0
         AND is_active = 1
-      ORDER BY id DESC
+      ORDER BY sort_order ASC, id ASC
       LIMIT ${isAll ? "$1 OFFSET $2" : "$2 OFFSET $3"}
     `;
 

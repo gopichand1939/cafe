@@ -32,8 +32,10 @@ const toListItemResponse = (req, item) => {
 };
 
 const normalizeFoodType = (value) => {
-  const numericValue = Number(value);
-  return numericValue === 0 ? 0 : 1;
+  if (value === "Vegan" || value === "Halal" || value === "Not applicable") {
+    return value;
+  }
+  return "Not applicable";
 };
 
 const createItem = async (req, res) => {
@@ -330,10 +332,43 @@ const deleteItem = async (req, res) => {
   }
 };
 
+const reorderItems = async (req, res) => {
+  try {
+    const { category_id, orderedIds } = req.body;
+
+    if (!category_id || !orderedIds || !Array.isArray(orderedIds) || orderedIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "category_id and orderedIds (non-empty array) are required",
+      });
+    }
+
+    await itemModel.reorderItems(Number(category_id), orderedIds);
+
+    await publishMenuChangeSafely({
+      entity: "item",
+      action: "reordered",
+      categoryId: Number(category_id),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Items reordered successfully",
+    });
+  } catch (error) {
+    console.error("Error reordering items:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
+
 module.exports = {
   createItem,
   getItemList,
   getItemById,
   updateItem,
   deleteItem,
+  reorderItems,
 };

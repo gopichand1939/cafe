@@ -5,6 +5,7 @@ const {
   getItemById,
   updateItem,
   deleteItem,
+  reorderItems,
 } = require("./ItemController");
 const upload = require("./uploadMiddleware");
 
@@ -15,5 +16,6 @@ router.post("/item_list", getItemList);
 router.post("/get_item_byId", getItemById);
 router.post("/update_item", upload.single("item_image"), updateItem);
 router.post("/delete_item", deleteItem);
+router.post("/reorder_items", reorderItems);
 
 module.exports = router;

@@ -6,6 +6,7 @@ const {
   getCategoryById,
   updateCategory,
   deleteCategory,
+  reorderCategories,
 } = require("./CategoryController");
 const upload = require("./uploadMiddleware");
 
@@ -17,5 +18,6 @@ router.get("/get_category", getCategory);
 router.post("/get_category_byId", getCategoryById);
 router.post("/update_category", upload.single("category_image"), updateCategory);
 router.post("/delete_category", deleteCategory);
+router.post("/reorder_categories", reorderCategories);
 
 module.exports = router;

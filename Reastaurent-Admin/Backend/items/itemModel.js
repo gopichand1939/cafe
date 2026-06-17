@@ -4,13 +4,13 @@ const itemModel = {
   createItem: async (category_id, item_name, item_description, item_image, price, discount_price, preparation_time, is_popular, is_new, is_veg) => {
     const query = `
       WITH category_target AS (
-        SELECT id, is_veg_nonveg_applicable
+        SELECT id
         FROM category
         WHERE id = $1::INT
           AND is_deleted = 0
       )
       INSERT INTO items
-      (category_id, item_name, item_description, item_image, price, discount_price, preparation_time, is_popular, is_new, is_veg)
+      (category_id, item_name, item_description, item_image, price, discount_price, preparation_time, is_popular, is_new, is_veg, sort_order)
       SELECT
         $1::INT,
         $2::VARCHAR(255),
@@ -21,11 +21,8 @@ const itemModel = {
         $7::INT,
         $8::SMALLINT,
         $9::SMALLINT,
-        CASE
-          WHEN (SELECT is_veg_nonveg_applicable FROM category_target LIMIT 1) = 1
-            THEN $10::SMALLINT
-          ELSE NULL::SMALLINT
-        END
+        $10::VARCHAR(50),
+        COALESCE((SELECT MAX(sort_order) FROM items WHERE category_id = $1::INT AND is_deleted = 0), 0) + 1
       WHERE EXISTS (SELECT 1 FROM category_target)
         AND NOT EXISTS (
           SELECT 1
@@ -62,11 +59,12 @@ const itemModel = {
         items.updated_at,
         items.is_deleted,
         items.is_active,
+        items.sort_order,
         COUNT(*) OVER()::INT AS total_records
       FROM items
       LEFT JOIN category ON category.id = items.category_id
       WHERE items.is_deleted = 0
-      ORDER BY items.id DESC
+      ORDER BY items.sort_order ASC, items.id ASC
       LIMIT $1 OFFSET $2
     `;
     const result = await db.query(query, [limit, offset]);
@@ -125,7 +123,7 @@ const itemModel = {
           AND is_deleted = 0
       ),
       category_target AS (
-        SELECT id, is_veg_nonveg_applicable
+        SELECT id, 1::SMALLINT AS is_veg_nonveg_applicable
         FROM category
         WHERE id = $2::INT
           AND is_deleted = 0
@@ -155,11 +153,7 @@ const itemModel = {
           preparation_time = $9::INT,
           is_popular = $10::SMALLINT,
           is_new = $11::SMALLINT,
-          is_veg = CASE
-            WHEN (SELECT is_veg_nonveg_applicable FROM category_target LIMIT 1) = 1
-              THEN $12::SMALLINT
-            ELSE NULL::SMALLINT
-          END,
+          is_veg = $12::VARCHAR(50),
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $1::INT
           AND is_deleted = 0
@@ -194,19 +188,45 @@ const itemModel = {
     const result = await db.query(query, values);
     return result.rows[0];
   },
-
   deleteItem: async (id) => {
     const query = `
       UPDATE items
-      SET
-        is_deleted = 1,
-        updated_at = CURRENT_TIMESTAMP
+    SET
+    is_deleted = 1,
+      updated_at = CURRENT_TIMESTAMP
       WHERE id = $1
         AND is_deleted = 0
-      RETURNING *;
+    RETURNING *;
     `;
     const result = await db.query(query, [id]);
     return result.rows[0];
+  },
+
+  reorderItems: async (category_id, orderedIds) => {
+    const client = await db.pool.connect();
+    try {
+      await client.query("BEGIN");
+      const query = `
+        UPDATE items
+        SET
+          sort_order = CASE id
+            ${orderedIds.map((id, index) => `WHEN $${index + 1}::INT THEN $${orderedIds.length + index + 1}::INT`).join(" ")}
+          END,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id IN (${orderedIds.map((_, i) => `$${i + 1}::INT`).join(", ")})
+          AND category_id = $${orderedIds.length + orderedIds.length + 1}::INT
+          AND is_deleted = 0;
+      `;
+      const values = [...orderedIds, ...orderedIds.map((_, index) => index + 1), category_id];
+      await client.query(query, values);
+      await client.query("COMMIT");
+      return true;
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 };
 

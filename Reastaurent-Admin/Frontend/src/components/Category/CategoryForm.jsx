@@ -161,32 +161,6 @@ function CategoryForm({ selectedCategory, onSubmit, isSubmitting }) {
               readOnly
             />
 
-              <div className="ui-field-shell">
-                <span className="ui-label">Vegan / Halal Applicable</span>
-                <button
-                  type="button"
-                  className={`ui-status-toggle ${
-                    formData.is_veg_nonveg_applicable ? "bg-success-bg text-success-text" : ""
-                  }`}
-                  onClick={() =>
-                    setFieldValue(
-                      "is_veg_nonveg_applicable",
-                      !formData.is_veg_nonveg_applicable
-                    )
-                  }
-                >
-                  <span
-                    className={`ui-status-toggle-dot ${
-                      formData.is_veg_nonveg_applicable
-                        ? "bg-success-text"
-                        : "bg-text-muted/40"
-                    }`}
-                  />
-                  <span className="text-[0.92rem] font-bold">
-                    {formData.is_veg_nonveg_applicable ? "Applicable" : "Not Applicable"}
-                  </span>
-                </button>
-              </div>
 
               <div className="ui-field-shell">
                 <span className="ui-label">Active Status</span>

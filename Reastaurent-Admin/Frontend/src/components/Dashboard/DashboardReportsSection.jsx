@@ -236,35 +236,35 @@ function DashboardReportsSection() {
         </button>
       </div>
 
-      <Card className="grid gap-4" padding="md">
-        <div className="grid gap-3 md:grid-cols-5">
-          <label className="grid gap-2 text-sm font-bold text-text-muted">
+      <Card className="grid gap-4" padding="sm">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-6 items-end">
+          <label className="grid gap-1.5 text-xs font-bold text-text-muted">
             From Date
             <input
               type="date"
               name="from_date"
               value={filters.from_date}
               onChange={handleFilterChange}
-              className="min-h-11 rounded-lg border border-border-subtle bg-white px-3 text-text-strong"
+              className="min-h-10 rounded-lg border border-border-subtle bg-white px-2.5 text-text-strong text-xs font-semibold w-full"
             />
           </label>
-          <label className="grid gap-2 text-sm font-bold text-text-muted">
+          <label className="grid gap-1.5 text-xs font-bold text-text-muted">
             To Date
             <input
               type="date"
               name="to_date"
               value={filters.to_date}
               onChange={handleFilterChange}
-              className="min-h-11 rounded-lg border border-border-subtle bg-white px-3 text-text-strong"
+              className="min-h-10 rounded-lg border border-border-subtle bg-white px-2.5 text-text-strong text-xs font-semibold w-full"
             />
           </label>
-          <label className="grid gap-2 text-sm font-bold text-text-muted">
+          <label className="grid gap-1.5 text-xs font-bold text-text-muted">
             Payment Status
             <select
               name="payment_status"
               value={filters.payment_status}
               onChange={handleFilterChange}
-              className="min-h-11 rounded-lg border border-border-subtle bg-white px-3 text-text-strong"
+              className="min-h-10 rounded-lg border border-border-subtle bg-white px-2.5 text-text-strong text-xs font-semibold cursor-pointer w-full"
             >
               {paymentStatusOptions.map((option) => (
                 <option key={option || "all"} value={option}>
@@ -273,13 +273,13 @@ function DashboardReportsSection() {
               ))}
             </select>
           </label>
-          <label className="grid gap-2 text-sm font-bold text-text-muted">
+          <label className="grid gap-1.5 text-xs font-bold text-text-muted">
             Order Status
             <select
               name="order_status"
               value={filters.order_status}
               onChange={handleFilterChange}
-              className="min-h-11 rounded-lg border border-border-subtle bg-white px-3 text-text-strong"
+              className="min-h-10 rounded-lg border border-border-subtle bg-white px-2.5 text-text-strong text-xs font-semibold cursor-pointer w-full"
             >
               {orderStatusOptions.map((option) => (
                 <option key={option || "all"} value={option}>
@@ -288,13 +288,13 @@ function DashboardReportsSection() {
               ))}
             </select>
           </label>
-          <label className="grid gap-2 text-sm font-bold text-text-muted">
+          <label className="grid gap-1.5 text-xs font-bold text-text-muted">
             Method
             <select
               name="payment_method"
               value={filters.payment_method}
               onChange={handleFilterChange}
-              className="min-h-11 rounded-lg border border-border-subtle bg-white px-3 text-text-strong"
+              className="min-h-10 rounded-lg border border-border-subtle bg-white px-2.5 text-text-strong text-xs font-semibold cursor-pointer w-full"
             >
               {paymentMethodOptions.map((option) => (
                 <option key={option || "all"} value={option}>
@@ -303,16 +303,16 @@ function DashboardReportsSection() {
               ))}
             </select>
           </label>
-        </div>
 
-        <button
-          type="button"
-          className="inline-flex min-h-11 w-fit items-center gap-2 rounded-lg bg-brand-500 px-4 font-bold text-white"
-          onClick={loadReport}
-        >
-          <LuSearch size={18} />
-          Apply
-        </button>
+          <button
+            type="button"
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-brand-500 px-4 text-xs font-bold text-white shadow-sm hover:bg-brand-600 transition cursor-pointer w-full"
+            onClick={loadReport}
+          >
+            <LuSearch size={14} />
+            Apply
+          </button>
+        </div>
       </Card>
 
       {error ? (
@@ -333,54 +333,6 @@ function DashboardReportsSection() {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <Card className="grid min-h-[360px] gap-4">
-          <h3 className="m-0 text-lg font-bold text-text-strong">Sales Chart</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={dailySales}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="sales_date" />
-              <YAxis />
-              <Tooltip formatter={(value) => formatCurrency(value)} />
-              <Legend />
-              <Line type="monotone" dataKey="total_revenue" stroke="#10b981" strokeWidth={3} />
-              <Line type="monotone" dataKey="paid_amount" stroke="#3b82f6" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card className="grid min-h-[360px] gap-4">
-          <h3 className="m-0 text-lg font-bold text-text-strong">Hourly Sales Analytics</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={hourlySales} margin={{ top: 12, right: 18, left: 6, bottom: 6 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="hour_label" tickFormatter={renderHourlyTick} minTickGap={18} />
-              <YAxis yAxisId="sales" tickFormatter={(value) => formatCurrency(value)} width={74} />
-              <YAxis yAxisId="orders" orientation="right" allowDecimals={false} width={44} />
-              <Tooltip formatter={formatHourlyMetric} />
-              <Legend />
-              <Line
-                yAxisId="sales"
-                type="monotone"
-                dataKey="total_sales"
-                name="Hourly sales"
-                stroke="#f97316"
-                strokeWidth={3}
-                dot={{ r: 3, strokeWidth: 2 }}
-                activeDot={{ r: 6 }}
-              />
-              <Line
-                yAxisId="orders"
-                type="monotone"
-                dataKey="delivered_orders"
-                name="Delivered orders"
-                stroke="#8b5cf6"
-                strokeWidth={3}
-                dot={{ r: 3, strokeWidth: 2 }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
 
         <Card className="grid min-h-[360px] gap-4">
           <h3 className="m-0 text-lg font-bold text-text-strong">Top Products</h3>

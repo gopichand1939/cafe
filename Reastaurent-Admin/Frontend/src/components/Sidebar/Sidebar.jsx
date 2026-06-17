@@ -370,15 +370,7 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
               isActive: isPathMatched(location.pathname, child.menu_key, child.children || []),
             })),
           })
-        )
-        .filter((menu) => {
-          /*
-          if (menu.menu_key === "reports") {
-            return false;
-          }
-          */
-          return menu.menu_key !== "reports";
-        }),
+        ),
     [location.pathname, storedMenus]
   );
 
@@ -423,14 +415,13 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
       }}
     >
       <div className={`${collapsed ? "grid justify-items-center pb-3 pt-1" : "pb-4"}`}>
-        <div className={`transition-[width,height,padding,transform,border-radius] duration-300 ${
-          collapsed ? "grid h-14 w-14 place-items-center rounded-2xl" : "rounded-[22px] px-4 py-[18px]"
-        }`}
-        style={{
-          border: `1px solid ${sidebarColors.panelBorder}`,
-          boxShadow: sidebarColors.panelShadow,
-          backgroundImage: `linear-gradient(135deg, ${sidebarColors.headerGradientStart} 0%, ${sidebarColors.headerGradientEnd} 100%)`,
-        }}>
+        <div className={`transition-[width,height,padding,transform,border-radius] duration-300 ${collapsed ? "grid h-14 w-14 place-items-center rounded-2xl" : "rounded-[22px] px-4 py-[18px]"
+          }`}
+          style={{
+            border: `1px solid ${sidebarColors.panelBorder}`,
+            boxShadow: sidebarColors.panelShadow,
+            backgroundImage: `linear-gradient(135deg, ${sidebarColors.headerGradientStart} 0%, ${sidebarColors.headerGradientEnd} 100%)`,
+          }}>
           {collapsed ? (
             <span className="text-base font-black tracking-tight text-brand-500">{en.sidebar.brand.collapsedName}</span>
           ) : (
@@ -455,11 +446,10 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
           const Icon = iconMap[menu.menu_key] || DefaultIcon;
           const menuLabel = getSidebarLabel(menu);
 
-          const parentClassName = `relative flex items-center gap-3 font-bold text-left no-underline transition-[transform,box-shadow] duration-200 ${
-            collapsed
+          const parentClassName = `relative flex items-center gap-3 font-bold text-left no-underline transition-[transform,box-shadow] duration-200 ${collapsed
               ? "h-14 w-14 justify-center rounded-[18px] px-0"
               : "min-h-[54px] w-full justify-start rounded-2xl px-[14px]"
-          }`;
+            }`;
 
           const iconWrapClassName = "grid h-8 w-8 shrink-0 place-items-center rounded-[10px]";
 
@@ -578,9 +568,8 @@ function Sidebar({ collapsed = false, onNavigate, onLogout }) {
       >
         <button
           type="button"
-          className={`flex items-center gap-3 rounded-2xl border font-bold transition-[transform,box-shadow] duration-200 hover:-translate-y-px ${
-            collapsed ? "h-14 w-14 justify-center px-0" : "min-h-[52px] w-full justify-start px-[14px]"
-          }`}
+          className={`flex items-center gap-3 rounded-2xl border font-bold transition-[transform,box-shadow] duration-200 hover:-translate-y-px ${collapsed ? "h-14 w-14 justify-center px-0" : "min-h-[52px] w-full justify-start px-[14px]"
+            }`}
           onClick={onLogout}
           title={collapsed ? en.sidebar.actions.logout : undefined}
           style={{

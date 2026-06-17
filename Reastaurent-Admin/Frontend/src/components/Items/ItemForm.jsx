@@ -22,25 +22,14 @@ const getInitialFormState = (selectedItem) => ({
     selectedItem && typeof selectedItem.is_new !== "undefined"
       ? Number(selectedItem.is_new) === 1
       : false,
-  is_veg:
-    selectedItem && typeof selectedItem.is_veg !== "undefined"
-      ? normalizeFoodType(selectedItem.is_veg)
-      : null,
+  is_veg: selectedItem?.is_veg || "Not applicable",
   is_active:
     selectedItem && typeof selectedItem.is_active !== "undefined"
       ? Number(selectedItem.is_active) === 1
       : true,
 });
 
-const foodTypeOptions = [
-  { label: "Vegan", value: 1, className: "bg-emerald-600 text-white shadow-sm" },
-  { label: "Halal", value: 0, className: "bg-red-600 text-white shadow-sm" },
-];
-
-function normalizeFoodType(value) {
-  const numericValue = Number(value);
-  return [0, 1].includes(numericValue) ? numericValue : null;
-}
+// Food type options are directly defined in the dropdown select
 
 function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
   const navigate = useNavigate();
@@ -104,22 +93,6 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
     [categories, formData.category_id]
   );
 
-  const isVegNonVegApplicable = useMemo(() => {
-    const source = selectedCategoryData || selectedItem;
-
-    if (!source || typeof source.is_veg_nonveg_applicable === "undefined") {
-      return true;
-    }
-
-    return Number(source.is_veg_nonveg_applicable) === 1;
-  }, [selectedCategoryData, selectedItem]);
-
-  useEffect(() => {
-    if (!isVegNonVegApplicable && formData.is_veg !== null) {
-      setFieldValue("is_veg", null);
-    }
-  }, [formData.is_veg, isVegNonVegApplicable]);
-
   const setFieldValue = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: null }));
@@ -170,9 +143,7 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
       nextErrors.preparation_time = "Preparation time must be a valid positive number";
     }
 
-    if (isVegNonVegApplicable && formData.is_veg === null) {
-      nextErrors.is_veg = "Select Vegan or Halal";
-    }
+    // is_veg validation is not required as it defaults to 'Not applicable'
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -197,7 +168,7 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
       preparation_time: formData.preparation_time !== "" ? parseInt(formData.preparation_time, 10) : null,
       is_popular: formData.is_popular ? 1 : 0,
       is_new: formData.is_new ? 1 : 0,
-      is_veg: isVegNonVegApplicable ? formData.is_veg : null,
+      is_veg: formData.is_veg || "Not applicable",
       is_active: formData.is_active ? 1 : 0,
     });
   };
@@ -332,33 +303,18 @@ function ItemForm({ selectedItem, onSubmit, isSubmitting }) {
                 </button>
               </div>
 
-              {isVegNonVegApplicable ? (
-                <div className="ui-field-shell min-w-[220px]">
-                  <span className="ui-label">Food Type</span>
-                  <div className="grid h-12 w-full max-w-[260px] grid-cols-2 rounded-full border border-slate-200 bg-white p-1 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-                    {foodTypeOptions.map((option) => {
-                      const isSelected = formData.is_veg === option.value;
-
-                      return (
-                        <button
-                          key={option.label}
-                          type="button"
-                          aria-pressed={isSelected}
-                          className={`grid h-10 min-w-0 place-items-center rounded-full px-3 text-center text-[0.92rem] font-bold leading-none transition-all ${
-                            isSelected ? option.className : "text-text-muted hover:bg-slate-50"
-                          }`}
-                          onClick={() => setFieldValue("is_veg", option.value)}
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {errors.is_veg ? (
-                    <span className="text-[0.82rem] font-semibold text-red-500">{errors.is_veg}</span>
-                  ) : null}
-                </div>
-              ) : null}
+              <InputField
+                label="Food Type"
+                as="select"
+                value={formData.is_veg || "Not applicable"}
+                onChange={(event) => setFieldValue("is_veg", event.target.value)}
+                error={errors.is_veg}
+                className="min-w-[220px]"
+              >
+                <option value="Vegan">Vegan</option>
+                <option value="Halal">Halal</option>
+                <option value="Not applicable">Not applicable</option>
+              </InputField>
             </div>
 
               <div className="ui-field-shell mt-2">

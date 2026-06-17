@@ -176,9 +176,8 @@ const DashboardCharts = ({ categoryStats, vegStats, barChartData }) => {
         </div>
       </Card>
 
-      {/*
       <Card className="col-span-full grid content-start gap-[20px]">
-        <strong className="text-[1.1rem] text-text-strong">Order Pipeline Overview</strong>
+        <strong className="text-[1.1rem] text-text-strong">Sales Chart</strong>
         <div className="h-[320px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={barChartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
@@ -208,7 +207,6 @@ const DashboardCharts = ({ categoryStats, vegStats, barChartData }) => {
           </ResponsiveContainer>
         </div>
       </Card>
-      */}
     </section>
   );
 };

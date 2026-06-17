@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
+import { createPortal } from "react-dom";
 import {
   MdAdd,
   MdClose,
@@ -17,11 +18,14 @@ import {
   CATEGORY_DELETE,
   CATEGORY_LIST,
   CATEGORY_UPDATE,
+  CATEGORY_REORDER,
   ITEM_CREATE,
   ITEM_DELETE,
   ITEM_LIST,
   ITEM_UPDATE,
+  ITEM_REORDER,
 } from "../../Utils/Constant";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { getImageUrl } from "../../Utils/imageUrl";
 import { setCategoryData, setItemData } from "../../Redux/CardSlice";
@@ -49,7 +53,7 @@ const blankItemForm = (categoryId = "") => ({
   preparation_time: "",
   is_popular: false,
   is_new: false,
-  is_veg: null,
+  is_veg: "Not applicable",
   is_active: true,
   image_file: null,
   image_label: "No image selected",
@@ -74,31 +78,16 @@ const placeholder = (label, tone = "eaf8f2") =>
 const toFormBool = (value, fallback = true) =>
   typeof value === "undefined" || value === null ? fallback : Number(value) === 1;
 
-const foodTypeOptions = [
-  { label: "Vegan", value: 1, activeClassName: "bg-emerald-600 text-white shadow-sm" },
-  { label: "Halal", value: 0, activeClassName: "bg-red-600 text-white shadow-sm" },
-];
-
-const foodTypeLabel = (value) =>
-  value === null || typeof value === "undefined"
-    ? "Not applicable"
-    : foodTypeOptions.find((option) => option.value === Number(value))?.label || "Halal";
+const foodTypeLabel = (value) => value || "Not applicable";
 
 const foodTypeBadgeClassName = (value) => {
-  if (Number(value) === 1) {
+  if (value === "Vegan") {
     return "bg-success-bg text-success-text";
   }
-
-  if (value === null || typeof value === "undefined") {
-    return "bg-slate-100 text-slate-700";
+  if (value === "Halal") {
+    return "bg-error-bg text-error-text";
   }
-
-  return "bg-error-bg text-error-text";
-};
-
-const toFoodTypeValue = (value) => {
-  const numericValue = Number(value);
-  return [0, 1].includes(numericValue) ? numericValue : null;
+  return "bg-slate-100 text-slate-700";
 };
 
 const buildCategoryForm = (category) => ({
@@ -121,7 +110,7 @@ const buildItemForm = (item) => ({
   preparation_time: item?.preparation_time != null ? String(item.preparation_time) : "",
   is_popular: toFormBool(item?.is_popular, false),
   is_new: toFormBool(item?.is_new, false),
-  is_veg: toFoodTypeValue(item?.is_veg),
+  is_veg: item?.is_veg || "Not applicable",
   is_active: toFormBool(item?.is_active),
   image_file: null,
   image_label: getImageUrl(item, "item_image") ? "Current image selected" : "No image selected",
@@ -174,28 +163,18 @@ function FieldToggle({ label, active, activeText, inactiveText, onClick }) {
 
 function FoodTypeChoice({ value, onChange }) {
   return (
-    <div className="ui-field-shell min-w-[220px]">
-      <span className="ui-label">Food type</span>
-      <div className="grid h-12 w-full max-w-[260px] grid-cols-2 rounded-full border border-slate-200 bg-white p-1 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-        {foodTypeOptions.map((option) => {
-          const isSelected = value === option.value;
-
-          return (
-            <button
-              key={option.label}
-              type="button"
-              aria-pressed={isSelected}
-              className={`grid h-10 min-w-0 place-items-center rounded-full px-3 text-center text-[0.9rem] font-extrabold leading-none transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 ${
-                isSelected ? option.activeClassName : "text-slate-500 hover:bg-slate-50"
-              }`}
-              onClick={() => onChange(option.value)}
-            >
-              {option.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <InputField
+      label="Food type"
+      as="select"
+      value={value || "Not applicable"}
+      onChange={(event) => onChange(event.target.value)}
+      inputClassName="min-h-[44px] rounded-[12px] px-3 py-2 text-[0.95rem]"
+      className="min-w-[220px]"
+    >
+      <option value="Vegan">Vegan</option>
+      <option value="Halal">Halal</option>
+      <option value="Not applicable">Not applicable</option>
+    </InputField>
   );
 }
 
@@ -301,6 +280,76 @@ function MenuCatalogBuilder() {
     fetchCatalog();
   }, []);
 
+  const handleDragEnd = async (result) => {
+    const { destination, source, type } = result;
+
+    if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) {
+      return;
+    }
+
+    if (type === "category") {
+      const originalCategories = [...categories];
+      const nextCategories = [...categories];
+      const [removed] = nextCategories.splice(source.index, 1);
+      nextCategories.splice(destination.index, 0, removed);
+      
+      setCategories(nextCategories);
+      dispatch(setCategoryData(nextCategories));
+
+      try {
+        const orderedIds = nextCategories.map((c) => c.id);
+        const response = await fetchWithRefreshToken(CATEGORY_REORDER, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderedIds }),
+        });
+        const data = await response.json();
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to save category order");
+        }
+        toast.success("Category order updated successfully");
+      } catch (error) {
+        console.error("Failed to reorder categories:", error);
+        toast.error(error.message || "Failed to update category order. Rolling back.");
+        setCategories(originalCategories);
+        dispatch(setCategoryData(originalCategories));
+      }
+    } else if (type === "item") {
+      const categoryId = Number(source.droppableId.split("-")[1]);
+      const categoryItems = items.filter((item) => String(item.category_id) === String(categoryId));
+      const otherItems = items.filter((item) => String(item.category_id) !== String(categoryId));
+      
+      const originalItems = [...items];
+      
+      const nextCategoryItems = [...categoryItems];
+      const [removed] = nextCategoryItems.splice(source.index, 1);
+      nextCategoryItems.splice(destination.index, 0, removed);
+      
+      const nextItems = [...nextCategoryItems, ...otherItems];
+      setItems(nextItems);
+      dispatch(setItemData(nextItems));
+
+      try {
+        const orderedIds = nextCategoryItems.map((item) => item.id);
+        const response = await fetchWithRefreshToken(ITEM_REORDER, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ category_id: categoryId, orderedIds }),
+        });
+        const data = await response.json();
+        if (!response.ok || data.success === false) {
+          throw new Error(data.message || "Failed to save item order");
+        }
+        toast.success("Item order updated successfully");
+      } catch (error) {
+        console.error("Failed to reorder items:", error);
+        toast.error(error.message || "Failed to update item order. Rolling back.");
+        setItems(originalItems);
+        dispatch(setItemData(originalItems));
+      }
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (categoryForm.image_preview_url?.startsWith("blob:")) {
@@ -373,19 +422,7 @@ function MenuCatalogBuilder() {
   };
 
   const setItemField = (field, value) => {
-    setItemForm((current) => {
-      const next = { ...current, [field]: value };
-
-      if (field === "category_id") {
-        const nextCategory = categories.find((category) => String(category.id) === String(value));
-
-        if (Number(nextCategory?.is_veg_nonveg_applicable) === 0) {
-          next.is_veg = null;
-        }
-      }
-
-      return next;
-    });
+    setItemForm((current) => ({ ...current, [field]: value }));
   };
 
   const setAddonField = (field, value) => {
@@ -589,10 +626,7 @@ function MenuCatalogBuilder() {
       return;
     }
 
-    if (itemVegNonVegApplicable && itemForm.is_veg === null) {
-      toast.error("Please select Veg or Non-Veg food type");
-      return;
-    }
+    // No validation required for is_veg since it defaults to 'Not applicable'
 
     const isEdit = itemMode?.type === "edit";
     const formData = new FormData();
@@ -608,9 +642,7 @@ function MenuCatalogBuilder() {
     formData.append("price", itemForm.price === "" ? 0 : itemForm.price);
     formData.append("is_popular", itemForm.is_popular ? 1 : 0);
     formData.append("is_new", itemForm.is_new ? 1 : 0);
-    if (itemVegNonVegApplicable && itemForm.is_veg !== null) {
-      formData.append("is_veg", itemForm.is_veg);
-    }
+    formData.append("is_veg", itemForm.is_veg || "Not applicable");
 
     if (itemForm.discount_price !== "") {
       formData.append("discount_price", itemForm.discount_price);
@@ -692,9 +724,7 @@ function MenuCatalogBuilder() {
     formData.append("price", item.price != null ? item.price : 0);
     formData.append("is_popular", Number(item.is_popular) === 1 ? 1 : 0);
     formData.append("is_new", Number(item.is_new) === 1 ? 1 : 0);
-    if (toFoodTypeValue(item.is_veg) !== null) {
-      formData.append("is_veg", toFoodTypeValue(item.is_veg));
-    }
+    formData.append("is_veg", item.is_veg || "Not applicable");
 
     if (item.discount_price != null) {
       formData.append("discount_price", item.discount_price);
@@ -855,18 +885,7 @@ function MenuCatalogBuilder() {
                   placeholder="A simple note for the team"
                   inputClassName={compactTextareaClassName}
                 />
-                <FieldToggle
-                  label="Vegan / Halal"
-                  active={categoryForm.is_veg_nonveg_applicable}
-                  activeText="Applicable"
-                  inactiveText="Not applicable"
-                  onClick={() =>
-                    setCategoryField(
-                      "is_veg_nonveg_applicable",
-                      !categoryForm.is_veg_nonveg_applicable
-                    )
-                  }
-                />
+                {/* Category level vegan/halal applicability removed */}
                 {isEdit ? (
                   <FieldToggle
                     label="Status"
@@ -1041,12 +1060,10 @@ function MenuCatalogBuilder() {
                 />
               </div>
               <div className="flex flex-wrap items-end gap-4">
-                {itemVegNonVegApplicable ? (
-                  <FoodTypeChoice
-                    value={itemForm.is_veg}
-                    onChange={(value) => setItemField("is_veg", value)}
-                  />
-                ) : null}
+                <FoodTypeChoice
+                  value={itemForm.is_veg}
+                  onChange={(value) => setItemField("is_veg", value)}
+                />
                 <FieldToggle
                   label="Popular"
                   active={itemForm.is_popular}
@@ -1208,6 +1225,92 @@ function MenuCatalogBuilder() {
     );
   };
 
+  const renderItemClone = (provided, snapshot, rubric) => {
+    const item = items.find((i) => String(i.id) === String(rubric.draggableId));
+    if (!item) return null;
+
+    const itemIsActive = Number(item.is_active) === 1;
+
+    return (
+      <div
+        ref={provided.innerRef}
+        {...provided.draggableProps}
+        {...provided.dragHandleProps}
+        style={{
+          ...provided.draggableProps.style,
+          opacity: 0.95,
+        }}
+        className="group/item"
+      >
+        <div
+          className={`relative overflow-hidden rounded-[8px] border border-emerald-500 bg-[#f4fcf9] shadow-[0_16px_36px_rgba(16,185,129,0.18)] scale-[1.012]`}
+        >
+          <span className="absolute left-0 top-0 h-full w-1.5 rounded-l-[8px] bg-emerald-500" aria-hidden="true" />
+          <div className="flex flex-wrap items-center gap-4 p-3 pl-5 sm:p-4 sm:pl-6 bg-white rounded-[8px]">
+            <img
+              className={`h-20 w-24 shrink-0 rounded-[8px] object-cover`}
+              src={getImageUrl(item, "item_image") || placeholder(item.item_name, "f7efe5")}
+              alt={item.item_name}
+            />
+            <div className={`min-w-[220px] flex-1`}>
+              <div className="flex flex-wrap items-center gap-2">
+                <h5 className="m-0 text-[1.05rem] font-extrabold text-text-strong">
+                  {item.item_name}
+                </h5>
+                {(item.is_veg === "Vegan" || item.is_veg === "Halal") ? (
+                  <span className={`rounded-full px-2.5 py-1 text-[0.72rem] font-extrabold uppercase ${foodTypeBadgeClassName(item.is_veg)}`}>
+                    {foodTypeLabel(item.is_veg)}
+                  </span>
+                ) : null}
+                {Number(item.is_popular) === 1 ? (
+                  <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-[0.72rem] font-extrabold uppercase text-amber-600">
+                    Popular
+                  </span>
+                ) : null}
+                {Number(item.is_new) === 1 ? (
+                  <span className="rounded-full bg-blue-500/10 px-2.5 py-1 text-[0.72rem] font-extrabold uppercase text-blue-600">
+                    New
+                  </span>
+                ) : null}
+              </div>
+              <p className="m-0 mt-1 max-w-[76ch] text-[0.9rem] leading-6 text-text-muted">
+                {item.item_description || "No description added yet."}
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-[0.9rem] font-bold">
+                <span className="text-text-strong">
+                  {item.discount_price != null ? money(item.discount_price) : money(item.price)}
+                </span>
+                {item.discount_price != null ? (
+                  <span className="text-text-muted line-through">{money(item.price)}</span>
+                ) : null}
+                <span className="text-text-muted">
+                  {item.preparation_time != null ? `${item.preparation_time} min` : "Prep time not set"}
+                </span>
+              </div>
+            </div>
+            <div className="ml-auto flex flex-wrap gap-2 opacity-50">
+              <InlineStatusToggle
+                active={itemIsActive}
+                activeText="Available"
+                inactiveText="Disabled"
+                disabled={true}
+              />
+              <Button variant="secondary" size="sm" leadingIcon={<MdRestaurantMenu />} disabled={true}>
+                Manage Add-ons
+              </Button>
+              <Button variant="secondary" size="sm" leadingIcon={<MdEdit />} disabled={true}>
+                Edit
+              </Button>
+              <Button variant="ghost" size="sm" leadingIcon={<MdDeleteOutline />} disabled={true}>
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="ui-page">
       <div className="px-6 pt-3 pb-6">
@@ -1311,216 +1414,116 @@ function MenuCatalogBuilder() {
             </Card>
           ) : null}
 
-          {!loading &&
-            filteredCategories.map((category) => {
-              const categoryItems = itemsByCategory[String(category.id)] || [];
-              const isOpen = String(openCategoryId) === String(category.id);
-              const categoryIsActive = Number(category.is_active) === 1;
+          {!loading && filteredCategories.length > 0 && (
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="categories-droppable" type="category">
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="grid gap-4"
+                  >
+                    {filteredCategories.map((category, index) => {
+                      const categoryItems = itemsByCategory[String(category.id)] || [];
+                      const isOpen = String(openCategoryId) === String(category.id);
+                      const categoryIsActive = Number(category.is_active) === 1;
 
-              return (
-                <Card
-                  key={category.id}
-                  className={`relative overflow-hidden p-0 transition-all duration-200 ${
-                    isOpen
-                      ? "border-2 border-emerald-500/35 bg-[linear-gradient(180deg,#f3fcf8_0%,#ffffff_100%)] shadow-[0_24px_60px_rgba(16,185,129,0.16)]"
-                      : categoryIsActive
-                        ? "bg-white"
-                        : "bg-surface-muted/70"
-                  }`}
-                >
-                  {isOpen ? (
-                    <span className="absolute left-0 top-0 h-full w-1.5 bg-emerald-500" aria-hidden="true" />
-                  ) : null}
-                  <div className="flex flex-wrap items-center gap-4 p-4 sm:p-5">
-                    <button
-                      type="button"
-                      className="grid h-20 w-24 shrink-0 place-items-center overflow-hidden rounded-[8px] border border-border-subtle bg-surface-muted"
-                      onClick={() => setOpenCategoryId(isOpen ? null : category.id)}
-                    >
-                      <img
-                        className={`h-full w-full object-cover ${
-                          categoryIsActive ? "" : "opacity-45 grayscale"
-                        }`}
-                        src={getImageUrl(category, "category_image") || placeholder(category.category_name)}
-                        alt={category.category_name}
-                        loading="lazy"
-                        decoding="async"
-                        onError={(event) => {
-                          event.currentTarget.src = placeholder(category.category_name);
-                        }}
-                      />
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`min-w-[220px] flex-1 text-left ${
-                        categoryIsActive ? "" : "opacity-60"
-                      }`}
-                      onClick={() => setOpenCategoryId(isOpen ? null : category.id)}
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="m-0 text-[1.35rem] font-extrabold text-text-strong">
-                          {category.category_name}
-                        </h3>
-                        {isOpen ? (
-                          <span className="rounded-full bg-emerald-500 px-2.5 py-1 text-[0.72rem] font-extrabold uppercase tracking-wide text-white">
-                            Open
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="m-0 mt-1 max-w-[72ch] text-[0.94rem] leading-6 text-text-muted">
-                        {category.category_description || "No description added yet."}
-                      </p>
-                    </button>
-
-                    <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-                      <span className="rounded-full bg-surface-panel px-3 py-2 text-[0.88rem] font-extrabold text-text-strong">
-                        {categoryItems.length} items
-                      </span>
-                      <InlineStatusToggle
-                        active={categoryIsActive}
-                        activeText="Active"
-                        inactiveText="Disabled"
-                        disabled={submittingKey === `category-status-${category.id}`}
-                        onClick={() => toggleCategoryStatus(category)}
-                      />
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        leadingIcon={<MdEdit />}
-                        onClick={() => startEditCategory(category)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        leadingIcon={<MdDeleteOutline />}
-                        disabled={submittingKey === `category-delete-${category.id}`}
-                        onClick={() => deleteCategory(category)}
-                      >
-                        Delete
-                      </Button>
-                      <button
-                        type="button"
-                        className="grid h-10 w-10 place-items-center rounded-[8px] border border-border-subtle bg-white text-2xl text-brand-600 transition-colors hover:bg-surface-panel"
-                        onClick={() => setOpenCategoryId(isOpen ? null : category.id)}
-                        aria-label={isOpen ? "Collapse category" : "Expand category"}
-                      >
-                        {isOpen ? <MdExpandLess /> : <MdExpandMore />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {isOpen ? (
-                    <div className="border-t border-emerald-500/20 bg-[#f8fffb] p-4 sm:p-5">
-                      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <h4 className="m-0 text-[1.08rem] font-extrabold text-text-strong">
-                            Items in {category.category_name}
-                          </h4>
-                          <p className="m-0 mt-1 text-[0.9rem] text-text-muted">
-                            Add or edit items in a focused popup while this category stays open.
-                          </p>
-                        </div>
-                        <Button
-                          size="sm"
-                          leadingIcon={<MdAdd />}
-                          onClick={() => startAddItem(category.id)}
+                      return (
+                        <Draggable
+                          key={category.id}
+                          draggableId={String(category.id)}
+                          index={index}
                         >
-                          Add Item
-                        </Button>
-                      </div>
-
-                      {categoryItems.length === 0 ? (
-                        <div className="rounded-[8px] border border-dashed border-border-subtle bg-white p-6 text-center">
-                          <p className="m-0 font-bold text-text-strong">No food items in this category yet.</p>
-                          <p className="m-0 mt-1 text-text-muted">Use Add Item to create the first one.</p>
-                        </div>
-                      ) : (
-                        <div className="grid gap-3">
-                          {categoryItems.map((item) => {
-                            const itemAddons = addonsByItem[String(item.id)] || [];
-                            const areAddonsOpen = String(openAddonItemId) === String(item.id);
-                            const itemIsActive = Number(item.is_active) === 1;
-
-                            return (
-                              <div
-                                key={item.id}
-                                className={`overflow-hidden rounded-[8px] border border-border-subtle ${
-                                  itemIsActive ? "bg-white" : "bg-surface-muted/70"
+                          {(draggableProvided, snapshot) => (
+                            <div
+                              ref={draggableProvided.innerRef}
+                              {...draggableProvided.draggableProps}
+                              style={{
+                                ...draggableProvided.draggableProps.style,
+                                opacity: snapshot.isDragging ? 0.95 : 1,
+                              }}
+                              className="group/category"
+                            >
+                              <Card
+                                className={`relative p-0 transition-all duration-300 ${
+                                  snapshot.isDragging
+                                    ? "border-2 border-emerald-500 bg-[#f4fcf9] shadow-[0_20px_50px_rgba(16,185,129,0.2)] scale-[1.012]"
+                                    : isOpen
+                                      ? "border-2 border-emerald-500/35 bg-[linear-gradient(180deg,#f3fcf8_0%,#ffffff_100%)] shadow-[0_24px_60px_rgba(16,185,129,0.16)]"
+                                      : categoryIsActive
+                                        ? "bg-white border-slate-200 hover:border-emerald-500/30 hover:shadow-[0_12px_32px_rgba(15,23,42,0.06)]"
+                                        : "bg-surface-muted/70 border-slate-200 hover:border-slate-300"
                                 }`}
                               >
-                                <div className="flex flex-wrap items-center gap-4 p-3 sm:p-4">
-                                  <img
-                                    className={`h-20 w-24 shrink-0 rounded-[8px] object-cover ${
-                                      itemIsActive ? "" : "opacity-45 grayscale"
+                                <span className={`absolute left-0 top-0 h-full w-1 rounded-l-[20px] transition-all duration-300 ${
+                                  snapshot.isDragging
+                                    ? "bg-emerald-500 w-1.5"
+                                    : isOpen
+                                      ? "bg-emerald-500/70"
+                                      : "bg-transparent group-hover/category:bg-slate-300"
+                                }`} aria-hidden="true" />
+                                <div
+                                  {...draggableProvided.dragHandleProps}
+                                  className="flex flex-wrap items-center gap-4 p-4 pl-6 sm:p-5 sm:pl-7 cursor-grab active:cursor-grabbing"
+                                >
+
+                                  <button
+                                    type="button"
+                                    className="grid h-20 w-24 shrink-0 place-items-center overflow-hidden rounded-[8px] border border-border-subtle bg-surface-muted"
+                                    onClick={() => setOpenCategoryId(isOpen ? null : category.id)}
+                                  >
+                                    <img
+                                      className={`h-full w-full object-cover ${
+                                        categoryIsActive ? "" : "opacity-45 grayscale"
+                                      }`}
+                                      src={getImageUrl(category, "category_image") || placeholder(category.category_name)}
+                                      alt={category.category_name}
+                                      loading="lazy"
+                                      decoding="async"
+                                      onError={(event) => {
+                                        event.currentTarget.src = placeholder(category.category_name);
+                                      }}
+                                    />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className={`min-w-[220px] flex-1 text-left ${
+                                      categoryIsActive ? "" : "opacity-60"
                                     }`}
-                                    src={getImageUrl(item, "item_image") || placeholder(item.item_name, "f7efe5")}
-                                    alt={item.item_name}
-                                    loading="lazy"
-                                    decoding="async"
-                                    onError={(event) => {
-                                      event.currentTarget.src = placeholder(item.item_name, "f7efe5");
-                                    }}
-                                  />
-                                  <div className={`min-w-[220px] flex-1 ${itemIsActive ? "" : "opacity-60"}`}>
+                                    onClick={() => setOpenCategoryId(isOpen ? null : category.id)}
+                                  >
                                     <div className="flex flex-wrap items-center gap-2">
-                                      <h5 className="m-0 text-[1.05rem] font-extrabold text-text-strong">
-                                        {item.item_name}
-                                      </h5>
-                                      <span className={`rounded-full px-2.5 py-1 text-[0.72rem] font-extrabold uppercase ${foodTypeBadgeClassName(item.is_veg)}`}>
-                                        {foodTypeLabel(item.is_veg)}
-                                      </span>
-                                      {Number(item.is_popular) === 1 ? (
-                                        <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-[0.72rem] font-extrabold uppercase text-amber-600">
-                                          Popular
-                                        </span>
-                                      ) : null}
-                                      {Number(item.is_new) === 1 ? (
-                                        <span className="rounded-full bg-blue-500/10 px-2.5 py-1 text-[0.72rem] font-extrabold uppercase text-blue-600">
-                                          New
+                                      <h3 className="m-0 text-[1.35rem] font-extrabold text-text-strong">
+                                        {category.category_name}
+                                      </h3>
+                                      {isOpen ? (
+                                        <span className="rounded-full bg-emerald-500 px-2.5 py-1 text-[0.72rem] font-extrabold uppercase tracking-wide text-white">
+                                          Open
                                         </span>
                                       ) : null}
                                     </div>
-                                    <p className="m-0 mt-1 max-w-[76ch] text-[0.9rem] leading-6 text-text-muted">
-                                      {item.item_description || "No description added yet."}
+                                    <p className="m-0 mt-1 max-w-[72ch] text-[0.94rem] leading-6 text-text-muted">
+                                      {category.category_description || "No description added yet."}
                                     </p>
-                                    <div className="mt-2 flex flex-wrap items-center gap-3 text-[0.9rem] font-bold">
-                                      <span className="text-text-strong">
-                                        {item.discount_price != null ? money(item.discount_price) : money(item.price)}
-                                      </span>
-                                      {item.discount_price != null ? (
-                                        <span className="text-text-muted line-through">{money(item.price)}</span>
-                                      ) : null}
-                                      <span className="text-text-muted">
-                                        {item.preparation_time != null ? `${item.preparation_time} min` : "Prep time not set"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <div className="ml-auto flex flex-wrap gap-2">
+                                  </button>
+
+                                  <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                                    <span className="rounded-full bg-surface-panel px-3 py-2 text-[0.88rem] font-extrabold text-text-strong">
+                                      {categoryItems.length} items
+                                    </span>
                                     <InlineStatusToggle
-                                      active={itemIsActive}
-                                      activeText="Available"
+                                      active={categoryIsActive}
+                                      activeText="Active"
                                       inactiveText="Disabled"
-                                      disabled={submittingKey === `item-status-${item.id}`}
-                                      onClick={() => toggleItemStatus(item)}
+                                      disabled={submittingKey === `category-status-${category.id}`}
+                                      onClick={() => toggleCategoryStatus(category)}
                                     />
                                     <Button
                                       variant="secondary"
                                       size="sm"
-                                      leadingIcon={<MdRestaurantMenu />}
-                                      onClick={() => {
-                                        window.location.href = "/addon-eligibility";
-                                      }}
-                                    >
-                                      Manage Add-ons
-                                    </Button>
-                                    <Button
-                                      variant="secondary"
-                                      size="sm"
                                       leadingIcon={<MdEdit />}
-                                      onClick={() => startEditItem(item)}
+                                      onClick={() => startEditCategory(category)}
                                     >
                                       Edit
                                     </Button>
@@ -1528,122 +1531,310 @@ function MenuCatalogBuilder() {
                                       variant="ghost"
                                       size="sm"
                                       leadingIcon={<MdDeleteOutline />}
-                                      disabled={submittingKey === `item-delete-${item.id}`}
-                                      onClick={() => deleteItem(item)}
+                                      disabled={submittingKey === `category-delete-${category.id}`}
+                                      onClick={() => deleteCategory(category)}
                                     >
                                       Delete
                                     </Button>
+                                    <button
+                                      type="button"
+                                      className="grid h-10 w-10 place-items-center rounded-[8px] border border-border-subtle bg-white text-2xl text-brand-600 transition-colors hover:bg-surface-panel"
+                                      onClick={() => setOpenCategoryId(isOpen ? null : category.id)}
+                                      aria-label={isOpen ? "Collapse category" : "Expand category"}
+                                    >
+                                      {isOpen ? <MdExpandLess /> : <MdExpandMore />}
+                                    </button>
                                   </div>
                                 </div>
-                                {areAddonsOpen ? (
-                                  <div className="border-t border-border-subtle bg-surface-muted/40 p-4">
-                                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+
+                                {isOpen ? (
+                                  <div className="border-t border-emerald-500/20 bg-[#f8fffb] p-4 sm:p-5">
+                                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                                       <div>
-                                        <h6 className="m-0 text-[1rem] font-extrabold text-text-strong">
-                                          Add-ons for {item.item_name}
-                                        </h6>
-                                        <p className="m-0 mt-1 text-[0.86rem] text-text-muted">
-                                          Add choices like sauces, sides, extras, or custom options.
+                                        <h4 className="m-0 text-[1.08rem] font-extrabold text-text-strong">
+                                          Items in {category.category_name}
+                                        </h4>
+                                        <p className="m-0 mt-1 text-[0.9rem] text-text-muted">
+                                          Add or edit items in a focused popup while this category stays open.
                                         </p>
                                       </div>
                                       <Button
                                         size="sm"
                                         leadingIcon={<MdAdd />}
-                                        onClick={() => startAddAddon(item)}
+                                        onClick={() => startAddItem(category.id)}
                                       >
-                                        Add Add-on
+                                        Add Item
                                       </Button>
                                     </div>
 
-                                    {addonMode?.type === "add" &&
-                                    String(addonMode.itemId) === String(item.id) ? (
-                                      <div className="mb-3">{renderAddonForm(item.id)}</div>
-                                    ) : null}
-
-                                    {itemAddons.length === 0 ? (
-                                      <div className="rounded-[8px] border border-dashed border-border-subtle bg-white p-5 text-center">
-                                        <p className="m-0 font-bold text-text-strong">
-                                          No add-ons for this item yet.
-                                        </p>
-                                        <p className="m-0 mt-1 text-text-muted">
-                                          Use Add Add-on to create choices for this food item.
-                                        </p>
+                                    {categoryItems.length === 0 ? (
+                                      <div className="rounded-[8px] border border-dashed border-border-subtle bg-white p-6 text-center">
+                                        <p className="m-0 font-bold text-text-strong">No food items in this category yet.</p>
+                                        <p className="m-0 mt-1 text-text-muted">Use Add Item to create the first one.</p>
                                       </div>
                                     ) : (
-                                      <div className="grid gap-2">
-                                        {itemAddons.map((addon) => {
-                                          const isEditingAddon =
-                                            addonMode?.type === "edit" &&
-                                            String(addonMode.id) === String(addon.id);
+                                      <Droppable
+                                        droppableId={`items-${category.id}`}
+                                        type="item"
+                                        renderClone={(provided, snapshot, rubric) =>
+                                          createPortal(
+                                            renderItemClone(provided, snapshot, rubric),
+                                            document.body
+                                          )
+                                        }
+                                      >
+                                        {(itemProvided) => (
+                                          <div
+                                            ref={itemProvided.innerRef}
+                                            {...itemProvided.droppableProps}
+                                            className="grid gap-3"
+                                          >
+                                            {categoryItems.map((item, itemIndex) => {
+                                              const itemAddons = addonsByItem[String(item.id)] || [];
+                                              const areAddonsOpen = String(openAddonItemId) === String(item.id);
+                                              const itemIsActive = Number(item.is_active) === 1;
 
-                                          return (
-                                            <div
-                                              key={addon.id}
-                                              className="overflow-hidden rounded-[8px] border border-border-subtle bg-white"
-                                            >
-                                              <div className="flex flex-wrap items-center gap-3 p-3">
-                                                <div className="grid h-11 w-11 place-items-center rounded-[8px] bg-brand-500/10 text-xl font-black text-brand-600">
-                                                  +
-                                                </div>
-                                                <div className="min-w-[200px] flex-1">
-                                                  <div className="flex flex-wrap items-center gap-2">
-                                                    <strong className="text-text-strong">
-                                                      {addon.addon_name}
-                                                    </strong>
-                                                    <span className="rounded-full bg-surface-panel px-2.5 py-1 text-[0.74rem] font-extrabold text-text-muted">
-                                                      {addon.addon_group}
-                                                    </span>
-                                                    <StatusPill
-                                                      active={Number(addon.is_active) === 1}
-                                                      label={Number(addon.is_active) === 1 ? "Active" : "Inactive"}
-                                                    />
-                                                  </div>
-                                                  <p className="m-0 mt-1 text-[0.86rem] font-bold text-text-muted">
-                                                    {money(addon.addon_price)} | Sort {addon.sort_order ?? 0}
-                                                  </p>
-                                                </div>
-                                                <div className="ml-auto flex flex-wrap gap-2">
-                                                  <Button
-                                                    variant="secondary"
-                                                    size="sm"
-                                                    leadingIcon={<MdEdit />}
-                                                    onClick={() => startEditAddon(addon)}
-                                                  >
-                                                    Edit
-                                                  </Button>
-                                                  <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    leadingIcon={<MdDeleteOutline />}
-                                                    disabled={submittingKey === `addon-delete-${addon.id}`}
-                                                    onClick={() => deleteAddon(addon)}
-                                                  >
-                                                    Delete
-                                                  </Button>
-                                                </div>
-                                              </div>
-                                              {isEditingAddon ? (
-                                                <div className="border-t border-border-subtle p-3">
-                                                  {renderAddonForm(item.id)}
-                                                </div>
-                                              ) : null}
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
+                                              return (
+                                                <Draggable
+                                                  key={item.id}
+                                                  draggableId={String(item.id)}
+                                                  index={itemIndex}
+                                                >
+                                                  {(itemDraggableProvided, itemSnapshot) => (
+                                                    <div
+                                                      ref={itemDraggableProvided.innerRef}
+                                                      {...itemDraggableProvided.draggableProps}
+                                                      {...itemDraggableProvided.dragHandleProps}
+                                                      style={{
+                                                        ...itemDraggableProvided.draggableProps.style,
+                                                        opacity: itemSnapshot.isDragging ? 0.95 : 1,
+                                                      }}
+                                                      className="group/item"
+                                                    >
+                                                      <div
+                                                        className={`relative rounded-[8px] border transition-all duration-300 cursor-grab active:cursor-grabbing ${
+                                                          itemSnapshot.isDragging
+                                                            ? "border-2 border-emerald-500 bg-[#f4fcf9] shadow-[0_16px_36px_rgba(16,185,129,0.18)] scale-[1.012]"
+                                                            : itemIsActive
+                                                              ? "bg-white border-slate-200 hover:border-emerald-500/20 hover:shadow-[0_8px_20px_rgba(15,23,42,0.05)]"
+                                                              : "bg-surface-muted/70 border-slate-200 hover:border-slate-300"
+                                                        }`}
+                                                      >
+                                                        <span className={`absolute left-0 top-0 h-full w-1 rounded-l-[8px] transition-all duration-300 ${
+                                                          itemSnapshot.isDragging
+                                                            ? "bg-emerald-500 w-1.5"
+                                                            : "bg-transparent group-hover/item:bg-slate-300"
+                                                        }`} aria-hidden="true" />
+                                                        <div className="flex flex-wrap items-center gap-4 p-3 pl-5 sm:p-4 sm:pl-6">
+                                                          <img
+                                                            className={`h-20 w-24 shrink-0 rounded-[8px] object-cover ${
+                                                              itemIsActive ? "" : "opacity-45 grayscale"
+                                                            }`}
+                                                            src={getImageUrl(item, "item_image") || placeholder(item.item_name, "f7efe5")}
+                                                            alt={item.item_name}
+                                                            loading="lazy"
+                                                            decoding="async"
+                                                            onError={(event) => {
+                                                              event.currentTarget.src = placeholder(item.item_name, "f7efe5");
+                                                            }}
+                                                          />
+                                                          <div className={`min-w-[220px] flex-1 ${itemIsActive ? "" : "opacity-60"}`}>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                              <h5 className="m-0 text-[1.05rem] font-extrabold text-text-strong">
+                                                                {item.item_name}
+                                                              </h5>
+                                                              {(item.is_veg === "Vegan" || item.is_veg === "Halal") ? (
+                                                                <span className={`rounded-full px-2.5 py-1 text-[0.72rem] font-extrabold uppercase ${foodTypeBadgeClassName(item.is_veg)}`}>
+                                                                  {foodTypeLabel(item.is_veg)}
+                                                                </span>
+                                                              ) : null}
+                                                              {Number(item.is_popular) === 1 ? (
+                                                                <span className="rounded-full bg-amber-500/10 px-2.5 py-1 text-[0.72rem] font-extrabold uppercase text-amber-600">
+                                                                  Popular
+                                                                </span>
+                                                              ) : null}
+                                                              {Number(item.is_new) === 1 ? (
+                                                                <span className="rounded-full bg-blue-500/10 px-2.5 py-1 text-[0.72rem] font-extrabold uppercase text-blue-600">
+                                                                  New
+                                                                </span>
+                                                              ) : null}
+                                                            </div>
+                                                            <p className="m-0 mt-1 max-w-[76ch] text-[0.9rem] leading-6 text-text-muted">
+                                                              {item.item_description || "No description added yet."}
+                                                            </p>
+                                                            <div className="mt-2 flex flex-wrap items-center gap-3 text-[0.9rem] font-bold">
+                                                              <span className="text-text-strong">
+                                                                {item.discount_price != null ? money(item.discount_price) : money(item.price)}
+                                                              </span>
+                                                              {item.discount_price != null ? (
+                                                                <span className="text-text-muted line-through">{money(item.price)}</span>
+                                                              ) : null}
+                                                              <span className="text-text-muted">
+                                                                {item.preparation_time != null ? `${item.preparation_time} min` : "Prep time not set"}
+                                                              </span>
+                                                            </div>
+                                                          </div>
+                                                          <div className="ml-auto flex flex-wrap gap-2">
+                                                            <InlineStatusToggle
+                                                              active={itemIsActive}
+                                                              activeText="Available"
+                                                              inactiveText="Disabled"
+                                                              disabled={submittingKey === `item-status-${item.id}`}
+                                                              onClick={() => toggleItemStatus(item)}
+                                                            />
+                                                            <Button
+                                                              variant="secondary"
+                                                              size="sm"
+                                                              leadingIcon={<MdRestaurantMenu />}
+                                                              onClick={() => {
+                                                                window.location.href = "/addon-eligibility";
+                                                              }}
+                                                            >
+                                                              Manage Add-ons
+                                                            </Button>
+                                                            <Button
+                                                              variant="secondary"
+                                                              size="sm"
+                                                              leadingIcon={<MdEdit />}
+                                                              onClick={() => startEditItem(item)}
+                                                            >
+                                                              Edit
+                                                            </Button>
+                                                            <Button
+                                                              variant="ghost"
+                                                              size="sm"
+                                                              leadingIcon={<MdDeleteOutline />}
+                                                              disabled={submittingKey === `item-delete-${item.id}`}
+                                                              onClick={() => deleteItem(item)}
+                                                            >
+                                                              Delete
+                                                            </Button>
+                                                          </div>
+                                                        </div>
+                                                        {areAddonsOpen ? (
+                                                          <div className="border-t border-border-subtle bg-surface-muted/40 p-4">
+                                                            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                                                              <div>
+                                                                <h6 className="m-0 text-[1rem] font-extrabold text-text-strong">
+                                                                  Add-ons for {item.item_name}
+                                                                </h6>
+                                                                <p className="m-0 mt-1 text-[0.86rem] text-text-muted">
+                                                                  Add choices like sauces, sides, extras, or custom options.
+                                                                </p>
+                                                              </div>
+                                                              <Button
+                                                                size="sm"
+                                                                leadingIcon={<MdAdd />}
+                                                                onClick={() => startAddAddon(item)}
+                                                              >
+                                                                Add Add-on
+                                                              </Button>
+                                                            </div>
+
+                                                            {addonMode?.type === "add" &&
+                                                            String(addonMode.itemId) === String(item.id) ? (
+                                                              <div className="mb-3">{renderAddonForm(item.id)}</div>
+                                                            ) : null}
+
+                                                            {itemAddons.length === 0 ? (
+                                                              <div className="rounded-[8px] border border-dashed border-border-subtle bg-white p-5 text-center">
+                                                                <p className="m-0 font-bold text-text-strong">
+                                                                  No add-ons for this item yet.
+                                                                </p>
+                                                                <p className="m-0 mt-1 text-text-muted">
+                                                                  Use Add Add-on to create choices for this food item.
+                                                                </p>
+                                                              </div>
+                                                            ) : (
+                                                              <div className="grid gap-2">
+                                                                {itemAddons.map((addon) => {
+                                                                  const isEditingAddon =
+                                                                    addonMode?.type === "edit" &&
+                                                                    String(addonMode.id) === String(addon.id);
+
+                                                                  return (
+                                                                    <div
+                                                                      key={addon.id}
+                                                                      className="overflow-hidden rounded-[8px] border border-border-subtle bg-white"
+                                                                    >
+                                                                      <div className="flex flex-wrap items-center gap-3 p-3">
+                                                                        <div className="grid h-11 w-11 place-items-center rounded-[8px] bg-brand-500/10 text-xl font-black text-brand-600">
+                                                                          +
+                                                                        </div>
+                                                                        <div className="min-w-[200px] flex-1">
+                                                                          <div className="flex flex-wrap items-center gap-2">
+                                                                            <strong className="text-text-strong">
+                                                                              {addon.addon_name}
+                                                                            </strong>
+                                                                            <span className="rounded-full bg-surface-panel px-2.5 py-1 text-[0.74rem] font-extrabold text-text-muted">
+                                                                              {addon.addon_group}
+                                                                            </span>
+                                                                            <StatusPill
+                                                                              active={Number(addon.is_active) === 1}
+                                                                              label={Number(addon.is_active) === 1 ? "Active" : "Inactive"}
+                                                                            />
+                                                                          </div>
+                                                                          <p className="m-0 mt-1 text-[0.86rem] font-bold text-text-muted">
+                                                                            {money(addon.addon_price)} | Sort {addon.sort_order ?? 0}
+                                                                          </p>
+                                                                        </div>
+                                                                        <div className="ml-auto flex flex-wrap gap-2">
+                                                                          <Button
+                                                                            variant="secondary"
+                                                                            size="sm"
+                                                                            leadingIcon={<MdEdit />}
+                                                                            onClick={() => startEditAddon(addon)}
+                                                                          >
+                                                                            Edit
+                                                                          </Button>
+                                                                          <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            leadingIcon={<MdDeleteOutline />}
+                                                                            disabled={submittingKey === `addon-delete-${addon.id}`}
+                                                                            onClick={() => deleteAddon(addon)}
+                                                                          >
+                                                                            Delete
+                                                                          </Button>
+                                                                        </div>
+                                                                      </div>
+                                                                      {isEditingAddon ? (
+                                                                        <div className="border-t border-border-subtle p-3">
+                                                                          {renderAddonForm(item.id)}
+                                                                        </div>
+                                                                      ) : null}
+                                                                    </div>
+                                                                  );
+                                                                })}
+                                                              </div>
+                                                            )}
+                                                          </div>
+                                                        ) : null}
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </Draggable>
+                                              );
+                                            })}
+                                            {itemProvided.placeholder}
+                                          </div>
+                                        )}
+                                      </Droppable>
                                     )}
                                   </div>
                                 ) : null}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
-                </Card>
-              );
-            })}
+                              </Card>
+                            </div>
+                          )}
+                        </Draggable>
+                      );
+                    })}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+          )}
 
           {categoryMode ? renderCategoryForm() : null}
           {itemMode ? renderItemForm(itemMode.categoryId) : null}
