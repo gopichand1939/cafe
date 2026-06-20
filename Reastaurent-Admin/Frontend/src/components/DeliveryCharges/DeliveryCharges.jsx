@@ -6,9 +6,9 @@ import PageHeader from "../common/PageHeader";
 
 function DeliveryCharges() {
   const [form, setForm] = useState({
-    base_charge: 30.00,
-    charge_per_km: 10.00,
-    free_delivery_threshold: 500.00,
+    base_charge: 1.00,
+    charge_per_km: 1.00,
+    free_delivery_threshold: 20.00,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -112,42 +112,42 @@ function DeliveryCharges() {
         <div className="grid gap-[22px] lg:grid-cols-[minmax(0,1fr)_400px]">
           <div className="grid min-w-0 max-w-[760px] content-start gap-[18px]">
             <div className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Base Delivery Fee (Rs)</span>
+              <span className="text-[0.92rem] font-semibold text-slate-600">Base Delivery Fee (£)</span>
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 value={form.base_charge}
                 onChange={(event) => setFieldValue("base_charge", event.target.value)}
-                placeholder="e.g. 30.00"
+                placeholder="e.g. 1.00"
                 required
                 className="w-full max-w-[720px] rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none focus:border-orange-500"
               />
             </div>
 
             <div className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Distance-Based Charge (Rs per KM)</span>
+              <span className="text-[0.92rem] font-semibold text-slate-600">Distance-Based Charge (£ per KM)</span>
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 value={form.charge_per_km}
                 onChange={(event) => setFieldValue("charge_per_km", event.target.value)}
-                placeholder="e.g. 10.00"
+                placeholder="e.g. 1.00"
                 required
                 className="w-full max-w-[720px] rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none focus:border-orange-500"
               />
             </div>
 
             <div className="grid gap-2">
-              <span className="text-[0.92rem] font-semibold text-slate-600">Free Delivery Minimum Threshold (Rs)</span>
+              <span className="text-[0.92rem] font-semibold text-slate-600">Free Delivery Minimum Threshold (£)</span>
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 value={form.free_delivery_threshold}
                 onChange={(event) => setFieldValue("free_delivery_threshold", event.target.value)}
-                placeholder="e.g. 500.00"
+                placeholder="e.g. 20.00"
                 required
                 className="w-full max-w-[720px] rounded-[8px] border border-slate-300 bg-white px-[14px] py-3 text-slate-900 outline-none focus:border-orange-500"
               />
@@ -165,7 +165,7 @@ function DeliveryCharges() {
                 <strong className="block my-1 text-blue-800">
                   Delivery Charge = Base Fee + (Distance in KM &times; Charge per KM)
                 </strong>
-                If the order subtotal exceeds the <strong>Free Delivery Minimum Threshold</strong>, the delivery fee is automatically set to Rs 0.00.
+                If the order subtotal exceeds the <strong>Free Delivery Minimum Threshold</strong>, the delivery fee is automatically set to £0.00.
                 <br /><br />
                 Additionally, for first-time signups, the delivery charges are fully excluded on their first order.
               </p>

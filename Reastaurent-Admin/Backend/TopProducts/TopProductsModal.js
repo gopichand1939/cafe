@@ -19,6 +19,22 @@ const TopProductsModel = {
       ON top_products (item_id)
       WHERE is_deleted = 0;
     `);
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS top_product_settings (
+        id INT PRIMARY KEY DEFAULT 1,
+        display_limit INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT chk_id CHECK (id = 1)
+      );
+    `);
+
+    await db.query(`
+      INSERT INTO top_product_settings (id, display_limit)
+      VALUES (1, 0)
+      ON CONFLICT (id) DO NOTHING;
+    `);
   },
 
   ensureTopProductsAccessMenu: async () => {
@@ -281,6 +297,23 @@ const TopProductsModel = {
     query += ` ORDER BY c.category_name ASC, i.item_name ASC`;
     const result = await db.query(query, values);
     return result.rows;
+  },
+
+  getTopProductLimit: async () => {
+    const result = await db.query(`SELECT display_limit FROM top_product_settings WHERE id = 1 LIMIT 1`);
+    return result.rows[0]?.display_limit ?? 0;
+  },
+
+  updateTopProductLimit: async (limit) => {
+    const query = `
+      INSERT INTO top_product_settings (id, display_limit)
+      VALUES (1, $1)
+      ON CONFLICT (id)
+      DO UPDATE SET display_limit = EXCLUDED.display_limit, updated_at = CURRENT_TIMESTAMP
+      RETURNING display_limit;
+    `;
+    const result = await db.query(query, [limit]);
+    return result.rows[0]?.display_limit ?? 0;
   }
 };
 

@@ -31,6 +31,7 @@ import { getImageUrl } from "../../Utils/imageUrl";
 import { setCategoryData, setItemData } from "../../Redux/CardSlice";
 import ImageDropZone from "../common/ImageDropZone";
 import StatusPill from "../common/StatusPill";
+import Loader from "../common/Loader";
 import { Button, Card, InputField, PageSection } from "../ui";
 
 const blankCategoryForm = () => ({
@@ -1393,9 +1394,7 @@ function MenuCatalogBuilder() {
           </div>
 
           {loading ? (
-            <Card>
-              <p className="m-0 text-text-muted">Loading menu catalog...</p>
-            </Card>
+            <Loader label="Loading menu catalog..." />
           ) : null}
 
           {!loading && filteredCategories.length === 0 ? (

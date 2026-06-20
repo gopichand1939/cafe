@@ -87,7 +87,7 @@ export function ItemCard({
           ) : null}
         </div>
 
-        {(item.is_veg === "Vegan" || item.is_veg === "Halal") ? (
+        {(item.is_veg_nonveg_applicable !== 0 && item.is_veg_nonveg_applicable !== "0" && (item.is_veg === "Vegan" || item.is_veg === "Halal")) ? (
           <div
             className={`absolute right-2.5 top-2.5 grid h-6 w-6 place-items-center rounded-md border-2 bg-black/60 backdrop-blur ${
               foodTypeMarker.borderClassName
@@ -130,14 +130,14 @@ export function ItemCard({
             {hasDiscount ? (
               <>
                 <span className="text-lg font-extrabold text-green-500">
-                  ₹{item.discount_price}
+                  £{item.discount_price}
                 </span>
                 <span className="ml-1.5 text-[13px] text-white/35 line-through">
-                  ₹{item.price}
+                  £{item.price}
                 </span>
               </>
             ) : (
-              <span className="text-lg font-extrabold text-white">₹{item.price}</span>
+              <span className="text-lg font-extrabold text-white">£{item.price}</span>
             )}
           </div>
 

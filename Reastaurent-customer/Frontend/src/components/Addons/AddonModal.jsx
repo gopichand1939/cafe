@@ -136,7 +136,7 @@ function AddonModal({ item, addons, loading, onClose, onConfirm }) {
                         </div>
 
                         <div className="text-sm font-extrabold text-amber-300">
-                          +₹{Number(addon.addon_price || 0).toFixed(2)}
+                          +£{Number(addon.addon_price || 0).toFixed(2)}
                         </div>
                       </button>
                     );
@@ -153,7 +153,7 @@ function AddonModal({ item, addons, loading, onClose, onConfirm }) {
               Total
             </div>
             <div className="mt-1 text-[26px] font-extrabold text-white">
-              ₹{totalPrice}
+              £{totalPrice}
             </div>
           </div>
 

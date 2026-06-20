@@ -22,13 +22,14 @@ const resolveAdminFromSocketRequest = async (request) => {
 
     const payload = verifyAccessToken(accessToken);
     const admin = await adminModel.getAdminForSessionValidation(payload.sub);
+    const session = await adminModel.getSessionByAdminAndSessionId(payload.sub, payload.sid);
 
     if (
       !admin ||
       Number(admin.is_active) !== 1 ||
-      admin.current_session_id !== payload.sid ||
-      !admin.session_expires_at ||
-      new Date(admin.session_expires_at) <= new Date()
+      !session ||
+      !session.session_expires_at ||
+      new Date(session.session_expires_at) <= new Date()
     ) {
       return null;
     }

@@ -6,9 +6,9 @@ const DeliveryChargesModel = {
     await db.query(`
       CREATE TABLE IF NOT EXISTS delivery_charge_settings (
         id SERIAL PRIMARY KEY,
-        base_charge NUMERIC(10,2) NOT NULL DEFAULT 30.00,
-        charge_per_km NUMERIC(10,2) NOT NULL DEFAULT 10.00,
-        free_delivery_threshold NUMERIC(10,2) NOT NULL DEFAULT 500.00,
+        base_charge NUMERIC(10,2) NOT NULL DEFAULT 1.00,
+        charge_per_km NUMERIC(10,2) NOT NULL DEFAULT 1.00,
+        free_delivery_threshold NUMERIC(10,2) NOT NULL DEFAULT 20.00,
         created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -17,8 +17,12 @@ const DeliveryChargesModel = {
     // 2. Seed default row
     await db.query(`
       INSERT INTO delivery_charge_settings (id, base_charge, charge_per_km, free_delivery_threshold)
-      VALUES (1, 30.00, 10.00, 500.00)
-      ON CONFLICT (id) DO NOTHING;
+      VALUES (1, 1.00, 1.00, 20.00)
+      ON CONFLICT (id)
+      DO UPDATE SET
+        base_charge = EXCLUDED.base_charge,
+        charge_per_km = EXCLUDED.charge_per_km,
+        free_delivery_threshold = EXCLUDED.free_delivery_threshold;
     `);
   },
 

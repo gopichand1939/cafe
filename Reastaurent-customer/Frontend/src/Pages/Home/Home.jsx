@@ -27,14 +27,42 @@ import {
 } from "../../Utils/notificationSound";
 
 function Home() {
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [categories, setCategories] = useState(() => {
+    try {
+      const cached = localStorage.getItem("customer_categories_cache");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [selectedCategory, setSelectedCategory] = useState(() => {
+    try {
+      const cached = localStorage.getItem("customer_categories_cache");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.length > 0) {
+          return parsed[0].id;
+        }
+      }
+    } catch {}
+    return "all";
+  });
   const [topProducts, setTopProducts] = useState([]);
   const [items, setItems] = useState([]);
-  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingCategories, setLoadingCategories] = useState(() => {
+    try {
+      const cached = localStorage.getItem("customer_categories_cache");
+      return !cached;
+    } catch {
+      return true;
+    }
+  });
   const [loadingItems, setLoadingItems] = useState(false);
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [previousCategoryBeforeSearch, setPreviousCategoryBeforeSearch] = useState(null);
   const [addonCache, setAddonCache] = useState({});
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedItemAddons, setSelectedItemAddons] = useState([]);
@@ -69,6 +97,7 @@ function Home() {
   const skipNextSelectedCategoryFetchRef = useRef(false);
   const previousNotificationCountRef = useRef(0);
   const hasLoadedNotificationSummaryRef = useRef(false);
+  const categoryItemsCacheRef = useRef({});
 
   useEffect(() => {
     selectedCategoryRef.current = selectedCategory;
@@ -101,14 +130,23 @@ function Home() {
   });
 
   const loadCategories = useEffectEvent(async (preferredCategoryId = null) => {
-    setLoadingCategories(true);
+    const hasCachedCategories = categories && categories.length > 0;
+    if (!hasCachedCategories) {
+      setLoadingCategories(true);
+    }
 
     try {
       const rawCategories = await fetchCategories();
       const nextCategories = [
-        { id: "all", category_name: "All", category_image: null },
+        { id: "all", category_name: "All", category_image: null, is_veg_nonveg_applicable: 1 },
         ...rawCategories,
       ];
+
+      try {
+        localStorage.setItem("customer_categories_cache", JSON.stringify(nextCategories));
+      } catch (storageError) {
+        console.warn("Could not save categories to localStorage:", storageError);
+      }
 
       const requestedCategoryId =
         preferredCategoryId ?? selectedCategoryRef.current;
@@ -127,15 +165,17 @@ function Home() {
       return nextSelectedCategory;
     } catch (error) {
       console.error("Failed to fetch categories:", error);
-      setCategories([]);
-      setSelectedCategory(null);
+      if (!hasCachedCategories) {
+        setCategories([]);
+        setSelectedCategory(null);
+      }
       return null;
     } finally {
       setLoadingCategories(false);
     }
   });
 
-  const loadItems = useEffectEvent(async (categoryId, reset = true) => {
+  const loadItems = useEffectEvent(async (categoryId, reset = true, searchString = "") => {
     if (!categoryId) {
       setItems([]);
       setCurrentPage(1);
@@ -145,6 +185,40 @@ function Home() {
 
     const pageToFetch = reset ? 1 : currentPage + 1;
     const fetchLimit = 12; // 3 rows of 4 items or 4 rows of 3 items
+    const searchVal = String(searchString || "").trim();
+    const cacheKeyReset = `${categoryId}_1_${fetchLimit}_${searchVal}`;
+    const cacheKeyFetch = `${categoryId}_${pageToFetch}_${fetchLimit}_${searchVal}`;
+
+    // Check cache for category switch (reset === true)
+    if (reset && categoryItemsCacheRef.current[cacheKeyReset]) {
+      const cached = categoryItemsCacheRef.current[cacheKeyReset];
+      setItems(cached.items);
+      setCurrentPage(cached.currentPage);
+      setTotalPages(cached.totalPages);
+      setLoadingItems(false);
+
+      // Silent background SWR revalidation
+      try {
+        const response = await fetchItemsByCategory(categoryId, 1, fetchLimit, searchVal);
+        const nextItems = response.data || [];
+        const pagination = response.pagination || {};
+
+        categoryItemsCacheRef.current[cacheKeyReset] = {
+          items: nextItems,
+          currentPage: 1,
+          totalPages: pagination.totalPages || 1,
+        };
+
+        if (selectedCategoryRef.current === categoryId && searchQuery === searchString) {
+          setItems(nextItems);
+          setCurrentPage(1);
+          setTotalPages(pagination.totalPages || 1);
+        }
+      } catch (swrError) {
+        console.error("SWR background fetch failed:", swrError);
+      }
+      return;
+    }
 
     if (reset) {
       setLoadingItems(true);
@@ -154,14 +228,25 @@ function Home() {
     }
 
     try {
-      const response = await fetchItemsByCategory(categoryId, pageToFetch, fetchLimit);
+      const response = await fetchItemsByCategory(categoryId, pageToFetch, fetchLimit, searchVal);
       const nextItems = response.data || [];
       const pagination = response.pagination || {};
 
       if (reset) {
         setItems(nextItems);
+        categoryItemsCacheRef.current[cacheKeyFetch] = {
+          items: nextItems,
+          currentPage: 1,
+          totalPages: pagination.totalPages || 1,
+        };
       } else {
         setItems((prev) => [...prev, ...nextItems]);
+        const cachedItems = categoryItemsCacheRef.current[cacheKeyReset]?.items || [];
+        categoryItemsCacheRef.current[cacheKeyReset] = {
+          items: [...cachedItems, ...nextItems],
+          currentPage: pageToFetch,
+          totalPages: pagination.totalPages || 1,
+        };
       }
 
       setCurrentPage(pageToFetch);
@@ -189,7 +274,7 @@ function Home() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          void loadItems(selectedCategory, false);
+          void loadItems(selectedCategory, false, searchQuery);
         }
       },
       { threshold: 0.1 }
@@ -205,7 +290,7 @@ function Home() {
         observer.unobserve(currentSentinel);
       }
     };
-  }, [loadingItems, isFetchingMore, currentPage, totalPages, selectedCategory]);
+  }, [loadingItems, isFetchingMore, currentPage, totalPages, selectedCategory, searchQuery]);
 
   const loadAddonsForItem = useEffectEvent(async (item, options = {}) => {
     const { useCache = false, openModal = true } = options;
@@ -258,6 +343,12 @@ function Home() {
     if (payload.entity === "category") {
       let nextSelectedCategory = selectedCategoryRef.current;
 
+      // Invalidate categories cache
+      categoryItemsCacheRef.current = {};
+      try {
+        localStorage.removeItem("customer_categories_cache");
+      } catch {}
+
       setCategories((prevCategories) => {
         const nextState = applyCategoryChange({
           categories: prevCategories,
@@ -293,6 +384,25 @@ function Home() {
 
       setItems(nextItemState.items);
       setSelectedItem(nextItemState.selectedItem);
+
+      // Update active view in cache and invalidate other cache keys
+      const activeCacheKey = selectedCategoryRef.current
+        ? `${selectedCategoryRef.current}_1_12_${String(searchQuery || "").trim()}`
+        : null;
+
+      if (activeCacheKey) {
+        categoryItemsCacheRef.current[activeCacheKey] = {
+          items: nextItemState.items,
+          currentPage: currentPage,
+          totalPages: totalPages,
+        };
+      }
+
+      Object.keys(categoryItemsCacheRef.current).forEach((key) => {
+        if (key !== activeCacheKey) {
+          delete categoryItemsCacheRef.current[key];
+        }
+      });
 
       if (
         selectedItemRef.current &&
@@ -484,6 +594,30 @@ function Home() {
     };
   }, []);
 
+  // Search query input debouncing
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  // Manage category state when searching (forces 'all' for global search, restores previous category on clear)
+  useEffect(() => {
+    const searchVal = String(debouncedSearchQuery).trim();
+    if (searchVal) {
+      if (selectedCategory && selectedCategory !== "all" && !previousCategoryBeforeSearch) {
+        setPreviousCategoryBeforeSearch(selectedCategory);
+      }
+      setSelectedCategory("all");
+    } else if (previousCategoryBeforeSearch) {
+      const restoreCat = previousCategoryBeforeSearch;
+      setPreviousCategoryBeforeSearch(null);
+      setSelectedCategory(restoreCat);
+    }
+  }, [debouncedSearchQuery]);
+
+  // Load items whenever selected category or debounced search query updates
   useEffect(() => {
     if (!selectedCategory) {
       setItems([]);
@@ -495,8 +629,8 @@ function Home() {
       return;
     }
 
-    void loadItems(selectedCategory);
-  }, [selectedCategory]);
+    void loadItems(selectedCategory, true, debouncedSearchQuery);
+  }, [selectedCategory, debouncedSearchQuery]);
 
   useEffect(() => {
     const accessToken = customerAuthStorage.getAccessToken();
@@ -758,42 +892,54 @@ function Home() {
           setCustomerDrawerOpen(false);
           setCartOpen(true);
         }}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
-      {/* Premium Top Products Showcase */}
-      {topProducts && topProducts.length > 0 ? (
-        <section className="px-4 py-6 sm:px-6 max-w-7xl mx-auto w-full">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-xl text-amber-400">★</span>
-            <h2 className="text-xl font-black text-white tracking-tight">Chef's Specialties</h2>
-          </div>
-          
-          <div className="flex gap-5 overflow-x-auto pb-5 pt-1 scrollbar-thin scrollbar-thumb-white/10 scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0">
-            {topProducts.map((item) => {
-              const cartQty = cart
-                .filter((cartItem) => cartItem.id === item.id)
-                .reduce((sum, cartItem) => sum + cartItem.qty, 0);
-
-              return (
-                <div key={item.id} className="w-[280px] shrink-0">
-                  <ItemCard
-                    item={item}
-                    onAddToCart={addToCart}
-                    onOpenAddons={openAddonsForItem}
-                    cartQty={cartQty}
-                    onRemoveFromCart={removeFromCart}
-                  />
-                </div>
-              );
-            })}
-          </div>
+      {searchQuery.trim() ? (
+        <section className="px-4 py-4 sm:px-6 max-w-7xl mx-auto w-full">
+          <h2 className="text-xl font-black text-white tracking-tight">
+            Search Results for "{searchQuery}"
+          </h2>
         </section>
-      ) : null}
-      <CategoryBar
-        categories={categories}
-        selectedCategory={selectedCategory}
-        onSelect={setSelectedCategory}
-        loading={loadingCategories}
-      />
+      ) : (
+        <>
+          {/* Premium Top Products Showcase */}
+          {topProducts && topProducts.length > 0 ? (
+            <section className="px-4 py-6 sm:px-6 max-w-7xl mx-auto w-full">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-xl text-amber-400">★</span>
+                <h2 className="text-xl font-black text-white tracking-tight">Chef's Specialties</h2>
+              </div>
+              
+              <div className="flex gap-5 overflow-x-auto pb-5 pt-1 scrollbar-thin scrollbar-thumb-white/10 scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0">
+                {topProducts.map((item) => {
+                  const cartQty = cart
+                    .filter((cartItem) => cartItem.id === item.id)
+                    .reduce((sum, cartItem) => sum + cartItem.qty, 0);
+
+                  return (
+                    <div key={item.id} className="w-[280px] shrink-0">
+                      <ItemCard
+                        item={item}
+                        onAddToCart={addToCart}
+                        onOpenAddons={openAddonsForItem}
+                        cartQty={cartQty}
+                        onRemoveFromCart={removeFromCart}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+          <CategoryBar
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onSelect={setSelectedCategory}
+            loading={loadingCategories}
+          />
+        </>
+      )}
       <ItemGrid
         items={items}
         loading={loadingItems}
@@ -803,6 +949,7 @@ function Home() {
         onRemoveFromCart={removeFromCart}
         sentinelRef={sentinelRef}
         isFetchingMore={isFetchingMore}
+        emptyMessage={searchQuery.trim() ? `No items found matching "${searchQuery}"` : "No items available in this category"}
       />
       <Suspense fallback={null}>
         {cartOpen ? (

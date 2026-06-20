@@ -217,6 +217,47 @@ const searchItems = async (req, res) => {
   }
 };
 
+const getTopProductLimit = async (req, res) => {
+  try {
+    const limit = await topProductsModel.getTopProductLimit();
+    return res.status(200).json({
+      success: true,
+      data: { display_limit: limit },
+    });
+  } catch (error) {
+    console.error("Error getting top product limit:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
+
+const updateTopProductLimit = async (req, res) => {
+  try {
+    const { display_limit } = req.body;
+    if (display_limit == null) {
+      return res.status(400).json({
+        success: false,
+        message: "display_limit is required",
+      });
+    }
+
+    const limit = await topProductsModel.updateTopProductLimit(Number(display_limit));
+    return res.status(200).json({
+      success: true,
+      message: "Top products display limit updated successfully",
+      data: { display_limit: limit },
+    });
+  } catch (error) {
+    console.error("Error updating top product limit:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
+
 module.exports = {
   getTopProducts,
   addTopProducts,
@@ -224,4 +265,6 @@ module.exports = {
   deleteTopProduct,
   reorderTopProducts,
   searchItems,
+  getTopProductLimit,
+  updateTopProductLimit,
 };

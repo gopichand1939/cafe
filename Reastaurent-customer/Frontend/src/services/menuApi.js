@@ -28,11 +28,12 @@ export const fetchCategories = async () => {
   return data.data || [];
 };
 
-export const fetchItemsByCategory = async (categoryId, page = 1, limit = 12) => {
+export const fetchItemsByCategory = async (categoryId, page = 1, limit = 12, search = "") => {
   const data = await postJson(ITEMS_BY_CATEGORY, {
     category_id: categoryId,
     page,
     limit,
+    search,
   });
 
   return data;

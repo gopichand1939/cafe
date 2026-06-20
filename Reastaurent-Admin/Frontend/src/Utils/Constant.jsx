@@ -57,6 +57,8 @@ export const TOP_PRODUCT_UPDATE = `${BACKEND_BASE_URL}/top-products/update`;
 export const TOP_PRODUCT_DELETE = `${BACKEND_BASE_URL}/top-products/delete`;
 export const TOP_PRODUCT_REORDER = `${BACKEND_BASE_URL}/top-products/reorder`;
 export const TOP_PRODUCT_SEARCH_ITEMS = `${BACKEND_BASE_URL}/top-products/search-items`;
+export const TOP_PRODUCT_GET_LIMIT = `${BACKEND_BASE_URL}/top-products/get-limit`;
+export const TOP_PRODUCT_UPDATE_LIMIT = `${BACKEND_BASE_URL}/top-products/update-limit`;
 
 export const ADDON_GROUP_CREATE = `${BACKEND_BASE_URL}/addons/create_addon_group`;
 export const ADDON_GROUP_LIST = `${BACKEND_BASE_URL}/addons/addon_group_list`;

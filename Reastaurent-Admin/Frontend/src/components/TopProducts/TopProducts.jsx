@@ -18,6 +18,8 @@ import {
   TOP_PRODUCT_DELETE,
   TOP_PRODUCT_REORDER,
   TOP_PRODUCT_SEARCH_ITEMS,
+  TOP_PRODUCT_GET_LIMIT,
+  TOP_PRODUCT_UPDATE_LIMIT,
 } from "../../Utils/Constant";
 import fetchWithRefreshToken from "../../Utils/fetchWithRefreshToken";
 import { getImageUrl } from "../../Utils/imageUrl";
@@ -53,6 +55,8 @@ function TopProducts() {
   const [loading, setLoading] = useState(true);
   const [limitFilter, setLimitFilter] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [customerLimit, setCustomerLimit] = useState(0);
+  const [updatingLimit, setUpdatingLimit] = useState(false);
 
   // Modal Search states
   const [searchCategory, setSearchCategory] = useState("all");
@@ -62,11 +66,11 @@ function TopProducts() {
   const [selectedItemIds, setSelectedItemIds] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // Load category and top products list
+  // Load category, top products list and display limit
   const loadData = async () => {
     setLoading(true);
     try {
-      const [topRes, catRes] = await Promise.all([
+      const [topRes, catRes, limitRes] = await Promise.all([
         fetchWithRefreshToken(TOP_PRODUCT_LIST, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -76,10 +80,18 @@ function TopProducts() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ page: 1, limit: 500 }),
         }),
+        fetchWithRefreshToken(TOP_PRODUCT_GET_LIMIT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }).catch(() => null),
       ]);
 
       const topData = await topRes.json();
       const catData = await catRes.json();
+      let limitData = { success: false };
+      if (limitRes) {
+        try { limitData = await limitRes.json(); } catch (_) {}
+      }
 
       if (!topRes.ok || topData.success === false) {
         throw new Error(topData.message || "Failed to load top products");
@@ -90,10 +102,40 @@ function TopProducts() {
 
       setTopProducts(topData.data || []);
       setCategories(catData.data || []);
+      if (limitData.success && limitData.data) {
+        setCustomerLimit(limitData.data.display_limit);
+      }
     } catch (error) {
       toast.error(error.message || "Failed to load top products data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveCustomerLimit = async () => {
+    const finalLimit = customerLimit === "" ? 0 : parseInt(customerLimit, 10) || 0;
+    setUpdatingLimit(true);
+
+    try {
+      const response = await fetchWithRefreshToken(TOP_PRODUCT_UPDATE_LIMIT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ display_limit: finalLimit }),
+      });
+      const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.message || "Failed to update display limit");
+      }
+      toast.success(
+        finalLimit === 0
+          ? "Customer storefront configured to show all top products"
+          : `Customer storefront limit updated to show top ${finalLimit} products`
+      );
+      setCustomerLimit(finalLimit);
+    } catch (error) {
+      toast.error(error.message || "Failed to update customer limit");
+    } finally {
+      setUpdatingLimit(false);
     }
   };
 
@@ -282,20 +324,49 @@ function TopProducts() {
       <Card padding="md" className="flex flex-col gap-4">
         {/* Controls Bar */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border-subtle pb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-[0.9rem] font-bold text-text-muted">Display filter:</span>
-            <InputField
-              as="select"
-              value={limitFilter}
-              onChange={(e) => setLimitFilter(e.target.value)}
-              className="max-w-[200px]"
-              inputClassName="min-h-[38px] rounded-xl text-[0.88rem] px-3 py-1"
-            >
-              <option value="all">Show All</option>
-              <option value="5">Top 5 Products</option>
-              <option value="10">Top 10 Products</option>
-              <option value="20">Top 20 Products</option>
-            </InputField>
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-[0.9rem] font-bold text-text-muted">Display filter (Admin):</span>
+              <InputField
+                as="select"
+                value={limitFilter}
+                onChange={(e) => setLimitFilter(e.target.value)}
+                className="max-w-[200px]"
+                inputClassName="min-h-[38px] rounded-xl text-[0.88rem] px-3 py-1"
+              >
+                <option value="all">Show All</option>
+                <option value="5">Top 5 Products</option>
+                <option value="10">Top 10 Products</option>
+                <option value="20">Top 20 Products</option>
+              </InputField>
+            </div>
+
+            <div className="flex items-center gap-2 border-l border-border-subtle pl-6">
+              <span className="text-[0.9rem] font-bold text-text-muted">Customer Storefront Limit:</span>
+              <div className="flex items-center gap-1.5">
+                <InputField
+                  type="number"
+                  min="0"
+                  placeholder="0 (Show All)"
+                  value={customerLimit}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCustomerLimit(val === "" ? "" : Math.max(0, parseInt(val, 10) || 0));
+                  }}
+                  disabled={updatingLimit}
+                  className="w-[100px]"
+                  inputClassName="min-h-[38px] rounded-xl text-[0.88rem] px-3 py-1 font-semibold text-emerald-500 border-emerald-500/20 bg-emerald-500/5 focus:border-emerald-500 text-center"
+                />
+                <Button
+                  variant="primary"
+                  onClick={saveCustomerLimit}
+                  disabled={updatingLimit}
+                  className="min-h-[38px] rounded-xl px-4 py-1 text-xs font-bold shrink-0"
+                >
+                  {updatingLimit ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </div>
           </div>
           <span className="text-sm font-semibold text-text-muted">
             Total Top Products: {topProducts.length} (Filtered: {filteredProducts.length})
@@ -391,15 +462,15 @@ function TopProducts() {
                             {item.discount_price && item.discount_price < item.price ? (
                               <>
                                 <span className="text-sm font-bold text-emerald-500">
-                                  ₹{item.discount_price}
+                                  £{item.discount_price}
                                 </span>
                                 <span className="text-xs text-text-muted line-through text-[0.75rem]">
-                                  ₹{item.price}
+                                  £{item.price}
                                 </span>
                               </>
                             ) : (
                               <span className="text-sm font-bold text-text-strong">
-                                ₹{item.price}
+                                £{item.price}
                               </span>
                             )}
                           </div>
@@ -526,7 +597,7 @@ function TopProducts() {
                             {item.item_name}
                           </span>
                           <span className="text-[0.74rem] text-text-muted truncate">
-                            {item.category_name} • ₹{item.price}
+                            {item.category_name} • £{item.price}
                           </span>
                         </div>
 

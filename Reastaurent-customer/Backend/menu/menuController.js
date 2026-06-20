@@ -21,7 +21,13 @@ const getCategory = async (req, res) => {
       SELECT
         id,
         category_name,
+        category_description,
         category_image,
+        created_at,
+        updated_at,
+        is_deleted,
+        is_active,
+        is_veg_nonveg_applicable,
         sort_order
       FROM category
       WHERE is_deleted = 0
@@ -51,7 +57,7 @@ const getCategory = async (req, res) => {
 
 const getItemsByCategory = async (req, res) => {
   try {
-    const { category_id, page = 1, limit = 5 } = req.body;
+    const { category_id, page = 1, limit = 5, search = "" } = req.body;
 
     if (!category_id) {
       return res.status(400).json({
@@ -61,10 +67,11 @@ const getItemsByCategory = async (req, res) => {
     }
 
     const isAll = category_id === "all" || category_id === 0;
+    const cleanSearch = String(search || "").trim();
 
     const pageNumber = Number(page) || 1;
     const limitNumber = Number(limit) || 5;
-    const cacheKey = `${category_id}_${pageNumber}_${limitNumber}`;
+    const cacheKey = `${category_id}_${pageNumber}_${limitNumber}_${cleanSearch}`;
 
     if (isCacheValid(cache.items[cacheKey])) {
       return res.status(200).json({
@@ -75,39 +82,175 @@ const getItemsByCategory = async (req, res) => {
 
     const offset = (pageNumber - 1) * limitNumber;
 
-    const itemsQuery = `
-      SELECT
-        id,
-        category_id,
-        item_name,
-        item_description,
-        item_image,
-        price,
-        discount_price,
-        preparation_time,
-        is_popular,
-        is_new,
-        is_veg,
-        is_active,
-        sort_order
-      FROM items
-      WHERE ${isAll ? "1=1" : "category_id = $1"}
-        AND is_deleted = 0
-        AND is_active = 1
-      ORDER BY sort_order ASC, id ASC
-      LIMIT ${isAll ? "$1 OFFSET $2" : "$2 OFFSET $3"}
-    `;
+    let itemsQuery = "";
+    let countQuery = "";
+    let itemsParams = [];
+    let countParams = [];
 
-    const countQuery = `
-      SELECT COUNT(*) AS total
-      FROM items
-      WHERE ${isAll ? "1=1" : "category_id = $1"}
-        AND is_deleted = 0
-        AND is_active = 1
-    `;
-
-    const itemsParams = isAll ? [limitNumber, offset] : [category_id, limitNumber, offset];
-    const countParams = isAll ? [] : [category_id];
+    if (cleanSearch) {
+      const searchPattern = `%${cleanSearch}%`;
+      if (isAll) {
+        itemsQuery = `
+          SELECT
+            i.id,
+            i.category_id,
+            c.category_name,
+            c.category_image,
+            i.item_name,
+            i.item_description,
+            i.item_image,
+            i.price,
+            i.discount_price,
+            i.preparation_time,
+            i.is_popular,
+            i.is_new,
+            i.is_veg,
+            c.is_veg_nonveg_applicable,
+            i.created_at,
+            i.updated_at,
+            i.is_deleted,
+            i.is_active,
+            i.sort_order
+          FROM items i
+          LEFT JOIN category c ON c.id = i.category_id
+          WHERE i.is_deleted = 0
+            AND i.is_active = 1
+            AND (i.item_name ILIKE $1 OR i.item_description ILIKE $1 OR c.category_name ILIKE $1)
+          ORDER BY i.sort_order ASC, i.id ASC
+          LIMIT $2 OFFSET $3
+        `;
+        countQuery = `
+          SELECT COUNT(*) AS total
+          FROM items i
+          LEFT JOIN category c ON c.id = i.category_id
+          WHERE i.is_deleted = 0
+            AND i.is_active = 1
+            AND (i.item_name ILIKE $1 OR i.item_description ILIKE $1 OR c.category_name ILIKE $1)
+        `;
+        itemsParams = [searchPattern, limitNumber, offset];
+        countParams = [searchPattern];
+      } else {
+        itemsQuery = `
+          SELECT
+            i.id,
+            i.category_id,
+            c.category_name,
+            c.category_image,
+            i.item_name,
+            i.item_description,
+            i.item_image,
+            i.price,
+            i.discount_price,
+            i.preparation_time,
+            i.is_popular,
+            i.is_new,
+            i.is_veg,
+            c.is_veg_nonveg_applicable,
+            i.created_at,
+            i.updated_at,
+            i.is_deleted,
+            i.is_active,
+            i.sort_order
+          FROM items i
+          LEFT JOIN category c ON c.id = i.category_id
+          WHERE i.category_id = $1
+            AND i.is_deleted = 0
+            AND i.is_active = 1
+            AND (i.item_name ILIKE $2 OR i.item_description ILIKE $2 OR c.category_name ILIKE $2)
+          ORDER BY i.sort_order ASC, i.id ASC
+          LIMIT $3 OFFSET $4
+        `;
+        countQuery = `
+          SELECT COUNT(*) AS total
+          FROM items i
+          LEFT JOIN category c ON c.id = i.category_id
+          WHERE i.category_id = $1
+            AND i.is_deleted = 0
+            AND i.is_active = 1
+            AND (i.item_name ILIKE $2 OR i.item_description ILIKE $2 OR c.category_name ILIKE $2)
+        `;
+        itemsParams = [category_id, searchPattern, limitNumber, offset];
+        countParams = [category_id, searchPattern];
+      }
+    } else {
+      if (isAll) {
+        itemsQuery = `
+          SELECT
+            i.id,
+            i.category_id,
+            c.category_name,
+            c.category_image,
+            i.item_name,
+            i.item_description,
+            i.item_image,
+            i.price,
+            i.discount_price,
+            i.preparation_time,
+            i.is_popular,
+            i.is_new,
+            i.is_veg,
+            c.is_veg_nonveg_applicable,
+            i.created_at,
+            i.updated_at,
+            i.is_deleted,
+            i.is_active,
+            i.sort_order
+          FROM items i
+          LEFT JOIN category c ON c.id = i.category_id
+          WHERE i.is_deleted = 0
+            AND i.is_active = 1
+          ORDER BY i.sort_order ASC, i.id ASC
+          LIMIT $1 OFFSET $2
+        `;
+        countQuery = `
+          SELECT COUNT(*) AS total
+          FROM items
+          WHERE is_deleted = 0
+            AND is_active = 1
+        `;
+        itemsParams = [limitNumber, offset];
+        countParams = [];
+      } else {
+        itemsQuery = `
+          SELECT
+            i.id,
+            i.category_id,
+            c.category_name,
+            c.category_image,
+            i.item_name,
+            i.item_description,
+            i.item_image,
+            i.price,
+            i.discount_price,
+            i.preparation_time,
+            i.is_popular,
+            i.is_new,
+            i.is_veg,
+            c.is_veg_nonveg_applicable,
+            i.created_at,
+            i.updated_at,
+            i.is_deleted,
+            i.is_active,
+            i.sort_order
+          FROM items i
+          LEFT JOIN category c ON c.id = i.category_id
+          WHERE i.category_id = $1
+            AND i.is_deleted = 0
+            AND i.is_active = 1
+          ORDER BY i.sort_order ASC, i.id ASC
+          LIMIT $2 OFFSET $3
+        `;
+        countQuery = `
+          SELECT COUNT(*) AS total
+          FROM items
+          WHERE category_id = $1
+            AND is_deleted = 0
+            AND is_active = 1
+        `;
+        itemsParams = [category_id, limitNumber, offset];
+        countParams = [category_id];
+      }
+    }
 
     const [itemsResult, countResult] = await Promise.all([
       db.query(itemsQuery, itemsParams),
@@ -116,7 +259,11 @@ const getItemsByCategory = async (req, res) => {
 
     const totalItems = parseInt(countResult.rows[0].total, 10) || 0;
     const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / limitNumber);
-    const items = itemsResult.rows.map((row) => attachImageUrl(req, row, "item_image"));
+    const items = itemsResult.rows.map((row) => {
+      let item = attachImageUrl(req, row, "item_image");
+      item = attachImageUrl(req, item, "category_image");
+      return item;
+    });
 
     const responseData = {
       success: true,
@@ -243,7 +390,17 @@ const getItemAddons = async (req, res) => {
 
 const getTopProducts = async (req, res) => {
   try {
-    const result = await db.query(`
+    let limitValue = 0;
+    try {
+      const limitResult = await db.query(`SELECT display_limit FROM top_product_settings WHERE id = 1 LIMIT 1`);
+      if (limitResult.rows.length > 0) {
+        limitValue = Number(limitResult.rows[0].display_limit) || 0;
+      }
+    } catch (dbError) {
+      console.warn("Could not fetch top products limit from top_product_settings. Defaulting to all.", dbError.message);
+    }
+
+    let queryStr = `
       SELECT
         i.id,
         tp.id AS top_product_id,
@@ -256,7 +413,9 @@ const getTopProducts = async (req, res) => {
         i.is_veg,
         i.is_new,
         i.is_popular,
-        c.category_name
+        c.category_name,
+        c.category_image,
+        c.is_veg_nonveg_applicable
       FROM top_products tp
       INNER JOIN items i ON i.id = tp.item_id
       LEFT JOIN category c ON c.id = i.category_id
@@ -266,11 +425,21 @@ const getTopProducts = async (req, res) => {
         AND i.is_active = 1
         AND (c.id IS NULL OR (c.is_deleted = 0 AND c.is_active = 1))
       ORDER BY tp.sort_order ASC, tp.id ASC
-    `);
+    `;
 
-    const items = result.rows.map((row) =>
-      attachImageUrl(req, row, "item_image")
-    );
+    const params = [];
+    if (limitValue > 0) {
+      queryStr += ` LIMIT $1`;
+      params.push(limitValue);
+    }
+
+    const result = await db.query(queryStr, params);
+
+    const items = result.rows.map((row) => {
+      let item = attachImageUrl(req, row, "item_image");
+      item = attachImageUrl(req, item, "category_image");
+      return item;
+    });
 
     return res.status(200).json({
       success: true,

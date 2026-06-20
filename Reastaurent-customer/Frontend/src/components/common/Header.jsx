@@ -7,6 +7,8 @@ function Header({
   onNotificationClick,
   customer,
   notificationCount = 0,
+  searchQuery = "",
+  onSearchChange,
 }) {
   const [hovered, setHovered] = useState(false);
   const [customerHovered, setCustomerHovered] = useState(false);
@@ -16,7 +18,7 @@ function Header({
     "relative flex items-center gap-2 rounded-2xl border border-white/10 px-3.5 py-2.5 text-white transition-all duration-300";
 
   return (
-    <header className="sticky top-0 z-[100] flex items-center justify-between border-b border-white/10 bg-white/[0.04] px-4 py-4 backdrop-blur-xl sm:px-6">
+    <header className="sticky top-0 z-[100] flex flex-wrap items-center justify-between gap-3.5 border-b border-white/10 bg-white/[0.04] px-4 py-3.5 backdrop-blur-xl sm:px-6">
       <div className="flex items-center gap-3">
         <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-amber-500 to-red-500 text-xl font-extrabold text-white">
           F
@@ -30,6 +32,29 @@ function Header({
           </p>
         </div>
       </div>
+
+      {onSearchChange !== undefined && (
+        <div className="order-3 w-full md:order-none md:flex-1 md:max-w-md lg:max-w-lg">
+          <div className="relative flex items-center rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-2 text-white/70 transition-all duration-300 focus-within:border-amber-500/50 focus-within:bg-white/[0.1] focus-within:shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+            <span className="mr-2 text-white/40">🔍</span>
+            <input
+              type="text"
+              placeholder="Search for delicious dishes, categories..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-full border-0 bg-transparent text-sm text-white placeholder-white/30 outline-none"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange("")}
+                className="border-0 bg-transparent px-1 text-xs text-white/40 transition-colors hover:text-white"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <button
